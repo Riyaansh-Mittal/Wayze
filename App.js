@@ -1,49 +1,60 @@
 /**
  * Root App Component
- * Sets up providers and initializes app
- *
- * BATCH 3 UPDATE: Added service layer testing
+ * Sets up all providers in correct order
+ * 
+ * BATCH 4 UPDATE: Added all context providers
  */
 
-import React, {useState, useEffect, useCallback} from 'react';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {StatusBar, View, Text, StyleSheet, ScrollView} from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { StatusBar, View, Text, StyleSheet, ScrollView } from 'react-native';
 
 // Providers
-import {ThemeProvider, useTheme} from './src/contexts/ThemeContext';
+import { ThemeProvider } from './src/contexts/ThemeContext';
+import { ToastProvider } from './src/components/common/Toast/ToastProvider';
+import { AuthProvider } from './src/contexts/AuthContext';
+import { UserProvider } from './src/contexts/UserContext';
+import { VehicleProvider } from './src/contexts/VehicleContext';
+import { SearchProvider } from './src/contexts/SearchContext';
+import { BalanceProvider } from './src/contexts/BalanceContext';
+
+// Hooks
 import {
-  ToastProvider,
-  useToast,
-} from './src/components/common/Toast/ToastProvider';
+  useAuth,
+  useVehicles,
+  useSearch,
+  useBalance,
+  useReferral,
+} from './src/hooks';
 
 // Components
 import PrimaryButton from './src/components/common/Button/PrimaryButton';
 import SecondaryButton from './src/components/common/Button/SecondaryButton';
 import Card from './src/components/common/Card/Card';
-import Spinner from './src/components/common/Loading/Spinner';
+import PlateInput from './src/components/common/Input/PlateInput';
 import AppBar from './src/components/navigation/AppBar';
 
-// Services (NEW - Batch 3)
-import {
-  AuthService,
-  VehiclesService,
-  SearchService,
-  ReferralService,
-} from './src/services/api';
-import SecureStorage from './src/services/storage/SecureStorage';
-
-import {COLORS, TYPOGRAPHY, SPACING, LAYOUT} from './src/config/theme';
-import {FEATURE_FLAGS} from './src/config/constants';
+import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from './src/config/theme';
 
 const App = () => {
   return (
-    <GestureHandlerRootView style={{flex: 1}}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
           <ToastProvider>
-            <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-            <ServiceLayerDemo />
+            <AuthProvider>
+              <UserProvider>
+                <VehicleProvider>
+                  <SearchProvider>
+                    <BalanceProvider>
+                      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+                      <ContextDemo />
+                    </BalanceProvider>
+                  </SearchProvider>
+                </VehicleProvider>
+              </UserProvider>
+            </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
       </SafeAreaProvider>
@@ -51,372 +62,241 @@ const App = () => {
   );
 };
 
-// Service Layer Demo Component
-const ServiceLayerDemo = () => {
-  const {t} = useTheme();
-  const {showSuccess, showError, showInfo} = useToast();
+// Context Demo Component
+// Context Demo Component
+const ContextDemo = () => {
+  const auth = useAuth();
+  const vehicles = useVehicles();
+  const search = useSearch();
+  const balance = useBalance();
+  const referral = useReferral();
 
-  const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState(null);
-  const [vehicles, setVehicles] = useState([]);
-  const [searchResult, setSearchResult] = useState(null);
+  const [plateInput, setPlateInput] = useState('');
 
-  // ✅ FIXED: Memoized function
-  const loadUserData = useCallback(async () => {
-    try {
-      const storedUser = await SecureStorage.getUserData();
-      if (storedUser) {
-        setUserData(storedUser);
-        showInfo('Welcome back!');
-      }
-    } catch (error) {
-      console.error('Failed to load user:', error);
-    }
-  }, [showInfo]);
+  // ✅ FIXED: Wrapped in useCallback
+  const handleLogin = useCallback(async () => {
+    await auth.socialLogin({
+      firstName: 'Riyaansh',
+      lastName: 'Mittal',
+      fullName: 'Riyaansh Mittal',
+      email: 'riyaansh@example.com',
+      phoneNumber: '9876543210',
+      deviceType: 'ANDROID',
+      fcmToken: 'test-fcm-token',
+    });
+  }, [auth]);
 
-  // Load user data on mount
+  // Auto-login on mount for demo
   useEffect(() => {
-    loadUserData();
-  }, [loadUserData]);
+    if (!auth.isAuthenticated) {
+      handleLogin();
+    }
+  }, [auth.isAuthenticated, handleLogin]);
 
-  // Test 1: Mock Login
-  const testLogin = async () => {
-    setLoading(true);
-    try {
-      const response = await AuthService.socialLogin({
-        firstName: 'Test',
-        lastName: 'User',
-        fullName: 'Test User',
-        email: 'test.user@example.com',
-        phoneNumber: '9876543210',
-        deviceType: 'ANDROID',
-        fcmToken: 'test-fcm-token',
-      });
-
-      if (response.success) {
-        setUserData(response.data.user);
-
-        // Save to storage
-        await SecureStorage.saveTokens(
-          response.data.token,
-          response.data.refreshToken,
-        );
-        await SecureStorage.saveUserData(response.data.user);
-
-        showSuccess('Login successful! 🎉');
-      }
-    } catch (error) {
-      showError('Login failed: ' + error.message);
-    } finally {
-      setLoading(false);
+  const handleSearch = async () => {
+    if (plateInput) {
+      await search.searchWithValidation(plateInput);
     }
   };
 
-  // Test 2: Get Vehicles
-  const testGetVehicles = async () => {
-    if (!userData) {
-      showError('Please login first');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await VehiclesService.list(userData._id);
-
-      if (response.success) {
-        setVehicles(response.data);
-        showSuccess(`Found ${response.data.length} vehicles`);
-      }
-    } catch (error) {
-      showError('Failed to get vehicles: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Test 3: Search Vehicle
-  const testSearchVehicle = async () => {
-    setLoading(true);
-    setSearchResult(null);
-    try {
-      const response = await SearchService.searchVehicle('MH01AB1234');
-
-      if (response.success) {
-        setSearchResult(response.data);
-        if (response.data.found) {
-          showSuccess('Vehicle found! ✅');
-        } else {
-          showInfo('Vehicle not found');
-        }
-      }
-    } catch (error) {
-      showError('Search failed: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Test 4: Validate Referral Code
-  const testReferralCode = async () => {
-    setLoading(true);
-    try {
-      const response = await ReferralService.validate('RIYA2024');
-
-      if (response.success && response.data.valid) {
-        showSuccess(`Valid code! Get ${response.data.reward} free calls 🎁`);
-      }
-    } catch (error) {
-      showError('Invalid referral code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Test 5: Add Vehicle
-  const testAddVehicle = async () => {
-    if (!userData) {
-      showError('Please login first');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const newVehicle = {
-        plateNumber: 'MH05XY' + Math.floor(Math.random() * 10000),
-        rcNumber: 'MH05202400' + Math.floor(Math.random() * 100000),
-        vehicleType: '2-wheeler',
-        contactPhone: '9876543210',
-        contactMethods: {
-          phone: true,
-          sms: true,
-          whatsapp: false,
-          email: false,
-        },
-      };
-
-      const response = await VehiclesService.create(userData._id, newVehicle);
-
-      if (response.success) {
-        showSuccess('Vehicle added successfully! 🚗');
-        // Refresh vehicle list
-        testGetVehicles();
-      }
-    } catch (error) {
-      showError('Failed to add vehicle: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Test 6: Logout
-  const testLogout = async () => {
-    setLoading(true);
-    try {
-      await AuthService.logout();
-      await SecureStorage.clearAuth();
-
-      setUserData(null);
-      setVehicles([]);
-      setSearchResult(null);
-
-      showSuccess('Logged out successfully');
-    } catch (error) {
-      showError('Logout failed: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (auth.isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={TYPOGRAPHY.h2}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* App Bar */}
       <AppBar
-        title="QR Parking - Service Layer"
-        rightIcon={<Text style={styles.icon}>⚙️</Text>}
-        onRightPress={() =>
-          showInfo(`Mock Mode: ${FEATURE_FLAGS.USE_MOCK_DATA ? 'ON' : 'OFF'}`)
-        }
+        title="QR Parking - State Management"
+        rightIcon={<Text style={styles.icon}>👤</Text>}
+        onRightPress={() => {}}
       />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔌 Batch 3 Complete!</Text>
+          <Text style={styles.sectionTitle}>🧠 Batch 4 Complete!</Text>
           <Text style={styles.sectionSubtitle}>
-            Service layer with mock data is ready. Test the APIs below:
+            Context API with custom hooks ready
           </Text>
-          <Card style={{marginTop: SPACING.base}}>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Mock Mode:</Text>
-              <Text style={[styles.statusValue, {color: COLORS.success}]}>
-                {FEATURE_FLAGS.USE_MOCK_DATA ? 'ENABLED ✓' : 'DISABLED'}
+        </View>
+
+        {/* Auth Status */}
+        <Card>
+          <Text style={TYPOGRAPHY.h2}>Authentication</Text>
+          <View style={styles.statusRow}>
+            <Text style={TYPOGRAPHY.caption}>User:</Text>
+            <Text style={TYPOGRAPHY.captionBold}>
+              {auth.isAuthenticated ? auth.getUserName() : 'Not logged in'}
+            </Text>
+          </View>
+          <View style={styles.statusRow}>
+            <Text style={TYPOGRAPHY.caption}>Email:</Text>
+            <Text style={TYPOGRAPHY.caption}>{auth.getUserEmail()}</Text>
+          </View>
+          {auth.isAuthenticated && (
+            <SecondaryButton
+              title="Logout"
+              onPress={auth.logout}
+              style={{ marginTop: SPACING.md }}
+            />
+          )}
+        </Card>
+
+        {/* Balance */}
+        <View style={styles.section}>
+          <Card>
+            <Text style={TYPOGRAPHY.h2}>Call Balance</Text>
+            <View style={styles.balanceContainer}>
+              <Text style={[styles.balanceAmount, { color: balance.getBalanceColor() }]}>
+                {balance.getFormattedBalance()}
+              </Text>
+              <Text style={TYPOGRAPHY.caption}>
+                Status: {balance.getBalanceStatus()}
               </Text>
             </View>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>User:</Text>
-              <Text style={styles.statusValue}>
-                {userData ? userData.fullName : 'Not logged in'}
-              </Text>
-            </View>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Vehicles:</Text>
-              <Text style={styles.statusValue}>{vehicles.length}</Text>
-            </View>
+            <SecondaryButton
+              title="View Balance History"
+              onPress={balance.getBalanceHistory}
+              loading={balance.isLoading}
+              style={{ marginTop: SPACING.md }}
+            />
           </Card>
         </View>
 
-        {/* Authentication Tests */}
+        {/* Vehicles */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔐 Authentication</Text>
-          {!userData ? (
-            <PrimaryButton
-              title="Test Login (Mock)"
-              onPress={testLogin}
-              loading={loading}
-              fullWidth
-              icon={<Text style={{color: COLORS.white}}>🔓</Text>}
-            />
-          ) : (
+          <Card>
+            <Text style={TYPOGRAPHY.h2}>My Vehicles</Text>
+            <View style={styles.statusRow}>
+              <Text style={TYPOGRAPHY.caption}>Total:</Text>
+              <Text style={TYPOGRAPHY.captionBold}>
+                {vehicles.getVehicleCount()}
+              </Text>
+            </View>
+            <View style={styles.statusRow}>
+              <Text style={TYPOGRAPHY.caption}>Total Searches:</Text>
+              <Text style={TYPOGRAPHY.captionBold}>
+                {vehicles.getTotalSearches()}
+              </Text>
+            </View>
             <SecondaryButton
-              title="Test Logout"
-              onPress={testLogout}
-              loading={loading}
-              fullWidth
-              icon={<Text style={{color: COLORS.primary}}>🔒</Text>}
+              title="Refresh Vehicles"
+              onPress={vehicles.refreshVehicles}
+              loading={vehicles.isRefreshing}
+              style={{ marginTop: SPACING.md }}
             />
-          )}
+          </Card>
         </View>
 
-        {/* Vehicle Tests */}
+        {/* Search */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🚗 Vehicles Service</Text>
-          <SecondaryButton
-            title="Get My Vehicles"
-            onPress={testGetVehicles}
-            loading={loading}
-            fullWidth
-            disabled={!userData}
-          />
-          <View style={{height: SPACING.md}} />
-          <SecondaryButton
-            title="Add Random Vehicle"
-            onPress={testAddVehicle}
-            loading={loading}
-            fullWidth
-            disabled={!userData}
-          />
+          <Card>
+            <Text style={TYPOGRAPHY.h2}>Search Vehicle</Text>
+            <PlateInput
+              value={plateInput}
+              onChangeText={setPlateInput}
+              style={{ marginTop: SPACING.md }}
+            />
+            <PrimaryButton
+              title="Search"
+              onPress={handleSearch}
+              loading={search.isSearching}
+              fullWidth
+              style={{ marginTop: SPACING.md }}
+            />
 
-          {vehicles.length > 0 && (
-            <Card style={{marginTop: SPACING.base}}>
-              <Text style={TYPOGRAPHY.captionBold}>Your Vehicles:</Text>
-              {vehicles.map((vehicle, index) => (
-                <View key={vehicle._id} style={styles.vehicleItem}>
-                  <Text style={TYPOGRAPHY.body}>
-                    {index + 1}. {vehicle.plateNumber}
-                  </Text>
-                  <Text style={[TYPOGRAPHY.caption, {marginTop: 2}]}>
-                    {vehicle.vehicleType} • {vehicle.stats.totalSearches}{' '}
-                    searches
-                  </Text>
-                </View>
-              ))}
-            </Card>
-          )}
-        </View>
-
-        {/* Search Tests */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔍 Search Service</Text>
-          <SecondaryButton
-            title="Search Vehicle (MH01AB1234)"
-            onPress={testSearchVehicle}
-            loading={loading}
-            fullWidth
-          />
-
-          {searchResult && (
-            <Card style={{marginTop: SPACING.base}}>
-              {searchResult.found ? (
-                <>
-                  <View style={styles.resultRow}>
-                    <Text style={styles.resultLabel}>Status:</Text>
-                    <Text style={[styles.resultValue, {color: COLORS.success}]}>
-                      Found ✓
-                    </Text>
-                  </View>
-                  <View style={styles.resultRow}>
-                    <Text style={styles.resultLabel}>Plate:</Text>
-                    <Text style={styles.resultValue}>
-                      {searchResult.vehicle.plateNumber}
-                    </Text>
-                  </View>
-                  <View style={styles.resultRow}>
-                    <Text style={styles.resultLabel}>Type:</Text>
-                    <Text style={styles.resultValue}>
-                      {searchResult.vehicle.vehicleType}
-                    </Text>
-                  </View>
-                  <View style={styles.resultRow}>
-                    <Text style={styles.resultLabel}>Owner:</Text>
-                    <Text style={styles.resultValue}>
-                      {searchResult.vehicle.owner.name}
-                    </Text>
-                  </View>
-                </>
-              ) : (
-                <Text style={[TYPOGRAPHY.body, {color: COLORS.textSecondary}]}>
-                  ❌ {searchResult.message}
+            {search.searchResult && (
+              <View style={styles.resultContainer}>
+                <Text style={TYPOGRAPHY.captionBold}>
+                  {search.isResultFound() ? '✅ Vehicle Found!' : '❌ Not Found'}
                 </Text>
-              )}
-            </Card>
-          )}
+                {search.isResultFound() && (
+                  <>
+                    <Text style={TYPOGRAPHY.caption}>
+                      Plate: {search.searchResult.vehicle.plateNumber}
+                    </Text>
+                    <Text style={TYPOGRAPHY.caption}>
+                      Owner: {search.searchResult.vehicle.owner.name}
+                    </Text>
+                  </>
+                )}
+              </View>
+            )}
+
+            <Text style={[TYPOGRAPHY.caption, { marginTop: SPACING.md }]}>
+              Recent searches: {search.recentSearches.length}
+            </Text>
+          </Card>
         </View>
 
-        {/* Referral Tests */}
+        {/* Referral */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎁 Referral Service</Text>
-          <SecondaryButton
-            title="Validate Code (RIYA2024)"
-            onPress={testReferralCode}
-            loading={loading}
-            fullWidth
-          />
+          <Card>
+            <Text style={TYPOGRAPHY.h2}>Referral Program</Text>
+            <View style={styles.statusRow}>
+              <Text style={TYPOGRAPHY.caption}>Your Code:</Text>
+              <Text style={TYPOGRAPHY.captionBold}>
+                {referral.getReferralCode() || 'N/A'}
+              </Text>
+            </View>
+            <View style={styles.statusRow}>
+              <Text style={TYPOGRAPHY.caption}>Total Referrals:</Text>
+              <Text style={TYPOGRAPHY.captionBold}>
+                {referral.getTotalReferrals()}
+              </Text>
+            </View>
+            <View style={styles.statusRow}>
+              <Text style={TYPOGRAPHY.caption}>Total Earned:</Text>
+              <Text style={TYPOGRAPHY.captionBold}>
+                {referral.getTotalEarnings()} calls
+              </Text>
+            </View>
+            <SecondaryButton
+              title="Share Referral Code"
+              onPress={referral.shareReferralCode}
+              style={{ marginTop: SPACING.md }}
+            />
+          </Card>
         </View>
 
-        {/* Info Card */}
+        {/* Info */}
         <Card style={styles.infoCard}>
-          <Text style={TYPOGRAPHY.captionBold}>💡 How It Works:</Text>
-          <Text style={[TYPOGRAPHY.caption, {marginTop: SPACING.xs}]}>
-            • All services use mock data in development{'\n'}• Switch to real
-            API by changing USE_MOCK_DATA flag{'\n'}• Mock APIs simulate
-            realistic delays{'\n'}• Data persists in AsyncStorage{'\n'}• Ready
-            for real backend integration
+          <Text style={TYPOGRAPHY.captionBold}>✅ What's Working:</Text>
+          <Text style={[TYPOGRAPHY.caption, { marginTop: SPACING.xs }]}>
+            • Auth context with login/logout{'\n'}
+            • Vehicle context with CRUD operations{'\n'}
+            • Search context with history{'\n'}
+            • Balance context with referrals{'\n'}
+            • Custom hooks for clean code{'\n'}
+            • Automatic state persistence{'\n'}
+            • Optimized re-renders
           </Text>
         </Card>
 
-        {/* Loading Indicator */}
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <Spinner size="large" />
-            <Text style={[TYPOGRAPHY.caption, {marginTop: SPACING.sm}]}>
-              Calling mock API...
-            </Text>
-          </View>
-        )}
-
-        {/* Bottom padding */}
-        <View style={{height: SPACING.xl}} />
+        <View style={{ height: SPACING.xl }} />
       </ScrollView>
     </View>
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.white,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: COLORS.white,
   },
   scrollView: {
@@ -426,15 +306,16 @@ const styles = StyleSheet.create({
     padding: LAYOUT.screenPadding,
   },
   section: {
-    marginBottom: LAYOUT.sectionGap,
+    marginBottom: LAYOUT.cardGap,
   },
   sectionTitle: {
     ...TYPOGRAPHY.h2,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   sectionSubtitle: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
+    marginBottom: SPACING.base,
   },
   icon: {
     fontSize: 24,
@@ -443,44 +324,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginTop: SPACING.sm,
   },
-  statusLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  statusValue: {
-    ...TYPOGRAPHY.captionBold,
-    color: COLORS.textPrimary,
-  },
-  vehicleItem: {
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.neutralBorder,
-    marginTop: SPACING.md,
-  },
-  resultRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  balanceContainer: {
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    paddingVertical: SPACING.base,
   },
-  resultLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+  balanceAmount: {
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: SPACING.xs,
   },
-  resultValue: {
-    ...TYPOGRAPHY.captionBold,
-    color: COLORS.textPrimary,
+  resultContainer: {
+    marginTop: SPACING.base,
+    padding: SPACING.md,
+    backgroundColor: COLORS.neutralLight,
+    borderRadius: 8,
   },
   infoCard: {
     backgroundColor: COLORS.primaryLight,
     borderColor: COLORS.primary,
     marginTop: SPACING.base,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: SPACING.lg,
   },
 });
 
