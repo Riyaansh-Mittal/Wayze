@@ -1,0 +1,473 @@
+{
+  "common": {
+    "appName": "QR Parking",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "done": "Done",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "retry": "Retry",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "submit": "Submit",
+    "continue": "Continue",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "share": "Share",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "remove": "Remove",
+    "apply": "Apply",
+    "comingSoon": "Coming soon"
+  },
+
+  "auth": {
+    "welcome": {
+      "title": "Welcome to QR Parking",
+      "subtitle": "Sign in to save your vehicles and be reachable when needed",
+      "googleButton": "Continue with Google",
+      "legalText": "By continuing, you agree to our",
+      "terms": "Terms",
+      "and": "and",
+      "privacy": "Privacy Policy",
+      "signinFailed": "Sign in failed. Try again."
+    },
+    "splash": {
+      "appName": "QR Parking"
+    },
+    "referral": {
+      "title": "Got a referral code?",
+      "subtitle": "Enter code and get bonus calls for free!",
+      "reward": "Get {{count}} free calls",
+      "inputLabel": "Referral Code (Optional)",
+      "inputPlaceholder": "Enter code",
+      "helperText": "Get this code from friends who use the app",
+      "invalidCode": "Invalid code. Try again.",
+      "ownCode": "You can't use your own code",
+      "applyButton": "Apply & Continue",
+      "skipButton": "Skip for now",
+      "success": "🎉 {{count}} free calls added!",
+      "failed": "Failed to apply code. Try again."
+    },
+    "logout": {
+      "title": "Logout?",
+      "message": "You'll need to sign in again to access your vehicles and account.",
+      "button": "Logout",
+      "success": "Logged out successfully"
+    }
+  },
+
+  "home": {
+    "greeting": "Good morning, {{name}}",
+    "greetingAfternoon": "Good afternoon, {{name}}",
+    "greetingEvening": "Good evening, {{name}}",
+    "subtitle": "What do you want to do today?",
+    "tabs": {
+      "findOwner": "Find owner",
+      "myVehicles": "My vehicles",
+      "activity": "Activity"
+    },
+    "findOwner": {
+      "title": "Find vehicle owner",
+      "body": "Search by plate and contact the owner if needed",
+      "button": "Start search",
+      "helper": "Works even if vehicle owner is not in your contacts"
+    },
+    "myVehicles": {
+      "title": "My vehicles",
+      "body": "View and manage the vehicles linked to your profile",
+      "bodyEmpty": "You haven't added any vehicles yet",
+      "button": "Open my vehicles",
+      "buttonEmpty": "Add your first vehicle",
+      "addButton": "Add new vehicle"
+    },
+    "activity": {
+      "title": "Recent activity",
+      "body": "See recent searches and contact requests related to your vehicles",
+      "button": "View activity",
+      "helper": "Only you can see this activity"
+    }
+  },
+
+  "vehicles": {
+    "title": "My Vehicles",
+    "addButton": "Add Vehicle",
+    "editButton": "Edit Vehicle",
+    "empty": {
+      "title": "No vehicles yet",
+      "message": "Add your vehicles to generate profile and be reachable",
+      "button": "Add Your First Vehicle"
+    },
+    "types": {
+      "2wheeler": "2-wheeler",
+      "3wheeler": "3-wheeler",
+      "4wheeler": "4-wheeler",
+      "other": "Other",
+      "2wheelerFull": "2-wheeler (Bike/Scooter)",
+      "3wheelerFull": "3-wheeler (Auto)",
+      "4wheelerFull": "4-wheeler (Car)"
+    },
+    "meta": {
+      "added": "Added {{date}}",
+      "contactRequests": "{{count}} contact requests",
+      "searches": "{{count}} searches"
+    },
+    "form": {
+      "vehicleType": "Vehicle Type",
+      "plateNumber": "Registration Number",
+      "platePlaceholder": "MH01AB1234",
+      "plateHelper": "Format: 2 letters + 2 digits + 2 letters + 4 digits",
+      "plateError": "Invalid format. Use MH01AB1234",
+      "plateChangeHelper": "Contact support to change plate number",
+      "contactPhone": "Contact Phone Number",
+      "contactPhonePlaceholder": "+91 98765 43210",
+      "contactPhoneHelper": "People will use this to reach you",
+      "contactMethods": "Contact Methods",
+      "allowCalls": "Allow phone calls",
+      "allowSMS": "Allow SMS",
+      "allowWhatsApp": "Allow WhatsApp",
+      "confirmation": "I confirm I own or am responsible for this vehicle",
+      "saveButton": "Save Vehicle",
+      "saveChangesButton": "Save Changes",
+      "cancelButton": "Cancel",
+      "success": "Vehicle added successfully",
+      "updateSuccess": "Changes saved",
+      "updateFailed": "Failed to save changes",
+      "deleteFailed": "Failed to delete vehicle"
+    },
+    "details": {
+      "title": "Vehicle Details",
+      "vehicleInfo": "Vehicle Information",
+      "registrationNumber": "Registration Number",
+      "rcNumber": "RC Number",
+      "vehicleType": "Vehicle Type",
+      "addedOn": "Added On",
+      "contactInfo": "Contact Information",
+      "phoneNumber": "Phone Number",
+      "allowedMethods": "Allowed Methods",
+      "methodsValue": "Call, SMS",
+      "rcDocument": "RC Document",
+      "viewFullSize": "View Full Size",
+      "activityStats": "Activity Statistics",
+      "totalSearches": "Total Searches",
+      "contactRequests": "Contact Requests",
+      "lastSearched": "Last Searched",
+      "timeAgo": "{{time}} ago",
+      "viewHistory": "View Full History",
+      "shareButton": "Share Vehicle Profile",
+      "deleteButton": "Delete Vehicle",
+      "deleteConfirm": {
+        "title": "Delete Vehicle?",
+        "message": "This will remove your vehicle from the network. People won't be able to find you.",
+        "confirmButton": "Delete",
+        "success": "Vehicle deleted"
+      }
+    },
+    "ownership": {
+      "conflict": {
+        "title": "Verify Ownership",
+        "heading": "This vehicle is already registered",
+        "plate": "Plate: {{plate}}",
+        "message": "This plate number is already linked to another account. To prevent fraud, we need to verify your ownership.",
+        "whatNext": "What happens next:",
+        "step1": "You upload RC (Registration Certificate) photo",
+        "step2": "Our team reviews it within 24 hours",
+        "step3": "If verified, the old record gets removed",
+        "step4": "Your vehicle will be linked to your account",
+        "security": "Your RC photo is used only for verification and deleted after 7 days",
+        "uploadButton": "Upload RC & Continue"
+      },
+      "upload": {
+        "title": "Upload RC Document",
+        "heading": "Upload clear photo of your RC",
+        "subtitle": "Make sure the plate number and your name are clearly visible",
+        "tapToUpload": "Tap to take photo or choose from gallery",
+        "fileInfo": "JPG, PNG or HEIC · Max 5MB",
+        "tipsTitle": "Tips for best results",
+        "tip1": "Use good lighting",
+        "tip2": "Avoid shadows and glare",
+        "tip3": "Capture all 4 corners of the document",
+        "tip4": "Ensure text is readable",
+        "confirmation": "I confirm this RC belongs to me and the vehicle {{plate}}",
+        "submitButton": "Submit for Verification",
+        "cancelButton": "Cancel Request",
+        "takePhoto": "Take Photo",
+        "chooseGallery": "Choose from Gallery",
+        "fileError": "File too large or invalid format",
+        "removePhoto": "Remove photo?",
+        "removeMessage": "You'll need to upload a photo to continue",
+        "submitting": "Submitting claim...",
+        "submitFailed": "Failed to submit claim. Try again."
+      },
+      "submitted": {
+        "title": "Claim Submitted",
+        "heading": "Ownership claim submitted!",
+        "message": "We'll review your RC document and notify you within 24 hours",
+        "step1": "RC photo uploaded",
+        "step2": "Under review",
+        "step3": "You'll be notified",
+        "now": "Now",
+        "duration": "24 hrs",
+        "emailInfo": "We'll send you an email and notification once the review is complete",
+        "homeButton": "Go to Home",
+        "vehiclesButton": "View My Vehicles"
+      }
+    }
+  },
+
+  "search": {
+    "title": "Find Vehicle Owner",
+    "inputLabel": "Enter Vehicle Number",
+    "inputPlaceholder": "MH01AB1234",
+    "inputHelper": "Format: 2 letters + 2 digits + 2 letters + 4 digits",
+    "searchButton": "Search Vehicle",
+    "recentTitle": "Recent Searches",
+    "recentEmpty": "No recent searches",
+    "searching": "Searching...",
+    "searchFailed": "Search failed. Try again.",
+    "results": {
+      "title": "Search Result",
+      "found": {
+        "vehicleTitle": "Vehicle Found",
+        "registered": "Registered {{time}} ago",
+        "ownerTitle": "Owner Information",
+        "memberSince": "Member since {{date}}",
+        "contactTitle": "Contact Owner",
+        "callButton": "Call Owner",
+        "whatsappButton": "WhatsApp Owner",
+        "emailButton": "Email Owner",
+        "respectMessage": "Please be respectful. Abuse will be reported.",
+        "reportLink": "Report an issue"
+      },
+      "notFound": {
+        "title": "Vehicle Not Found",
+        "message": "{{plate}} is not registered in our network yet.",
+        "suggestionsTitle": "What You Can Do",
+        "suggestion1": "Leave a note on the vehicle",
+        "suggestion2": "Contact parking management",
+        "suggestion3": "Share this app with the owner",
+        "searchAgainButton": "Search Again",
+        "shareButton": "Share App"
+      }
+    },
+    "contact": {
+      "title": "Contact Owner?",
+      "message": "You're about to contact {{name}} regarding vehicle {{plate}}.",
+      "logInfo": "This action will be logged for safety and transparency.",
+      "confirmCall": "Yes, Call Now",
+      "confirmWhatsApp": "Yes, Open WhatsApp",
+      "confirmEmail": "Yes, Send Email",
+      "logged": "Contact logged",
+      "failed": "Failed to contact owner. Try again."
+    },
+    "registrationGate": {
+      "title": "Register Your Vehicle First",
+      "message": "To maintain community trust, we ask everyone to register at least one vehicle before searching.",
+      "helper": "This helps prevent spam and keeps everyone safe.",
+      "addButton": "Add My First Vehicle",
+      "viewButton": "View My Vehicles",
+      "laterButton": "Maybe Later",
+      "toast": "Add a vehicle to unlock search feature"
+    }
+  },
+
+  "profile": {
+    "title": "Profile",
+    "verified": {
+      "email": "✓ Email Verified",
+      "phone": "✓ Phone Verified"
+    },
+    "balance": {
+      "title": "Available Balance",
+      "calls": "{{count}} calls",
+      "helper": "Use for vehicle searches",
+      "lowBalance": "Low balance! Invite friends to earn more calls"
+    },
+    "referral": {
+      "title": "Invite & Earn",
+      "message": "Give {{give}} calls, Get {{get}} calls for each friend!",
+      "yourCode": "Your code:",
+      "copyButton": "Copy",
+      "shareButton": "Share",
+      "copiedToast": "Code copied! Share with friends 🎉",
+      "stats": "{{count}} friends joined · {{earned}} calls earned"
+    },
+    "stats": {
+      "title": "Your Activity",
+      "vehicles": "Vehicles Registered",
+      "searches": "Vehicle Searches",
+      "contacted": "Times Contacted",
+      "memberSince": "Member Since"
+    },
+    "menu": {
+      "settings": "Account Settings",
+      "activity": "Activity History",
+      "settingsItem": "Settings",
+      "help": "Help & Support",
+      "about": "About App",
+      "logout": "Logout",
+      "deleteAccount": "Delete Account"
+    },
+    "activity": {
+      "title": "Activity History",
+      "filters": {
+        "all": "All",
+        "vehicles": "Vehicles",
+        "searches": "Searches",
+        "contacts": "Contacts"
+      },
+      "timeline": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "lastWeek": "Last Week"
+      },
+      "types": {
+        "searched": "Searched for {{plate}}",
+        "added": "Added vehicle {{plate}}",
+        "called": "Called owner of {{plate}}",
+        "edited": "Edited vehicle {{plate}}"
+      },
+      "loadMore": "Load More",
+      "empty": "No activity yet"
+    },
+    "settings": {
+      "title": "Settings",
+      "notifications": {
+        "title": "Notifications",
+        "push": "Push Notifications",
+        "email": "Email Alerts",
+        "sms": "SMS Alerts"
+      },
+      "privacy": {
+        "title": "Privacy & Data",
+        "visibility": "Profile Visibility",
+        "public": "Public",
+        "private": "Private",
+        "downloadData": "Download Your Data (GDPR)",
+        "dataPolicy": "Data Usage Policy"
+      },
+      "preferences": {
+        "title": "Preferences",
+        "darkMode": "Dark Mode",
+        "language": "Language",
+        "languageValue": "English"
+      },
+      "account": {
+        "title": "Account",
+        "changePassword": "Change Password",
+        "linkedAccounts": "Linked Accounts"
+      },
+      "dataExport": {
+        "preparing": "Preparing your data...",
+        "checkEmail": "Check your email for download link"
+      }
+    },
+    "help": {
+      "title": "Help & Support",
+      "quickHelp": "Quick Help",
+      "faqs": "FAQs",
+      "contact": "Contact Support",
+      "reportBug": "Report a Bug",
+      "rateApp": "Rate This App",
+      "commonIssues": "Common Issues",
+      "faq1": {
+        "question": "How do I add a vehicle?",
+        "answer": "Go to My Vehicles tab, tap + button, fill details, upload RC photo, and save."
+      },
+      "faq2": {
+        "question": "Why can't I find a vehicle?",
+        "answer": "The vehicle owner hasn't registered yet. Share the app with them."
+      },
+      "faq3": {
+        "question": "How do I change my contact number?",
+        "answer": "Go to Profile > Settings > Account > Edit Profile."
+      },
+      "bugReported": "Bug report submitted. Thank you!"
+    },
+    "about": {
+      "title": "About",
+      "version": "Version {{version}} (Build {{build}})",
+      "tagline": "Find vehicle owners instantly",
+      "legal": "Legal & Information",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "licenses": "Open Source Licenses",
+      "connect": "Connect With Us",
+      "website": "Website",
+      "email": "Email Us",
+      "twitter": "Follow on Twitter",
+      "footer": "Made with ❤️ in India 🇮🇳",
+      "copyright": "© {{year}} QR Parking. All rights reserved."
+    },
+    "deleteAccount": {
+      "step1": {
+        "title": "Delete Account",
+        "heading": "We're Sorry to See You Go",
+        "subtitle": "Before you proceed, please understand:",
+        "warning1": "All your vehicles will be removed",
+        "warning2": "All activity history will be deleted",
+        "warning3": "RC documents will be permanently deleted",
+        "warning4": "Your call balance will be lost",
+        "warning5": "This action cannot be undone",
+        "continueButton": "Continue to Delete",
+        "keepButton": "Keep My Account"
+      },
+      "step2": {
+        "title": "Confirm Deletion",
+        "heading": "Are You Absolutely Sure?",
+        "instruction": "To confirm, type DELETE in the box below:",
+        "placeholder": "Type DELETE here",
+        "finalWarning": "This will immediately sign you out and delete all your data within 24 hours.",
+        "deleteButton": "Delete My Account",
+        "lastChance": {
+          "title": "Last Chance",
+          "message": "Proceed with account deletion?",
+          "confirm": "Yes, Delete"
+        },
+        "success": "Account deleted successfully",
+        "failed": "Failed to delete account. Contact support."
+      }
+    }
+  },
+
+  "errors": {
+    "network": "Network error. Please check your connection.",
+    "timeout": "Request timeout. Please try again.",
+    "unauthorized": "Session expired. Please login again.",
+    "forbidden": "You don't have permission to perform this action.",
+    "notFound": "Resource not found.",
+    "serverError": "Server error. Please try again later.",
+    "unknown": "Something went wrong. Please try again.",
+    "validation": "Please check your input and try again."
+  },
+
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email format",
+    "invalidPhone": "Invalid phone number",
+    "invalidPlate": "Invalid plate format. Use MH01AB1234",
+    "minLength": "Minimum {{count}} characters required",
+    "maxLength": "Maximum {{count}} characters allowed",
+    "fileTooLarge": "File size must be less than {{size}}MB",
+    "invalidFileType": "Invalid file type. Use JPG, PNG or HEIC"
+  },
+
+  "time": {
+    "now": "Now",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago",
+    "weeksAgo": "{{count}} weeks ago",
+    "monthsAgo": "{{count}} months ago",
+    "yearsAgo": "{{count}} years ago"
+  }
+}
