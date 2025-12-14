@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "104858287148",
+    "project_id": "qr-parking-app",
+    "storage_bucket": "qr-parking-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:104858287148:android:acd4ca1fc7eac80e8f2589",
+        "android_client_info": {
+          "package_name": "com.qrparkingappbare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDv987Kj1DKokEn7a9j0ZQ6TIWA68A-EEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

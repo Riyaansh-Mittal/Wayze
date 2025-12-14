@@ -1,0 +1,11 @@
+{
+  "name": "QRParkingAppBare",
+  "displayName": "QR Parking App",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-4807931196810855~2604013388",
+    "ios_app_id": "ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"
+  },
+  "version": "1.0.0",
+  "build": "1"
+}
+
