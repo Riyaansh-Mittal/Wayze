@@ -1,104 +1,100 @@
 /**
  * Main Navigator
- * Main app navigation after authentication
- * TODO: Will be implemented in Batch 8
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../hooks';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING } from '../config/theme';
-import PrimaryButton from '../components/common/Button/PrimaryButton';
+import VehicleNavigator from './VehicleNavigator';
 
-const MainNavigator = ({ navigation }) => {
-  const { user, logout } = useAuth();
+const Tab = createBottomTabNavigator();
 
-  const handleLogout = async () => {
-    await logout();
-    // Navigation will automatically go back to auth flow
-    navigation.replace('Auth');
-  };
+// Placeholder screens
+const HomeScreen = () => (
+  <View style={styles.placeholderContainer}>
+    <Text style={styles.placeholderText}>Home Screen (Coming in Batch 7)</Text>
+  </View>
+);
+
+const SearchScreen = () => (
+  <View style={styles.placeholderContainer}>
+    <Text style={styles.placeholderText}>Search Screen (Coming in Batch 7)</Text>
+  </View>
+);
+
+const ProfileScreen = () => (
+  <View style={styles.placeholderContainer}>
+    <Text style={styles.placeholderText}>Profile Screen (Coming in Batch 8)</Text>
+  </View>
+);
+
+const HomeIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🏠</Text>;
+const SearchIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🔍</Text>;
+const VehiclesIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🚗</Text>;
+const ProfileIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>👤</Text>;
+
+const MainNavigator = () => {
+  const insets = useSafeAreaInsets();
+
+  // ✅ Debug: Check what insets are being returned
+  console.log('📱 Safe Area Insets:', insets);
+
+  // ✅ Use actual insets on iOS, fixed value on Android
+  const bottomPadding = Platform.OS === 'android'
+    ? 16  // Fixed padding for Android (adjust as needed: 12-20)
+    : insets.bottom || 8;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.content}>
-        <Text style={styles.icon}>🎉</Text>
-        <Text style={styles.title}>Welcome to QR Parking!</Text>
-        <Text style={styles.subtitle}>
-          You're logged in as {user?.fullName}
-        </Text>
-
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>✅ Batch 5 Complete!</Text>
-          <Text style={styles.infoText}>
-            • Splash screen with auto-login{'\n'}
-            • Welcome screen with Google Sign-In{'\n'}
-            • Referral code entry flow{'\n'}
-            • Auth navigation working{'\n'}
-            • Token persistence{'\n'}
-            {'\n'}
-            Main app screens coming in Batch 6-8
-          </Text>
-        </View>
-
-        <PrimaryButton
-          title="Logout"
-          onPress={handleLogout}
-          style={styles.button}
-        />
-      </View>
-    </SafeAreaView>
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarStyle: {
+          height: 60 + bottomPadding,
+          paddingBottom: bottomPadding,
+          paddingTop: 8,
+          borderTopWidth: 1,
+          borderTopColor: COLORS.neutralBorder,
+          backgroundColor: COLORS.white,
+          elevation: 8,
+          shadowColor: COLORS.black,
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginBottom: 2,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
+        },
+      }}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: HomeIcon }} />
+      <Tab.Screen name="Search" component={SearchScreen} options={{ tabBarIcon: SearchIcon }} />
+      <Tab.Screen name="Vehicles" component={VehicleNavigator} options={{ tabBarIcon: VehiclesIcon }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ProfileIcon }} />
+    </Tab.Navigator>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  content: {
+  placeholderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: SPACING.lg,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: SPACING.lg,
   },
-  icon: {
-    fontSize: 80,
-    marginBottom: SPACING.base,
-  },
-  title: {
-    ...TYPOGRAPHY.h1,
-    marginBottom: SPACING.sm,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
-  },
-  infoCard: {
-    backgroundColor: COLORS.primaryLight,
-    padding: SPACING.lg,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    marginBottom: SPACING.xl,
-    width: '100%',
-  },
-  infoTitle: {
+  placeholderText: {
     ...TYPOGRAPHY.h2,
-    color: COLORS.primary,
-    marginBottom: SPACING.md,
-  },
-  infoText: {
-    ...TYPOGRAPHY.caption,
+    textAlign: 'center',
     color: COLORS.textSecondary,
-    lineHeight: 20,
-  },
-  button: {
-    width: '100%',
   },
 });
 

@@ -23,74 +23,81 @@ const BottomNavigation = ({
       style={[
         styles.container,
         {
-          paddingBottom: insets.bottom,
+          paddingBottom: Math.max(insets.bottom, SPACING.xs), // ✅ Bottom safe area padding
         },
         style,
       ]}
       testID={testID}
     >
-      {tabs.map((tab, index) => {
-        const isActive = index === activeIndex;
-        
-        return (
-          <TouchableOpacity
-            key={tab.key || index}
-            style={styles.tab}
-            onPress={() => onTabPress(index, tab)}
-            activeOpacity={0.7}
-            accessibilityRole="tab"
-            accessibilityLabel={tab.label}
-            accessibilityState={{ selected: isActive }}
-          >
-            {/* Icon */}
-            <View style={styles.iconContainer}>
-              {React.cloneElement(tab.icon, {
-                color: isActive ? COLORS.primary : COLORS.textSecondary,
-                size: COMPONENTS.bottomNav.iconSize,
-              })}
-            </View>
+      {/* ✅ Content wrapper for proper centering */}
+      <View style={styles.content}>
+        {tabs.map((tab, index) => {
+          const isActive = index === activeIndex;
 
-            {/* Label */}
-            <Text
-              style={[
-                styles.label,
-                isActive && styles.labelActive,
-              ]}
-              numberOfLines={1}
+          return (
+            <TouchableOpacity
+              key={tab.key || index}
+              style={styles.tab}
+              onPress={() => onTabPress(index, tab)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityLabel={tab.label}
+              accessibilityState={{ selected: isActive }}
             >
-              {tab.label}
-            </Text>
-
-            {/* Badge (optional) */}
-            {tab.badge && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{tab.badge}</Text>
+              {/* Icon */}
+              <View style={styles.iconContainer}>
+                {React.cloneElement(tab.icon, {
+                  color: isActive ? COLORS.primary : COLORS.textSecondary,
+                  size: COMPONENTS.bottomNav.iconSize,
+                })}
               </View>
-            )}
-          </TouchableOpacity>
-        );
-      })}
+
+              {/* Label */}
+              <Text
+                style={[
+                  styles.label,
+                  isActive && styles.labelActive,
+                ]}
+                numberOfLines={1}
+              >
+                {tab.label}
+              </Text>
+
+              {/* Badge (optional) */}
+              {tab.badge && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{tab.badge}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    height: COMPONENTS.bottomNav.height,
     backgroundColor: COMPONENTS.bottomNav.backgroundColor,
     borderTopWidth: COMPONENTS.bottomNav.borderTopWidth,
     borderTopColor: COMPONENTS.bottomNav.borderTopColor,
+  },
+  content: {
+    // ✅ Fixed height for content, centered
+    height: COMPONENTS.bottomNav.height,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center', // ✅ Centers tabs vertically
+    paddingHorizontal: SPACING.xs, // ✅ Side padding
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.sm, // ✅ Vertical padding for tap area
   },
   iconContainer: {
-    marginBottom: 2,
+    marginBottom: SPACING.xs,
   },
   label: {
     ...TYPOGRAPHY.tiny,
@@ -102,8 +109,8 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: 4,
-    right: '30%',
+    top: 2,
+    right: '28%',
     backgroundColor: COLORS.error,
     borderRadius: 10,
     minWidth: 18,

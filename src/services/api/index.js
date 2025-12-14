@@ -316,6 +316,20 @@ export const OwnershipService = {
     }
     return request(HTTP_METHODS.GET, ENDPOINTS.ownership.status(claimId));
   },
+
+  getUserClaims: async (userId) => {
+    if (FEATURE_FLAGS.USE_MOCK_DATA) {
+      return { success: true, data: [] };
+    }
+    return request(HTTP_METHODS.GET, ENDPOINTS.ownership.userClaims(userId));
+  },
+
+  cancel: async (claimId) => {
+    if (FEATURE_FLAGS.USE_MOCK_DATA) {
+      return { success: true };
+    }
+    return request(HTTP_METHODS.DELETE, ENDPOINTS.ownership.cancel(claimId));
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════

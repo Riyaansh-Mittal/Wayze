@@ -1,10 +1,76 @@
-# OSX
-#
-.DS_Store
+# ===================================
+# QR PARKING APP - .gitignore
+# ===================================
 
-# Xcode
-#
-build/
+# ============ SENSITIVE FILES ============
+# Environment variables (CRITICAL - contains API keys)
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.production.local
+
+# Firebase configuration (if using separate config files)
+**/firebase/config.js
+**/firebase-config.js
+google-services.json
+GoogleService-Info.plist
+
+# API keys and secrets
+**/config/secrets.js
+**/config/api.keys.js
+.secret
+
+
+# ============ macOS ============
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+
+# ============ WINDOWS ============
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+
+# ============ iOS / XCODE ============
+# Build files
+ios/build/
+ios/Pods/
+ios/.xcode.env.local
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Xcode user settings
+xcuserdata/
+*.xcuserstate
+*.xcworkspace
+!default.xcworkspace
+project.xcworkspace/
+
+# Xcode file types
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -13,62 +79,164 @@ build/
 !default.mode2v3
 *.perspectivev3
 !default.perspectivev3
-xcuserdata
-*.xccheckout
-*.moved-aside
-DerivedData
 *.hmap
-*.ipa
-*.xcuserstate
-**/.xcode.env.local
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
 
-# Android/IntelliJ
-#
-build/
-.idea
-.gradle
-local.properties
+# CocoaPods
+**/Pods/
+Podfile.lock
+
+# Certificates & provisioning profiles
+*.p8
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+
+
+# ============ ANDROID ============
+# Build files
+android/build/
+android/app/build/
+android/.gradle/
+android/captures/
+android/local.properties
+android/app/release/
+
+# Android Studio / IntelliJ
+.idea/
 *.iml
-*.hprof
+.gradle/
+local.properties
 .cxx/
+.externalNativeBuild/
+
+# Keystore files (CRITICAL - signing keys)
 *.keystore
+*.jks
 !debug.keystore
 
-# node.js
-#
+# Android profiling
+*.hprof
+
+# Google Services
+android/app/google-services.json
+
+
+# ============ NODE / NPM / YARN ============
 node_modules/
-npm-debug.log
-yarn-error.log
-
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
-# screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/
-
-**/fastlane/report.xml
-**/fastlane/Preview.html
-**/fastlane/screenshots
-**/fastlane/test_output
-
-# Bundle artifact
-*.jsbundle
-
-# Ruby / CocoaPods
-**/Pods/
-/vendor/bundle/
-
-# Temporary files created by Metro to check the health of the file watcher
-.metro-health-check*
-
-# testing
-/coverage
-
-# Yarn
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Package manager locks (choose one strategy)
+# Option 1: Commit lock files (recommended for teams)
+# Option 2: Ignore them (uncomment below)
+# package-lock.json
+# yarn.lock
+
+
+# ============ REACT NATIVE ============
+# Metro bundler
+.metro-health-check*
+.metro-cache/
+
+# Bundle artifacts
+*.jsbundle
+*.bundle
+
+# Expo (if using)
+.expo/
+.expo-shared/
+web-build/
+dist/
+
+# React Native debugger
+.vscode/.react/
+
+
+# ============ TESTING ============
+coverage/
+.nyc_output/
+*.lcov
+.jest/
+__snapshots__/
+
+
+# ============ LOGS ============
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# Java crash logs
+hs_err_pid*.log
+
+
+# ============ FASTLANE ============
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots/**/*.png
+**/fastlane/test_output/
+fastlane/README.md
+
+
+# ============ RUBY / BUNDLER ============
+vendor/bundle/
+.bundle/
+*.gem
+
+
+# ============ TEMPORARY / EDITOR FILES ============
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+
+# ============ MISC ============
+# Debug files
+.sourcemaps/
+sourcemaps/
+
+# Build artifacts
+*.tgz
+*.apk
+*.aab
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Backup files
+*.bak
+*.backup
+*-backup.*

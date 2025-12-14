@@ -8,49 +8,35 @@
  * @param {Date|string|number} date - Date to format
  * @param {string} format - Format type ('short', 'long', 'relative')
  */
-export const formatDate = (date, format = 'short') => {
-  if (!date) {return '';}
+export const formatDate = (dateString, format = 'relative') => {
+  if (!dateString) {return 'N/A';}
 
-  const dateObj = new Date(date);
+  const date = new Date(dateString);
+  const now = new Date();
 
-  if (isNaN(dateObj.getTime())) {return '';}
+  if (format === 'relative') {
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
-  switch (format) {
-    case 'short':
-      // Jun 15, 2024
-      return dateObj.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
+    if (diffMins < 1) {return 'Just now';}
+    if (diffMins < 60) {return `${diffMins}m ago`;}
+    if (diffHours < 24) {return `${diffHours}h ago`;}
+    if (diffDays < 7) {return `${diffDays}d ago`;}
 
-    case 'long':
-      // June 15, 2024
-      return dateObj.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      });
-
-    case 'relative':
-      // 2 hours ago, Yesterday, etc.
-      return formatRelativeTime(dateObj);
-
-    case 'time':
-      // 11:05 AM
-      return dateObj.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      });
-
-    case 'datetime':
-      // Jun 15, 2024, 11:05 AM
-      return `${formatDate(dateObj, 'short')}, ${formatDate(dateObj, 'time')}`;
-
-    default:
-      return dateObj.toLocaleDateString();
+    return date.toLocaleDateString();
   }
+
+  if (format === 'full') {
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
+  return date.toLocaleDateString();
 };
 
 /**
@@ -104,25 +90,18 @@ export const formatRelativeTime = (date) => {
  * @param {string} phoneNumber - Phone number to format
  * @returns {string} - Formatted phone number (e.g., "+91 98765 43210")
  */
-export const formatPhoneNumber = (phoneNumber) => {
-  if (!phoneNumber) {return '';}
+export const formatPhoneNumber = (phone) => {
+  if (!phone) {return '';}
 
-  // Remove all non-digit characters
-  const digits = phoneNumber.replace(/\D/g, '');
+  // Remove non-digits
+  const cleaned = phone.replace(/\D/g, '');
 
-  // If starts with 91, assume it's Indian number with country code
-  if (digits.startsWith('91') && digits.length === 12) {
-    const number = digits.substring(2);
-    return `+91 ${number.substring(0, 5)} ${number.substring(5)}`;
+  // Format as: +91 98765 43210
+  if (cleaned.length === 10) {
+    return `+91 ${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
   }
 
-  // If 10 digits, format as Indian number
-  if (digits.length === 10) {
-    return `+91 ${digits.substring(0, 5)} ${digits.substring(5)}`;
-  }
-
-  // Return as-is if format doesn't match
-  return phoneNumber;
+  return phone;
 };
 
 /**
@@ -157,16 +136,21 @@ export const formatPlateNumber = (plateNumber) => {
  * @param {string} name - Full name
  * @returns {string} - Masked name (e.g., "Riyaansh Mittal" -> "R**** M****")
  */
-export const maskName = (name) => {
-  if (!name) {return '';}
+/**
+ * Mask name for privacy (show first name + first letter of last name)
+ */
+export const maskName = (fullName) => {
+  if (!fullName) {return 'Unknown';}
 
-  const parts = name.split(' ');
-  return parts
-    .map((part) => {
-      if (part.length <= 1) {return part;}
-      return `${part[0]}${'*'.repeat(part.length - 1)}`;
-    })
-    .join(' ');
+  const parts = fullName.trim().split(' ');
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
+  const firstName = parts[0];
+  const lastInitial = parts[parts.length - 1][0];
+
+  return `${firstName} ${lastInitial}.`;
 };
 
 /**
@@ -221,10 +205,10 @@ export const capitalizeWords = (str) => {
 /**
  * Truncate text with ellipsis
  */
-export const truncateText = (text, maxLength) => {
-  if (!text || text.length <= maxLength) {return text;}
-
-  return `${text.substring(0, maxLength)}...`;
+export const truncateText = (text, maxLength = 50) => {
+  if (!text) {return '';}
+  if (text.length <= maxLength) {return text;}
+  return text.slice(0, maxLength) + '...';
 };
 
 /**
@@ -247,8 +231,6 @@ export const getGreeting = (name = '') => {
  * Format call balance display
  */
 export const formatCallBalance = (balance) => {
-  if (balance === null || balance === undefined) {return '0 calls';}
-
   return `${balance} ${balance === 1 ? 'call' : 'calls'}`;
 };
 
