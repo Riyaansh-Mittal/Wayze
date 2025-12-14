@@ -21,7 +21,7 @@ const Avatar = ({
 
   // Get initials from name
   const getInitials = (fullName) => {
-    if (!fullName) return '?';
+    if (!fullName) {return '?';}
     const parts = fullName.trim().split(' ');
     if (parts.length >= 2) {
       return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();

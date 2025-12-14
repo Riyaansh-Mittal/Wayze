@@ -35,14 +35,14 @@ export const ERROR_TYPES = {
  * Map HTTP status codes to error types
  */
 const getErrorType = (statusCode) => {
-  if (!statusCode) return ERROR_TYPES.NETWORK;
+  if (!statusCode) {return ERROR_TYPES.NETWORK;}
 
-  if (statusCode === 401) return ERROR_TYPES.UNAUTHORIZED;
-  if (statusCode === 403) return ERROR_TYPES.FORBIDDEN;
-  if (statusCode === 404) return ERROR_TYPES.NOT_FOUND;
-  if (statusCode === 408 || statusCode === 504) return ERROR_TYPES.TIMEOUT;
-  if (statusCode >= 400 && statusCode < 500) return ERROR_TYPES.VALIDATION;
-  if (statusCode >= 500) return ERROR_TYPES.SERVER;
+  if (statusCode === 401) {return ERROR_TYPES.UNAUTHORIZED;}
+  if (statusCode === 403) {return ERROR_TYPES.FORBIDDEN;}
+  if (statusCode === 404) {return ERROR_TYPES.NOT_FOUND;}
+  if (statusCode === 408 || statusCode === 504) {return ERROR_TYPES.TIMEOUT;}
+  if (statusCode >= 400 && statusCode < 500) {return ERROR_TYPES.VALIDATION;}
+  if (statusCode >= 500) {return ERROR_TYPES.SERVER;}
 
   return ERROR_TYPES.UNKNOWN;
 };
@@ -146,7 +146,7 @@ export const formatResponse = (data, success = true, message = '') => {
  * Handle validation errors
  */
 export const handleValidationError = (validationResult) => {
-  if (validationResult.valid) return null;
+  if (validationResult.valid) {return null;}
 
   return {
     type: ERROR_TYPES.VALIDATION,

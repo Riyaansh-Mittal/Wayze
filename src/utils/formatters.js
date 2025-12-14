@@ -9,11 +9,11 @@
  * @param {string} format - Format type ('short', 'long', 'relative')
  */
 export const formatDate = (date, format = 'short') => {
-  if (!date) return '';
+  if (!date) {return '';}
 
   const dateObj = new Date(date);
 
-  if (isNaN(dateObj.getTime())) return '';
+  if (isNaN(dateObj.getTime())) {return '';}
 
   switch (format) {
     case 'short':
@@ -57,7 +57,7 @@ export const formatDate = (date, format = 'short') => {
  * Format relative time (e.g., "2 hours ago", "just now")
  */
 export const formatRelativeTime = (date) => {
-  if (!date) return '';
+  if (!date) {return '';}
 
   const dateObj = new Date(date);
   const now = new Date();
@@ -105,7 +105,7 @@ export const formatRelativeTime = (date) => {
  * @returns {string} - Formatted phone number (e.g., "+91 98765 43210")
  */
 export const formatPhoneNumber = (phoneNumber) => {
-  if (!phoneNumber) return '';
+  if (!phoneNumber) {return '';}
 
   // Remove all non-digit characters
   const digits = phoneNumber.replace(/\D/g, '');
@@ -131,7 +131,7 @@ export const formatPhoneNumber = (phoneNumber) => {
  * @returns {string} - Masked phone number (e.g., "+91 *****3210")
  */
 export const maskPhoneNumber = (phoneNumber) => {
-  if (!phoneNumber) return '';
+  if (!phoneNumber) {return '';}
 
   const formatted = formatPhoneNumber(phoneNumber);
   const parts = formatted.split(' ');
@@ -148,7 +148,7 @@ export const maskPhoneNumber = (phoneNumber) => {
  * Format plate number to uppercase
  */
 export const formatPlateNumber = (plateNumber) => {
-  if (!plateNumber) return '';
+  if (!plateNumber) {return '';}
   return plateNumber.trim().toUpperCase();
 };
 
@@ -158,12 +158,12 @@ export const formatPlateNumber = (plateNumber) => {
  * @returns {string} - Masked name (e.g., "Riyaansh Mittal" -> "R**** M****")
  */
 export const maskName = (name) => {
-  if (!name) return '';
+  if (!name) {return '';}
 
   const parts = name.split(' ');
   return parts
     .map((part) => {
-      if (part.length <= 1) return part;
+      if (part.length <= 1) {return part;}
       return `${part[0]}${'*'.repeat(part.length - 1)}`;
     })
     .join(' ');
@@ -173,7 +173,7 @@ export const maskName = (name) => {
  * Format currency (Indian Rupees)
  */
 export const formatCurrency = (amount) => {
-  if (amount === null || amount === undefined) return '₹0';
+  if (amount === null || amount === undefined) {return '₹0';}
 
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -187,7 +187,7 @@ export const formatCurrency = (amount) => {
  * Format number with commas
  */
 export const formatNumber = (number) => {
-  if (number === null || number === undefined) return '0';
+  if (number === null || number === undefined) {return '0';}
 
   return new Intl.NumberFormat('en-IN').format(number);
 };
@@ -196,7 +196,7 @@ export const formatNumber = (number) => {
  * Format file size to human readable format
  */
 export const formatFileSize = (bytes) => {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) {return '0 Bytes';}
 
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -209,7 +209,7 @@ export const formatFileSize = (bytes) => {
  * Capitalize first letter of each word
  */
 export const capitalizeWords = (str) => {
-  if (!str) return '';
+  if (!str) {return '';}
 
   return str
     .toLowerCase()
@@ -222,7 +222,7 @@ export const capitalizeWords = (str) => {
  * Truncate text with ellipsis
  */
 export const truncateText = (text, maxLength) => {
-  if (!text || text.length <= maxLength) return text;
+  if (!text || text.length <= maxLength) {return text;}
 
   return `${text.substring(0, maxLength)}...`;
 };
@@ -247,7 +247,7 @@ export const getGreeting = (name = '') => {
  * Format call balance display
  */
 export const formatCallBalance = (balance) => {
-  if (balance === null || balance === undefined) return '0 calls';
+  if (balance === null || balance === undefined) {return '0 calls';}
 
   return `${balance} ${balance === 1 ? 'call' : 'calls'}`;
 };
@@ -256,15 +256,15 @@ export const formatCallBalance = (balance) => {
  * Format timeline date groups (Today, Yesterday, Last Week, etc.)
  */
 export const formatTimelineGroup = (date) => {
-  if (!date) return '';
+  if (!date) {return '';}
 
   const dateObj = new Date(date);
   const now = new Date();
   const diffInDays = Math.floor((now - dateObj) / (1000 * 60 * 60 * 24));
 
-  if (diffInDays === 0) return 'Today';
-  if (diffInDays === 1) return 'Yesterday';
-  if (diffInDays < 7) return 'Last Week';
+  if (diffInDays === 0) {return 'Today';}
+  if (diffInDays === 1) {return 'Yesterday';}
+  if (diffInDays < 7) {return 'Last Week';}
 
   return formatDate(dateObj, 'short');
 };
@@ -287,13 +287,13 @@ export const formatVehicleType = (type) => {
  * Format contact methods to readable string
  */
 export const formatContactMethods = (methods) => {
-  if (!methods) return '';
+  if (!methods) {return '';}
 
   const enabledMethods = [];
-  if (methods.phone) enabledMethods.push('Call');
-  if (methods.sms) enabledMethods.push('SMS');
-  if (methods.whatsapp) enabledMethods.push('WhatsApp');
-  if (methods.email) enabledMethods.push('Email');
+  if (methods.phone) {enabledMethods.push('Call');}
+  if (methods.sms) {enabledMethods.push('SMS');}
+  if (methods.whatsapp) {enabledMethods.push('WhatsApp');}
+  if (methods.email) {enabledMethods.push('Email');}
 
   return enabledMethods.join(', ');
 };
@@ -302,11 +302,11 @@ export const formatContactMethods = (methods) => {
  * Parse and format API error messages
  */
 export const formatErrorMessage = (error) => {
-  if (typeof error === 'string') return error;
+  if (typeof error === 'string') {return error;}
 
-  if (error?.message) return error.message;
+  if (error?.message) {return error.message;}
 
-  if (error?.response?.data?.message) return error.response.data.message;
+  if (error?.response?.data?.message) {return error.response.data.message;}
 
   return 'Something went wrong. Please try again.';
 };
