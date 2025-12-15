@@ -10,14 +10,9 @@ import { COLORS, TYPOGRAPHY, SPACING } from '../config/theme';
 import VehicleNavigator from './VehicleNavigator';
 import SearchNavigator from './SearchNavigator'; // ✅ Import SearchNavigator
 import HomeScreen from '../screens/home/HomeScreen';
+import ProfileNavigator from './ProfileNavigator';
 
 const Tab = createBottomTabNavigator();
-
-const ProfileScreen = () => (
-  <View style={styles.placeholderContainer}>
-    <Text style={styles.placeholderText}>Profile Screen (Coming in Batch 8)</Text>
-  </View>
-);
 
 // Tab bar icons
 const HomeIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🏠</Text>;
@@ -75,7 +70,7 @@ const MainNavigator = () => {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileNavigator}
         options={{ tabBarIcon: ProfileIcon }}
       />
     </Tab.Navigator>

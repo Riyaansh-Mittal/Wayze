@@ -1,28 +1,29 @@
 /**
  * Design System - Complete TOON Specification Implementation
  * Single source of truth for all design tokens
+ * NOW WITH DARK MODE SUPPORT
  */
 
 // ═══════════════════════════════════════════════════════════════
-// COLOR PALETTE
+// COLOR PALETTE - LIGHT THEME
 // ═══════════════════════════════════════════════════════════════
 
 export const COLORS = {
   // Brand Colors
-  primary: '#1565C0', // Buttons, Active States, Links
-  success: '#2E7D32', // Verification Badges, Success Messages
-  warning: '#F57C00', // Alerts, Important Notices
-  error: '#C62828', // Errors, Destructive Actions, Validation
+  primary: '#1565C0',
+  success: '#2E7D32',
+  warning: '#F57C00',
+  error: '#C62828',
 
   // Neutral Colors
-  white: '#FFFFFF', // App Background
-  neutralLight: '#F5F5F5', // Card Surfaces, Input Backgrounds
-  neutralBorder: '#E0E0E0', // Dividers, Borders
+  white: '#FFFFFF',
+  neutralLight: '#F5F5F5',
+  neutralBorder: '#E0E0E0',
 
   // Text Colors
-  textPrimary: '#212121', // Headings, Body (16:1 contrast)
-  textSecondary: '#616161', // Captions, Meta Info (7:1 contrast)
-  textDisabled: '#9E9E9E', // Placeholders, Disabled States
+  textPrimary: '#212121',
+  textSecondary: '#616161',
+  textDisabled: '#9E9E9E',
 
   // Functional Colors
   successLight: '#E8F5E9',
@@ -33,6 +34,38 @@ export const COLORS = {
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.5)',
   overlayLight: 'rgba(0, 0, 0, 0.3)',
+};
+
+// ═══════════════════════════════════════════════════════════════
+// COLOR PALETTE - DARK THEME
+// ═══════════════════════════════════════════════════════════════
+
+export const COLORS_DARK = {
+  // Brand Colors (same)
+  primary: '#1565C0',
+  success: '#4CAF50',
+  warning: '#FF9800',
+  error: '#EF5350',
+
+  // Neutral Colors
+  white: '#1E1E1E', // Dark card background
+  neutralLight: '#2C2C2C', // Darker neutral
+  neutralBorder: '#3C3C3C', // Borders in dark mode
+
+  // Text Colors
+  textPrimary: '#FFFFFF',
+  textSecondary: '#B3B3B3',
+  textDisabled: '#6E6E6E',
+
+  // Functional Colors
+  successLight: '#1B5E20',
+  warningLight: '#E65100',
+  errorLight: '#B71C1C',
+  primaryLight: '#1E3A5F',
+
+  // Overlay
+  overlay: 'rgba(0, 0, 0, 0.7)',
+  overlayLight: 'rgba(0, 0, 0, 0.5)',
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -54,15 +87,15 @@ export const FONTS = {
 };
 
 export const FONT_SIZES = {
-  h1: 28, // Screen Title
-  h2: 20, // Section Header
-  body: 18, // Default Body Text
-  bodyInput: 18, // Input Text
-  button: 18, // Button Label
-  caption: 16, // Small Text
-  plateNumber: 24, // Special - Plate Number Display
-  small: 14, // Helper text
-  tiny: 12, // Timestamp, metadata
+  h1: 28,
+  h2: 20,
+  body: 18,
+  bodyInput: 18,
+  button: 18,
+  caption: 16,
+  plateNumber: 24,
+  small: 14,
+  tiny: 12,
 };
 
 export const LINE_HEIGHTS = {
@@ -77,47 +110,48 @@ export const LINE_HEIGHTS = {
   tiny: 18,
 };
 
-export const TYPOGRAPHY = {
+// Typography factory - creates typography styles with dynamic colors
+const createTypography = (colors) => ({
   h1: {
     fontSize: FONT_SIZES.h1,
     lineHeight: LINE_HEIGHTS.h1,
     fontWeight: FONTS.weight.bold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.family.primary,
   },
   h2: {
     fontSize: FONT_SIZES.h2,
     lineHeight: LINE_HEIGHTS.h2,
     fontWeight: FONTS.weight.semibold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.family.primary,
   },
   body: {
     fontSize: FONT_SIZES.body,
     lineHeight: LINE_HEIGHTS.body,
     fontWeight: FONTS.weight.regular,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.family.primary,
   },
   bodyBold: {
     fontSize: FONT_SIZES.body,
     lineHeight: LINE_HEIGHTS.body,
     fontWeight: FONTS.weight.semibold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.family.primary,
   },
   caption: {
     fontSize: FONT_SIZES.caption,
     lineHeight: LINE_HEIGHTS.caption,
     fontWeight: FONTS.weight.regular,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontFamily: FONTS.family.primary,
   },
   captionBold: {
     fontSize: FONT_SIZES.caption,
     lineHeight: LINE_HEIGHTS.caption,
     fontWeight: FONTS.weight.semibold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.family.primary,
   },
   button: {
@@ -130,24 +164,26 @@ export const TYPOGRAPHY = {
     fontSize: FONT_SIZES.plateNumber,
     lineHeight: LINE_HEIGHTS.plateNumber,
     fontWeight: FONTS.weight.bold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.family.primary,
   },
   small: {
     fontSize: FONT_SIZES.small,
     lineHeight: LINE_HEIGHTS.small,
     fontWeight: FONTS.weight.regular,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontFamily: FONTS.family.primary,
   },
   tiny: {
     fontSize: FONT_SIZES.tiny,
     lineHeight: LINE_HEIGHTS.tiny,
     fontWeight: FONTS.weight.regular,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontFamily: FONTS.family.primary,
   },
-};
+});
+
+export const TYPOGRAPHY = createTypography(COLORS); // Default light theme typography
 
 // ═══════════════════════════════════════════════════════════════
 // SPACING SYSTEM
@@ -164,13 +200,12 @@ export const SPACING = {
   xxxl: 64,
 };
 
-// Common spacing patterns
 export const LAYOUT = {
-  screenPadding: SPACING.lg, // 24dp
-  sectionGap: SPACING.xl, // 32dp
-  cardGap: SPACING.base, // 16dp
-  fieldGap: SPACING.lg, // 24dp
-  buttonGap: SPACING.md, // 12dp
+  screenPadding: SPACING.lg,
+  sectionGap: SPACING.xl,
+  cardGap: SPACING.base,
+  fieldGap: SPACING.lg,
+  buttonGap: SPACING.md,
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -195,7 +230,7 @@ export const SHADOWS = {
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2, // Android
+    elevation: 2,
   },
   modal: {
     shadowColor: '#000',
@@ -224,118 +259,99 @@ export const SHADOWS = {
 // COMPONENT STYLES
 // ═══════════════════════════════════════════════════════════════
 
-export const COMPONENTS = {
-  // Primary Button
+const createComponents = (colors) => ({
   primaryButton: {
     height: 56,
     borderRadius: RADIUS.medium,
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: SPACING.base,
     iconSize: 24,
     iconSpacing: SPACING.md,
   },
-
-  // Secondary Button
   secondaryButton: {
     height: 56,
     borderRadius: RADIUS.medium,
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: colors.primary,
     paddingHorizontal: SPACING.base,
     iconSize: 24,
     iconSpacing: SPACING.md,
   },
-
-  // Destructive Button
   destructiveButton: {
     height: 56,
     borderRadius: RADIUS.medium,
-    backgroundColor: COLORS.error,
+    backgroundColor: colors.error,
     paddingHorizontal: SPACING.base,
     iconSize: 24,
     iconSpacing: SPACING.md,
   },
-
-  // Input Field
   inputField: {
     height: 56,
     borderRadius: RADIUS.medium,
     borderWidth: 2,
-    borderColorDefault: COLORS.neutralBorder,
-    borderColorFocused: COLORS.primary,
-    borderColorError: COLORS.error,
-    backgroundColor: COLORS.white,
+    borderColorDefault: colors.neutralBorder,
+    borderColorFocused: colors.primary,
+    borderColorError: colors.error,
+    backgroundColor: colors.white,
     paddingHorizontal: SPACING.base,
     fontSize: FONT_SIZES.bodyInput,
   },
-
-  // Card
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderRadius: RADIUS.large,
     borderWidth: 1,
-    borderColor: COLORS.neutralBorder,
+    borderColor: colors.neutralBorder,
     padding: SPACING.base,
     ...SHADOWS.card,
   },
-
-  // Bottom Navigation
   bottomNav: {
     height: 64,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderTopWidth: 1,
-    borderTopColor: COLORS.neutralBorder,
+    borderTopColor: colors.neutralBorder,
     iconSize: 28,
     labelSize: 12,
   },
-
-  // App Bar
   appBar: {
     height: 64,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.neutralBorder,
+    borderBottomColor: colors.neutralBorder,
     paddingHorizontal: SPACING.base,
   },
-
-  // Avatar
   avatar: {
     small: 40,
     medium: 48,
     large: 80,
     xlarge: 100,
   },
-
-  // Badge
   badge: {
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.xlarge,
     fontSize: FONT_SIZES.small,
   },
-
-  // Divider
   divider: {
     height: 1,
-    backgroundColor: COLORS.neutralBorder,
+    backgroundColor: colors.neutralBorder,
   },
-
-  // Icon Button
   iconButton: {
     size: 48,
     iconSize: 28,
   },
-};
+});
+
+export const COMPONENTS = createComponents(COLORS); // Default light theme components
 
 // ═══════════════════════════════════════════════════════════════
 // ANIMATIONS
 // ═══════════════════════════════════════════════════════════════
 
 export const ANIMATIONS = {
-  standard: 200, // ms - Standard transition
-  screen: 300, // ms - Screen push
-  modal: 250, // ms - Modal slide
+  standard: 200,
+  screen: 300,
+  modal: 250,
   easing: {
     default: 'ease-in-out',
     spring: {
@@ -350,34 +366,60 @@ export const ANIMATIONS = {
 // ═══════════════════════════════════════════════════════════════
 
 export const ACCESSIBILITY = {
-  minTouchTarget: 48, // dp - WCAG AA minimum
-  minFontSize: 16, // pt - Minimum readable size
+  minTouchTarget: 48,
+  minFontSize: 16,
   contrastRatios: {
-    normalText: 4.5, // WCAG AA
-    largeText: 3, // WCAG AA
-    enhanced: 7, // WCAG AAA
+    normalText: 4.5,
+    largeText: 3,
+    enhanced: 7,
   },
   focusOutlineWidth: 3,
   focusOutlineColor: COLORS.primary,
 };
 
 // ═══════════════════════════════════════════════════════════════
-// EXPORT COMPLETE THEME
+// THEME OBJECTS
 // ═══════════════════════════════════════════════════════════════
 
-const theme = {
+// Light Theme (default)
+export const lightTheme = {
   colors: COLORS,
   fonts: FONTS,
   fontSizes: FONT_SIZES,
   lineHeights: LINE_HEIGHTS,
-  typography: TYPOGRAPHY,
+  typography: createTypography(COLORS),
   spacing: SPACING,
   layout: LAYOUT,
   radius: RADIUS,
   shadows: SHADOWS,
-  components: COMPONENTS,
+  components: createComponents(COLORS),
   animations: ANIMATIONS,
   accessibility: ACCESSIBILITY,
 };
+
+// Dark Theme
+export const darkTheme = {
+  colors: COLORS_DARK,
+  fonts: FONTS,
+  fontSizes: FONT_SIZES,
+  lineHeights: LINE_HEIGHTS,
+  typography: createTypography(COLORS_DARK),
+  spacing: SPACING,
+  layout: LAYOUT,
+  radius: RADIUS,
+  shadows: SHADOWS, // Same shadows
+  components: createComponents(COLORS_DARK),
+  animations: ANIMATIONS,
+  accessibility: {
+    ...ACCESSIBILITY,
+    focusOutlineColor: COLORS_DARK.primary,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// DEFAULT EXPORT (Light Theme for backward compatibility)
+// ═══════════════════════════════════════════════════════════════
+
+const theme = lightTheme;
 
 export default theme;

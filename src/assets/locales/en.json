@@ -340,6 +340,8 @@
     },
     "settings": {
       "title": "Settings",
+      "selectLanguage": "Select Language",
+      "languageChanged": "Language changed successfully",
       "notifications": {
         "title": "Notifications",
         "push": "Push Notifications",

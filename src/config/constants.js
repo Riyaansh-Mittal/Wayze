@@ -204,6 +204,13 @@ export const LANGUAGES = {
   MR: 'mr',
 };
 
+// ✅ ADD THIS SECTION (after LANGUAGES)
+// Theme Modes
+export const THEME_MODES = {
+  LIGHT: 'light',
+  DARK: 'dark',
+};
+
 export const LANGUAGE_OPTIONS = [
   { label: 'English', value: LANGUAGES.EN, flag: '🇬🇧' },
   { label: 'हिन्दी', value: LANGUAGES.HI, flag: '🇮🇳' },
