@@ -3,18 +3,15 @@
  * Central export for all custom hooks
  */
 
-export { useAuth } from './useAuth';
-export { useVehicles } from './useVehicles';
-export { useSearch } from './useSearch';
+// Context hooks
+export { useAuth } from '../contexts/AuthContext';
+export { useBalance } from '../contexts/BalanceContext';
+export { useVehicles } from '../contexts/VehicleContext';
+export { useSearch } from '../contexts/SearchContext';
+
+// Custom hooks
 export { useReferral } from './useReferral';
-export { useBalance } from './useBalance';
-export { useDebounce, useDebouncedCallback } from './useDebounce';
+export { useDebounce } from './useDebounce';
 
-// Re-export context hooks
-export { useUser } from '../contexts/UserContext';
-
-// Re-export theme hook
-export { useTheme } from '../contexts/ThemeContext';
-
-// Re-export toast hook
+// Component hooks
 export { useToast } from '../components/common/Toast/ToastProvider';

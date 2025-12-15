@@ -3,20 +3,26 @@
  * Manages search history and results cache
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { SearchService } from '../services/api';
-import { useToast } from '../components/common/Toast/ToastProvider';
-import { useAuth } from './AuthContext';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react';
+import {SearchService} from '../services/api';
+import {useToast} from '../components/common/Toast/ToastProvider';
+import {useAuth} from './AuthContext';
 import AsyncStorage from '../services/storage/AsyncStorage';
-import { STORAGE_KEYS } from '../config/constants';
+import {STORAGE_KEYS} from '../config/constants';
 
 const SearchContext = createContext();
 
 const MAX_RECENT_SEARCHES = 10;
 
-export const SearchProvider = ({ children }) => {
-  const { user } = useAuth();
-  const { showSuccess, showError } = useToast();
+export const SearchProvider = ({children}) => {
+  const {user} = useAuth();
+  const {showSuccess, showError} = useToast();
 
   const [searchHistory, setSearchHistory] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
@@ -47,7 +53,7 @@ export const SearchProvider = ({ children }) => {
   /**
    * Save recent searches to AsyncStorage
    */
-  const saveRecentSearches = async (searches) => {
+  const saveRecentSearches = async searches => {
     try {
       await AsyncStorage.save(STORAGE_KEYS.RECENT_SEARCHES, searches);
     } catch (error) {
@@ -56,46 +62,13 @@ export const SearchProvider = ({ children }) => {
   };
 
   /**
-   * Search for vehicle by plate number
-   */
-  const searchVehicle = useCallback(async (plateNumber) => {
-    try {
-      setIsSearching(true);
-      setSearchResult(null);
-
-      const response = await SearchService.searchVehicle(plateNumber);
-
-      if (response.success) {
-        setSearchResult(response.data);
-
-        // Add to recent searches
-        addToRecentSearches(plateNumber, response.data.found);
-
-        if (response.data.found) {
-          showSuccess('Vehicle found!');
-        } else {
-          showError('Vehicle not found in our network');
-        }
-
-        return { success: true, data: response.data };
-      }
-
-      return { success: false };
-    } catch (error) {
-      showError('Search failed. Please try again.');
-      return { success: false, error: error.message };
-    } finally {
-      setIsSearching(false);
-    }
-  }, [showSuccess, showError, addToRecentSearches]);
-
-  /**
    * Add plate to recent searches
+   * ✅ Fixed - Moved before searchVehicle to avoid circular dependency
    */
   const addToRecentSearches = useCallback((plateNumber, found) => {
-    setRecentSearches((prev) => {
+    setRecentSearches(prev => {
       // Remove if already exists
-      const filtered = prev.filter((item) => item.plateNumber !== plateNumber);
+      const filtered = prev.filter(item => item.plateNumber !== plateNumber);
 
       // Add to beginning
       const updated = [
@@ -112,7 +85,59 @@ export const SearchProvider = ({ children }) => {
 
       return updated;
     });
-  }, []);
+  }, []); // ✅ No dependencies needed
+
+  /**
+   * Search for vehicle by plate number
+   */
+  const searchVehicle = useCallback(
+    async plateNumber => {
+      try {
+        setIsSearching(true);
+        setSearchResult(null);
+
+        const response = await SearchService.searchVehicle(plateNumber);
+
+        if (response.success) {
+          setSearchResult(response.data);
+
+          // Add to recent searches
+          addToRecentSearches(plateNumber, response.data.found);
+
+          if (response.data.found) {
+            showSuccess('Vehicle found!');
+          } else {
+            showError('Vehicle not found in our network');
+          }
+
+          return {success: true, data: response.data};
+        }
+
+        return {success: false};
+      } catch (error) {
+        showError('Search failed. Please try again.');
+        return {success: false, error: error.message};
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [showSuccess, showError, addToRecentSearches], // ✅ Fixed - addToRecentSearches now stable
+  );
+
+  /**
+   * Remove single search from recent
+   */
+  const removeRecentSearch = useCallback(
+    plateNumber => {
+      setRecentSearches(prev => {
+        const filtered = prev.filter(item => item.plateNumber !== plateNumber);
+        saveRecentSearches(filtered);
+        return filtered;
+      });
+      showSuccess('Search removed');
+    },
+    [showSuccess],
+  );
 
   /**
    * Clear recent searches
@@ -122,46 +147,38 @@ export const SearchProvider = ({ children }) => {
       setRecentSearches([]);
       await AsyncStorage.remove(STORAGE_KEYS.RECENT_SEARCHES);
       showSuccess('Recent searches cleared');
-      return { success: true };
+      return {success: true};
     } catch (error) {
       showError('Failed to clear searches');
-      return { success: false, error: error.message };
+      return {success: false, error: error.message};
     }
   }, [showSuccess, showError]);
 
   /**
    * Get search history from API
    */
-  const getSearchHistory = useCallback(async (limit = 20) => {
-    if (!user) {return { success: false, error: 'Not authenticated' };}
-
-    try {
-      const response = await SearchService.getHistory(limit);
-
-      if (response.success) {
-        setSearchHistory(response.data);
-        return { success: true, data: response.data };
+  const getSearchHistory = useCallback(
+    async (limit = 20) => {
+      if (!user) {
+        return {success: false, error: 'Not authenticated'};
       }
 
-      return { success: false };
-    } catch (error) {
-      showError('Failed to load search history');
-      return { success: false, error: error.message };
-    }
-  }, [user, showError]);
+      try {
+        const response = await SearchService.getHistory(limit);
 
-  /**
-   * Log contact action
-   */
-  const logContact = useCallback(async (contactData) => {
-    try {
-      const response = await SearchService.logContact(contactData);
-      return { success: response.success };
-    } catch (error) {
-      console.error('Failed to log contact:', error);
-      return { success: false, error: error.message };
-    }
-  }, []);
+        if (response.success) {
+          setSearchHistory(response.data);
+          return {success: true, data: response.data};
+        }
+
+        return {success: false};
+      } catch (error) {
+        showError('Failed to load search history');
+        return {success: false, error: error.message};
+      }
+    },
+    [user, showError],
+  );
 
   /**
    * Clear search result
@@ -180,12 +197,15 @@ export const SearchProvider = ({ children }) => {
     // Methods
     searchVehicle,
     clearRecentSearches,
+    removeRecentSearch,
     getSearchHistory,
-    logContact,
     clearSearchResult,
+    // ✅ Removed logContact - now handled by ContactService directly in modals
   };
 
-  return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
+  return (
+    <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
+  );
 };
 
 export const useSearch = () => {

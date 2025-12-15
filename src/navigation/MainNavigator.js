@@ -1,26 +1,21 @@
 /**
  * Main Navigator
+ * Main app navigation with bottom tabs
  */
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING } from '../config/theme';
 import VehicleNavigator from './VehicleNavigator';
+import SearchNavigator from './SearchNavigator'; // ✅ Import SearchNavigator
 
 const Tab = createBottomTabNavigator();
 
 // Placeholder screens
 const HomeScreen = () => (
   <View style={styles.placeholderContainer}>
-    <Text style={styles.placeholderText}>Home Screen (Coming in Batch 7)</Text>
-  </View>
-);
-
-const SearchScreen = () => (
-  <View style={styles.placeholderContainer}>
-    <Text style={styles.placeholderText}>Search Screen (Coming in Batch 7)</Text>
+    <Text style={styles.placeholderText}>Home Screen (Coming in Batch 8)</Text>
   </View>
 );
 
@@ -30,21 +25,15 @@ const ProfileScreen = () => (
   </View>
 );
 
+// Tab bar icons
 const HomeIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🏠</Text>;
 const SearchIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🔍</Text>;
 const VehiclesIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🚗</Text>;
 const ProfileIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>👤</Text>;
 
 const MainNavigator = () => {
-  const insets = useSafeAreaInsets();
-
-  // ✅ Debug: Check what insets are being returned
-  console.log('📱 Safe Area Insets:', insets);
-
-  // ✅ Use actual insets on iOS, fixed value on Android
-  const bottomPadding = Platform.OS === 'android'
-    ? 16  // Fixed padding for Android (adjust as needed: 12-20)
-    : insets.bottom || 8;
+  // Use fixed padding for Android
+  const bottomPadding = Platform.OS === 'android' ? 16 : 8;
 
   return (
     <Tab.Navigator
@@ -75,10 +64,26 @@ const MainNavigator = () => {
         },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: HomeIcon }} />
-      <Tab.Screen name="Search" component={SearchScreen} options={{ tabBarIcon: SearchIcon }} />
-      <Tab.Screen name="Vehicles" component={VehicleNavigator} options={{ tabBarIcon: VehiclesIcon }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ProfileIcon }} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ tabBarIcon: HomeIcon }}
+      />
+      <Tab.Screen
+        name="Search"
+        component={SearchNavigator}  // ✅ Use SearchNavigator instead of placeholder
+        options={{ tabBarIcon: SearchIcon }}
+      />
+      <Tab.Screen
+        name="Vehicles"
+        component={VehicleNavigator}
+        options={{ tabBarIcon: VehiclesIcon }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarIcon: ProfileIcon }}
+      />
     </Tab.Navigator>
   );
 };

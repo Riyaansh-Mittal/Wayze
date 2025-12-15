@@ -24,7 +24,7 @@ export const uploadRCPhoto = async (imageData, userId) => {
       contentType: imageData.type,
     });
     const downloadURL = await reference.getDownloadURL();
-    
+
     return {
       success: true,
       url: downloadURL,
@@ -65,7 +65,7 @@ export const uploadProfilePhoto = async (imageData, userId) => {
  */
 export const deleteFile = async (filename) => {
   // Mock implementation - always succeeds
-  
+
   // In production, use this:
   /*
   try {
@@ -89,7 +89,7 @@ export const deleteFile = async (filename) => {
  */
 export const getFileURL = async (filename) => {
   // Mock implementation
-  
+
   // In production, use this:
   /*
   try {

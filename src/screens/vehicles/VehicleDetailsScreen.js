@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useVehicles } from '../../hooks';
+import { useVehicles } from '../../contexts/VehicleContext';
 import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
 import { formatDate } from '../../utils/formatters';
 import AppBar from '../../components/navigation/AppBar';

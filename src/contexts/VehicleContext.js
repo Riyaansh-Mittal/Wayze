@@ -20,18 +20,8 @@ export const VehicleProvider = ({ children }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   /**
-   * Load vehicles when authenticated
-   */
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      loadVehicles();
-    } else {
-      setVehicles([]);
-    }
-  }, [isAuthenticated, user, loadVehicles]);
-
-  /**
    * Load all vehicles
+   * ✅ Moved before useEffect to avoid dependency issues
    */
   const loadVehicles = useCallback(async (showLoader = true) => {
     if (!user) {return { success: false, error: 'Not authenticated' };}
@@ -53,7 +43,19 @@ export const VehicleProvider = ({ children }) => {
     } finally {
       if (showLoader) {setIsLoading(false);}
     }
-  }, [user, showError]);
+  }, [user, showError]); // ✅ Only depends on user and showError
+
+  /**
+   * Load vehicles when authenticated
+   * ✅ Fixed - Now loadVehicles is stable
+   */
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadVehicles();
+    } else {
+      setVehicles([]);
+    }
+  }, [isAuthenticated, user, loadVehicles]); // ✅ Safe now
 
   /**
    * Refresh vehicles (pull-to-refresh)

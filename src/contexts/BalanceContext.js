@@ -20,7 +20,7 @@ export const BalanceProvider = ({children}) => {
   const {user, isAuthenticated, updateUser} = useAuth();
   const {showSuccess, showError} = useToast();
 
-  const [balance, setBalance] = useState(0);
+  const [balance, setBalance] = useState(2);
   const [balanceHistory, setBalanceHistory] = useState([]);
   const [referralStats, setReferralStats] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,10 +30,10 @@ export const BalanceProvider = ({children}) => {
    */
   useEffect(() => {
     if (isAuthenticated && user) {
-      setBalance(user.callBalance || 0);
+      setBalance(user.callBalance || 2);
       loadBalance();
     } else {
-      setBalance(0);
+      setBalance(2);
       setBalanceHistory([]);
       setReferralStats(null);
     }
@@ -224,6 +224,14 @@ export const BalanceProvider = ({children}) => {
   }, [user]);
 
   /**
+   * Check if user can make a contact (has at least 1 credit)
+   * ✅ ADD THIS FUNCTION
+   */
+  const canMakeContact = useCallback(() => {
+    return balance >= 1;
+  }, [balance]);
+
+  /**
    * Check if balance is low
    */
   const isBalanceLow = useCallback(() => {
@@ -246,6 +254,7 @@ export const BalanceProvider = ({children}) => {
     applyReferralCode,
     getReferralStats,
     getReferralCode,
+    canMakeContact, // ✅ ADD THIS TO VALUE
     isBalanceLow,
   };
 

@@ -1,6 +1,6 @@
 /**
  * Add Vehicle Screen
- * Form to add a new vehicle
+ * Form to add a new vehicle (No RC required unless conflict)
  */
 
 import React, { useState } from 'react';
@@ -14,20 +14,17 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useVehicles } from '../../hooks';
+import { useVehicles } from '../../contexts/VehicleContext';
 import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
 import {
   validatePlateNumber,
-  validateRCNumber,
   validatePhoneNumber,
 } from '../../utils/validators';
 import AppBar from '../../components/navigation/AppBar';
 import PlateInput from '../../components/common/Input/PlateInput';
-import TextInput from '../../components/common/Input/TextInput';
 import PhoneInput from '../../components/common/Input/PhoneInput';
 import VehicleTypeSelector from '../../components/vehicle/VehicleTypeSelector';
 import ContactMethodsSelector from '../../components/vehicle/ContactMethodsSelector';
-import RCUploader from '../../components/vehicle/RCUploader';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
 import Card from '../../components/common/Card/Card';
@@ -37,16 +34,13 @@ const AddVehicleScreen = ({ navigation }) => {
 
   const [formData, setFormData] = useState({
     plateNumber: '',
-    rcNumber: '',
     vehicleType: '',
     contactPhone: '',
     contactMethods: {
       phone: true,
       sms: true,
       whatsapp: false,
-      email: false,
     },
-    rcPhoto: null,
   });
 
   const [errors, setErrors] = useState({});
@@ -67,12 +61,6 @@ const AddVehicleScreen = ({ navigation }) => {
       newErrors.plateNumber = plateValidation.message;
     }
 
-    // RC number
-    const rcValidation = validateRCNumber(formData.rcNumber);
-    if (!rcValidation.valid) {
-      newErrors.rcNumber = rcValidation.message;
-    }
-
     // Vehicle type
     if (!formData.vehicleType) {
       newErrors.vehicleType = 'Please select vehicle type';
@@ -88,11 +76,6 @@ const AddVehicleScreen = ({ navigation }) => {
     const hasContactMethod = Object.values(formData.contactMethods).some((v) => v);
     if (!hasContactMethod) {
       newErrors.contactMethods = 'Select at least one contact method';
-    }
-
-    // RC photo
-    if (!formData.rcPhoto) {
-      newErrors.rcPhoto = 'RC photo is required';
     }
 
     setErrors(newErrors);
@@ -111,19 +94,29 @@ const AddVehicleScreen = ({ navigation }) => {
     setIsCheckingPlate(false);
 
     if (plateCheck.exists) {
-      // Plate already registered - show conflict screen
+      // Plate already registered - show conflict screen with RC verification
       navigation.navigate('OwnershipConflict', {
         plateNumber: formData.plateNumber,
         existingVehicle: plateCheck.vehicle,
+        newVehicleData: formData, // Pass the new vehicle data
       });
       return;
     }
 
-    // Add vehicle
+    // No conflict - add vehicle directly (no RC required)
     const result = await addVehicle(formData);
 
     if (result.success) {
-      navigation.goBack();
+      Alert.alert(
+        'Success',
+        'Vehicle added successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
     } else {
       Alert.alert('Error', result.error || 'Failed to add vehicle');
     }
@@ -149,10 +142,12 @@ const AddVehicleScreen = ({ navigation }) => {
         >
           {/* Info Card */}
           <Card style={styles.infoCard}>
-            <Text style={styles.infoIcon}>📋</Text>
-            <Text style={styles.infoText}>
-              Register your vehicle to be reachable when someone needs to contact you
-            </Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoIcon}>📋</Text>
+              <Text style={styles.infoText}>
+                Register your vehicle to be reachable when someone needs to contact you about parking.
+              </Text>
+            </View>
           </Card>
 
           {/* Form */}
@@ -162,18 +157,6 @@ const AddVehicleScreen = ({ navigation }) => {
               value={formData.plateNumber}
               onChangeText={(value) => updateField('plateNumber', value)}
               error={errors.plateNumber}
-              required
-            />
-
-            {/* RC Number */}
-            <TextInput
-              label="RC Number"
-              value={formData.rcNumber}
-              onChangeText={(value) => updateField('rcNumber', value)}
-              placeholder="MH01AB123456789"
-              autoCapitalize="characters"
-              error={errors.rcNumber}
-              helperText="Registration Certificate number"
               required
             />
 
@@ -189,6 +172,7 @@ const AddVehicleScreen = ({ navigation }) => {
               value={formData.contactPhone}
               onChangeText={(value) => updateField('contactPhone', value)}
               error={errors.contactPhone}
+              helperText="This number will be used to contact you"
               required
             />
 
@@ -198,23 +182,31 @@ const AddVehicleScreen = ({ navigation }) => {
               onChange={(value) => updateField('contactMethods', value)}
               error={errors.contactMethods}
             />
-
-            {/* RC Photo */}
-            <RCUploader
-              value={formData.rcPhoto}
-              onChange={(value) => updateField('rcPhoto', value)}
-              error={errors.rcPhoto}
-            />
           </View>
+
+          {/* Privacy Notice */}
+          <Card style={styles.privacyCard}>
+            <View style={styles.privacyRow}>
+              <Text style={styles.privacyIcon}>🔒</Text>
+              <View style={styles.privacyInfo}>
+                <Text style={styles.privacyTitle}>Privacy & Security</Text>
+                <Text style={styles.privacyText}>
+                  • Your contact details remain private{'\n'}
+                  • Only revealed when someone contacts you{'\n'}
+                  • RC verification only if ownership conflict occurs
+                </Text>
+              </View>
+            </View>
+          </Card>
 
           {/* Buttons */}
           <View style={styles.buttonContainer}>
             <PrimaryButton
-              title="Add Vehicle"
+              title={isCheckingPlate ? 'Checking...' : 'Add Vehicle'}
               onPress={handleSubmit}
               loading={isLoading || isCheckingPlate}
               fullWidth
-              icon={<Text style={{ color: COLORS.white }}>→</Text>}
+              icon={<Text style={{ color: COLORS.white }}>✓</Text>}
             />
 
             <SecondaryButton
@@ -234,7 +226,7 @@ const AddVehicleScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
   },
   keyboardView: {
     flex: 1,
@@ -247,10 +239,12 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxxl,
   },
   infoCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: COLORS.primaryLight,
     marginBottom: SPACING.lg,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   infoIcon: {
     fontSize: 32,
@@ -263,6 +257,30 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: SPACING.lg,
+  },
+  privacyCard: {
+    backgroundColor: COLORS.successLight,
+    marginBottom: SPACING.lg,
+  },
+  privacyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  privacyIcon: {
+    fontSize: 28,
+    marginRight: SPACING.md,
+  },
+  privacyInfo: {
+    flex: 1,
+  },
+  privacyTitle: {
+    ...TYPOGRAPHY.bodyBold,
+    marginBottom: SPACING.xs,
+  },
+  privacyText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
   },
   buttonContainer: {
     marginTop: SPACING.base,
