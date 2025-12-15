@@ -9,15 +9,9 @@ import { View, Text, StyleSheet, Platform } from 'react-native';
 import { COLORS, TYPOGRAPHY, SPACING } from '../config/theme';
 import VehicleNavigator from './VehicleNavigator';
 import SearchNavigator from './SearchNavigator'; // ✅ Import SearchNavigator
+import HomeScreen from '../screens/home/HomeScreen';
 
 const Tab = createBottomTabNavigator();
-
-// Placeholder screens
-const HomeScreen = () => (
-  <View style={styles.placeholderContainer}>
-    <Text style={styles.placeholderText}>Home Screen (Coming in Batch 8)</Text>
-  </View>
-);
 
 const ProfileScreen = () => (
   <View style={styles.placeholderContainer}>

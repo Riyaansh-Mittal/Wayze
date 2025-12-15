@@ -1,53 +1,36 @@
 /**
- * Root App Component
- * Sets up all providers and navigation
- *
- * BATCH 5 UPDATE: Added complete authentication flow
+ * App Entry Point
  */
 
 import React from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'react-native';
-
-// Providers
-import { ThemeProvider } from './src/contexts/ThemeContext';
-import { ToastProvider } from './src/components/common/Toast/ToastProvider';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './src/contexts/AuthContext';
-import { UserProvider } from './src/contexts/UserContext';
+import { BalanceProvider } from './src/contexts/BalanceContext';
 import { VehicleProvider } from './src/contexts/VehicleContext';
 import { SearchProvider } from './src/contexts/SearchContext';
-import { BalanceProvider } from './src/contexts/BalanceContext';
-
-// Navigation
-import { RootNavigator } from './src/navigation';
-
+import { ToastProvider } from './src/components/common/Toast/ToastProvider';
+import AppNavigator from './src/navigation/AppNavigator';
 import { COLORS } from './src/config/theme';
 
 const App = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <UserProvider>
-                <VehicleProvider>
-                  <SearchProvider>
-                    <BalanceProvider>
-                      <StatusBar
-                        barStyle="dark-content"
-                        backgroundColor={COLORS.white}
-                      />
-                      <RootNavigator />
-                    </BalanceProvider>
-                  </SearchProvider>
-                </VehicleProvider>
-              </UserProvider>
-            </AuthProvider>
-          </ToastProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.white}
+      />
+      <ToastProvider>
+        <AuthProvider>
+          <BalanceProvider>
+            <VehicleProvider>
+              <SearchProvider>
+                <AppNavigator />
+              </SearchProvider>
+            </VehicleProvider>
+          </BalanceProvider>
+        </AuthProvider>
+      </ToastProvider>
     </GestureHandlerRootView>
   );
 };
