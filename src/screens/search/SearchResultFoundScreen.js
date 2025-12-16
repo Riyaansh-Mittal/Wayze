@@ -1,6 +1,7 @@
 /**
  * Search Result Found Screen
  * Shows vehicle owner details when found
+ * FULLY THEME-AWARE WITH SVG ICONS
  */
 
 import React from 'react';
@@ -10,54 +11,105 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBalance } from '../../contexts/BalanceContext';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useBalance} from '../../contexts/BalanceContext';
+import {useTheme} from '../../contexts/ThemeContext';
 import AppBar from '../../components/navigation/AppBar';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
 import Card from '../../components/common/Card/Card';
+import VehicleIcon from '../../components/common/Icon/VehicleIcon';
+import {InfoIcon} from '../../assets/icons';
 
-const SearchResultFoundScreen = ({ navigation, route }) => {
-  const { vehicle, searchQuery } = route.params;
-  const { balance, canMakeContact } = useBalance();
+const SearchResultFoundScreen = ({navigation, route}) => {
+  const {t, theme} = useTheme();
+  const {colors, spacing, layout} = theme;
+  const {vehicle, searchQuery} = route.params;
+  const {balance, canMakeContact} = useBalance();
 
   const hasEnoughCredits = canMakeContact();
 
+  const getTimeAgo = dateString => {
+    // Mock implementation - replace with actual logic
+    return t('time.monthsAgo', {count: 5});
+  };
+
+  // Get vehicle type label
+  const getVehicleTypeLabel = type => {
+    switch (type) {
+      case '2wheeler':
+        return t('vehicles.types.2-wheeler');
+      case '3wheeler':
+        return t('vehicles.types.3-wheeler');
+      case '4wheeler':
+        return t('vehicles.types.4-wheeler');
+      default:
+        return type;
+    }
+  };
+
+  // FREE ALERT OPTION - No credits needed
   const handleSendAlert = () => {
-    // Free action - no balance check needed
     navigation.navigate('SendAlertModal', {
       vehicle,
       searchQuery,
     });
   };
 
+  // PAID OPTIONS - Require credits
   const handleCallOwner = () => {
     if (!hasEnoughCredits) {
       Alert.alert(
-        'Insufficient Balance',
-        'You need at least 1 contact credit to call the owner. Purchase more from your profile.',
+        t('profile.balance.lowBalance'),
+        t('search.registrationGate.toast'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          {text: t('common.cancel'), style: 'cancel'},
           {
-            text: 'Buy Credits',
-            onPress: () => navigation.navigate('Profile', { screen: 'PurchaseCredits' }),
+            text: t('common.continue'),
+            onPress: () =>
+              navigation.navigate('Profile', {screen: 'PurchaseCredits'}),
           },
-        ]
+        ],
       );
       return;
     }
 
-    // Has enough credits - proceed to call
     navigation.navigate('CallOwnerModal', {
       vehicle,
       searchQuery,
     });
   };
 
-  const handleSearchAgain = () => {
-    navigation.goBack();
+  const handleWhatsAppOwner = () => {
+    if (!hasEnoughCredits) {
+      Alert.alert(
+        t('profile.balance.lowBalance'),
+        t('search.registrationGate.toast'),
+      );
+      return;
+    }
+
+    navigation.navigate('WhatsAppOwnerModal', {
+      vehicle,
+      searchQuery,
+    });
+  };
+
+  const handleEmailOwner = () => {
+    if (!hasEnoughCredits) {
+      Alert.alert(
+        t('profile.balance.lowBalance'),
+        t('search.registrationGate.toast'),
+      );
+      return;
+    }
+
+    navigation.navigate('EmailOwnerModal', {
+      vehicle,
+      searchQuery,
+    });
   };
 
   const handleReportIssue = () => {
@@ -68,165 +120,290 @@ const SearchResultFoundScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.background}]}
+      edges={['top']}>
       <AppBar
-        title="Search Result"
+        title={t('search.results.title')}
         showBack
         onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Success Header */}
-        <View style={styles.header}>
-          <Text style={styles.successIcon}>✅</Text>
-          <Text style={styles.title}>Vehicle Found!</Text>
-          <Text style={styles.subtitle}>
-            We found the owner of {searchQuery}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            padding: layout.screenPadding,
+            paddingBottom: spacing.xxxl,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}>
+        {/* Vehicle Found Header */}
+        <View style={[styles.header, {marginBottom: spacing.xl}]}>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.sm,
+              },
+            ]}>
+            {t('search.results.found.vehicleTitle')}
           </Text>
         </View>
 
-        {/* Vehicle Info Card */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vehicle Information</Text>
-          <Card>
-            <View style={styles.vehicleRow}>
-              <Text style={styles.vehicleIcon}>
-                {vehicle.vehicleType === '2-wheeler' ? '🏍️' : '🚗'}
+        {/* Vehicle Info Card with SVG Icon */}
+        <Card style={{marginBottom: spacing.base}}>
+          <View style={styles.vehicleRow}>
+            {/* SVG Vehicle Icon */}
+            <VehicleIcon
+              type={vehicle.vehicleType}
+              size={48}
+              color={colors.primary}
+              style={{marginRight: spacing.md}}
+            />
+            <View style={styles.vehicleInfo}>
+              <Text
+                style={[
+                  styles.plateNumber,
+                  {
+                    color: colors.textPrimary,
+                    marginBottom: spacing.xs,
+                  },
+                ]}>
+                {vehicle.plateNumber}
               </Text>
-              <View style={styles.vehicleInfo}>
-                <Text style={styles.plateNumber}>{vehicle.plateNumber}</Text>
-                <Text style={styles.vehicleMeta}>
-                  {vehicle.vehicleType} · Registered {vehicle.registeredAgo || '5 months ago'}
-                </Text>
-              </View>
+              <Text style={[styles.vehicleMeta, {color: colors.textSecondary}]}>
+                {getVehicleTypeLabel(vehicle.vehicleType)} ·{' '}
+                {t('search.results.found.registered', {
+                  time: getTimeAgo(vehicle.createdAt),
+                })}
+              </Text>
             </View>
-          </Card>
-        </View>
+          </View>
+        </Card>
 
         {/* Owner Info Card */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Owner Information</Text>
-          <Card>
-            <View style={styles.ownerRow}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {vehicle.owner?.name?.charAt(0).toUpperCase() || 'U'}
-                </Text>
-              </View>
-              <View style={styles.ownerInfo}>
-                <View style={styles.ownerNameRow}>
-                  <Text style={styles.ownerName}>{vehicle.owner?.name || 'R**** M****'}</Text>
-                  {vehicle.owner?.verified && (
-                    <Text style={styles.verifiedBadge}>✓</Text>
-                  )}
-                </View>
-                <Text style={styles.ownerMeta}>
-                  Member since {vehicle.owner?.memberSince || 'June 2024'}
-                </Text>
-              </View>
+        <Card style={{marginBottom: spacing.lg}}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.md,
+              },
+            ]}>
+            {t('search.results.found.ownerTitle')}
+          </Text>
+
+          <View style={styles.ownerRow}>
+            <View
+              style={[
+                styles.avatar,
+                {
+                  backgroundColor: colors.primary,
+                  marginRight: spacing.md,
+                },
+              ]}>
+              <Text style={[styles.avatarText, {color: colors.white}]}>
+                {vehicle.owner?.name?.charAt(0).toUpperCase() || 'R'}
+              </Text>
             </View>
-          </Card>
-        </View>
-
-        {/* Contact Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact Owner</Text>
-
-          {/* Free Alert Option */}
-          <Card style={styles.freeCard}>
-            <View style={styles.optionRow}>
-              <Text style={styles.optionIcon}>🔔</Text>
-              <View style={styles.optionInfo}>
-                <Text style={styles.optionTitle}>Send Alert</Text>
-                <Text style={styles.optionDescription}>
-                  Notify owner for free. They'll see your message.
+            <View style={styles.ownerInfo}>
+              <View style={[styles.ownerNameRow, {marginBottom: spacing.xs}]}>
+                <Text
+                  style={[
+                    styles.ownerName,
+                    {
+                      color: colors.textPrimary,
+                      marginRight: spacing.xs,
+                    },
+                  ]}>
+                  {vehicle.owner?.maskedName || 'R**** M****'}
+                </Text>
+                <Text style={[styles.verifiedBadge, {color: colors.success}]}>
+                  ✓
                 </Text>
               </View>
-              <View style={styles.freeBadge}>
-                <Text style={styles.freeText}>FREE</Text>
+              <Text style={[styles.ownerMeta, {color: colors.textSecondary}]}>
+                {t('search.results.found.memberSince', {
+                  date: vehicle.owner?.memberSince || 'June 2024',
+                })}
+              </Text>
+            </View>
+          </View>
+        </Card>
+
+        {/* Contact Owner Section */}
+        <View style={[styles.section, {marginBottom: spacing.base}]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.md,
+              },
+            ]}>
+            {t('search.results.found.contactTitle')}
+          </Text>
+
+          {/* FREE ALERT OPTION */}
+          <Card
+            style={[
+              styles.freeCard,
+              {
+                backgroundColor: colors.successLight,
+                borderColor: colors.success,
+                borderWidth: 1,
+                marginBottom: spacing.sm,
+              },
+            ]}>
+            <View style={styles.optionRow}>
+              <Text style={[styles.optionIcon, {marginRight: spacing.md}]}>
+                🔔
+              </Text>
+              <View style={styles.optionInfo}>
+                <Text
+                  style={[
+                    styles.optionTitle,
+                    {
+                      color: colors.textPrimary,
+                      marginBottom: spacing.xs,
+                    },
+                  ]}>
+                  {t('search.results.found.alertTitle') || 'Send Alert'}
+                </Text>
+                <Text
+                  style={[
+                    styles.optionDescription,
+                    {color: colors.textSecondary},
+                  ]}>
+                  {t('search.results.found.alertDescription') ||
+                    "Notify owner for free. They'll see your message."}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.freeBadge,
+                  {
+                    backgroundColor: colors.success,
+                    paddingHorizontal: spacing.sm,
+                    paddingVertical: spacing.xs,
+                  },
+                ]}>
+                <Text style={[styles.freeText, {color: colors.white}]}>
+                  {t('common.free') || 'FREE'}
+                </Text>
               </View>
             </View>
           </Card>
 
           <PrimaryButton
-            title="Send Alert"
+            title={t('search.results.found.alertButton') || 'Send Alert'}
             onPress={handleSendAlert}
             fullWidth
-            icon={<Text style={{ color: COLORS.white, fontSize: 20 }}>🔔</Text>}
-            style={{ marginTop: SPACING.sm }}
+            icon={<Text style={{color: colors.white, fontSize: 18}}>🔔</Text>}
+            style={{marginBottom: spacing.lg}}
           />
 
-          {/* Paid Call Option */}
-          <Card style={[styles.paidCard, !hasEnoughCredits && styles.disabledCard]}>
-            <View style={styles.optionRow}>
-              <Text style={styles.optionIcon}>📞</Text>
-              <View style={styles.optionInfo}>
-                <Text style={styles.optionTitle}>Call Owner</Text>
-                <Text style={styles.optionDescription}>
-                  Reveal phone number and call directly.
-                </Text>
-              </View>
-              <View style={styles.costBadge}>
-                <Text style={styles.costText}>1 Credit</Text>
-              </View>
-            </View>
-          </Card>
-
-          {!hasEnoughCredits ? (
-            <SecondaryButton
-              title="Buy Credits to Call"
-              onPress={() => navigation.navigate('Profile', { screen: 'PurchaseCredits' })}
-              fullWidth
-              icon={<Text style={{ color: COLORS.primary, fontSize: 20 }}>💳</Text>}
-              style={{ marginTop: SPACING.sm }}
-            />
-          ) : (
-            <SecondaryButton
-              title="Call Owner"
-              onPress={handleCallOwner}
-              fullWidth
-              icon={<Text style={{ color: COLORS.primary, fontSize: 20 }}>📞</Text>}
-              style={{ marginTop: SPACING.sm }}
-            />
-          )}
+          {/* Call Button */}
+          <SecondaryButton
+            title={t('search.results.found.callButton')}
+            onPress={handleCallOwner}
+            fullWidth
+            icon={<Text style={{color: colors.primary, fontSize: 18}}>📞</Text>}
+            style={{marginBottom: spacing.sm}}
+          />
         </View>
 
-        {/* Balance Info */}
-        <Card style={styles.balanceCard}>
-          <View style={styles.balanceRow}>
-            <Text style={styles.balanceIcon}>💰</Text>
-            <View style={styles.balanceInfo}>
-              <Text style={styles.balanceLabel}>Your Contact Credits</Text>
-              <Text style={styles.balanceValue}>{balance} credits remaining</Text>
+        {/* Balance Info - Only show if credits are low */}
+        {!hasEnoughCredits && (
+          <Card
+            style={[
+              styles.balanceCard,
+              {
+                backgroundColor: colors.warningLight,
+                borderColor: colors.warning,
+                borderWidth: 1,
+                marginBottom: spacing.md,
+              },
+            ]}>
+            <View style={styles.balanceRow}>
+              <Text style={[styles.balanceIcon, {marginRight: spacing.md}]}>
+                💰
+              </Text>
+              <View style={styles.balanceInfo}>
+                <Text
+                  style={[
+                    styles.balanceLabel,
+                    {
+                      color: colors.textSecondary,
+                      marginBottom: spacing.xs,
+                    },
+                  ]}>
+                  {t('profile.balance.title')}
+                </Text>
+                <Text
+                  style={[styles.balanceValue, {color: colors.textPrimary}]}>
+                  {t('profile.balance.calls', {count: balance})}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('Profile', {screen: 'PurchaseCredits'})
+                }
+                style={[
+                  styles.buyButton,
+                  {
+                    backgroundColor: colors.primary,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.sm,
+                    borderRadius: 6,
+                  },
+                ]}>
+                <Text style={[styles.buyButtonText, {color: colors.white}]}>
+                  {t('common.buy') || 'Buy'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          </View>
-        </Card>
+          </Card>
+        )}
 
-        {/* Privacy Notice */}
-        <Card style={styles.infoCard}>
+        {/* Respect Message */}
+        <Card
+          style={[
+            styles.infoCard,
+            {
+              backgroundColor: colors.neutralLight,
+              marginBottom: spacing.md,
+            },
+          ]}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>ℹ️</Text>
-            <Text style={styles.infoText}>
-              Please be respectful. Abuse will be reported.
+            <View style={{marginRight: spacing.sm}}>
+              <InfoIcon width={20} height={20} fill={colors.primary} />
+            </View>
+            <Text
+              style={[
+                styles.infoText,
+                {
+                  color: colors.textSecondary,
+                  flex: 1,
+                },
+              ]}>
+              {t('search.results.found.respectMessage')}
             </Text>
           </View>
         </Card>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          <SecondaryButton
-            title="Search Again"
-            onPress={handleSearchAgain}
-            fullWidth
-          />
-          <Text style={styles.reportLink} onPress={handleReportIssue}>
-            Report an issue
+        {/* Report Link */}
+        <TouchableOpacity
+          onPress={handleReportIssue}
+          style={[styles.reportButton, {paddingVertical: spacing.sm}]}>
+          <Text style={[styles.reportLink, {color: colors.primary}]}>
+            {t('search.results.found.reportLink')}
           </Text>
-        </View>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -235,57 +412,33 @@ const SearchResultFoundScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: LAYOUT.screenPadding,
-    paddingBottom: SPACING.xxxl,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
-  },
-  successIcon: {
-    fontSize: 80,
-    marginBottom: SPACING.md,
-  },
+  scrollContent: {},
+  header: {},
   title: {
-    ...TYPOGRAPHY.h1,
-    marginBottom: SPACING.sm,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  section: {
-    marginBottom: SPACING.lg,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.h2,
-    marginBottom: SPACING.sm,
+    fontSize: 24,
+    fontWeight: '700',
   },
   vehicleRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  vehicleIcon: {
-    fontSize: 40,
-    marginRight: SPACING.md,
-  },
   vehicleInfo: {
     flex: 1,
   },
   plateNumber: {
-    ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.xs,
+    fontSize: 20,
+    fontWeight: '600',
   },
   vehicleMeta: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
   },
   ownerRow: {
     flexDirection: 'row',
@@ -295,14 +448,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.md,
   },
   avatarText: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.white,
+    fontSize: 20,
+    fontWeight: '700',
   },
   ownerInfo: {
     flex: 1,
@@ -310,124 +461,80 @@ const styles = StyleSheet.create({
   ownerNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
   },
   ownerName: {
-    ...TYPOGRAPHY.bodyBold,
-    marginRight: SPACING.xs,
+    fontSize: 16,
+    fontWeight: '600',
   },
   verifiedBadge: {
     fontSize: 16,
-    color: COLORS.success,
   },
   ownerMeta: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 14,
   },
-  freeCard: {
-    backgroundColor: COLORS.successLight,
-    borderColor: COLORS.success,
-    marginBottom: SPACING.sm,
-  },
-  paidCard: {
-    backgroundColor: COLORS.warningLight,
-    borderColor: COLORS.warning,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.sm,
-  },
-  disabledCard: {
-    backgroundColor: COLORS.neutralBg,
-    borderColor: COLORS.neutralBorder,
-    opacity: 0.6,
-  },
+  section: {},
+  freeCard: {},
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   optionIcon: {
     fontSize: 32,
-    marginRight: SPACING.md,
   },
   optionInfo: {
     flex: 1,
   },
   optionTitle: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.xs,
+    fontSize: 16,
+    fontWeight: '600',
   },
   optionDescription: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
   },
   freeBadge: {
-    backgroundColor: COLORS.success,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
     borderRadius: 4,
   },
   freeText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.white,
+    fontSize: 12,
     fontWeight: '700',
   },
-  costBadge: {
-    backgroundColor: COLORS.warning,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: 4,
-  },
-  costText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.white,
-    fontWeight: '700',
-  },
-  balanceCard: {
-    backgroundColor: COLORS.primaryLight,
-    marginBottom: SPACING.md,
-  },
+  balanceCard: {},
   balanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   balanceIcon: {
     fontSize: 32,
-    marginRight: SPACING.md,
   },
   balanceInfo: {
     flex: 1,
   },
   balanceLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+    fontSize: 13,
   },
   balanceValue: {
-    ...TYPOGRAPHY.bodyBold,
+    fontSize: 16,
+    fontWeight: '600',
   },
-  infoCard: {
-    backgroundColor: COLORS.neutralBg,
-    marginBottom: SPACING.lg,
+  buyButton: {},
+  buyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
+  infoCard: {},
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-  infoIcon: {
-    fontSize: 20,
-    marginRight: SPACING.sm,
+    alignItems: 'flex-start',
   },
   infoText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
-  actions: {
+  reportButton: {
     alignItems: 'center',
   },
   reportLink: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.primary,
-    marginTop: SPACING.md,
+    fontSize: 15,
     textDecorationLine: 'underline',
   },
 });

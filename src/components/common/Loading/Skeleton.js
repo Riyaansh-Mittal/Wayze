@@ -1,23 +1,28 @@
 /**
  * Skeleton Component
- * Placeholder loading animation
+ * Animated placeholder for loading content
+ * FULLY THEME-AWARE
  */
 
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
 import PropTypes from 'prop-types';
-import { COLORS, RADIUS } from '../../../config/theme';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const Skeleton = ({
   width = '100%',
   height = 20,
-  borderRadius = RADIUS.small,
+  borderRadius = 4,
   style,
+  testID,
 }) => {
+  const { theme } = useTheme();
+  const { colors } = theme;
+
   const opacity = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
-    const animation = Animated.loop(
+    Animated.loop(
       Animated.sequence([
         Animated.timing(opacity, {
           toValue: 1,
@@ -30,11 +35,7 @@ const Skeleton = ({
           useNativeDriver: true,
         }),
       ])
-    );
-
-    animation.start();
-
-    return () => animation.stop();
+    ).start();
   }, [opacity]);
 
   return (
@@ -45,17 +46,19 @@ const Skeleton = ({
           width,
           height,
           borderRadius,
+          backgroundColor: colors.neutralLight,
           opacity,
         },
         style,
       ]}
+      testID={testID}
     />
   );
 };
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: COLORS.neutralLight,
+    // Styles applied dynamically
   },
 });
 
@@ -63,7 +66,8 @@ Skeleton.propTypes = {
   width: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   height: PropTypes.number,
   borderRadius: PropTypes.number,
-  style: PropTypes.object,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  testID: PropTypes.string,
 };
 
 export default Skeleton;

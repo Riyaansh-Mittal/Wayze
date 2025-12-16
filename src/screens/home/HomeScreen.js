@@ -1,6 +1,7 @@
 /**
  * Home Dashboard Screen
  * Main screen with segmented control for Find Owner / My Vehicles / Activity
+ * FULLY THEME-AWARE
  */
 
 import React, { useState } from 'react';
@@ -14,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVehicles } from '../../contexts/VehicleContext';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import AppBar from '../../components/navigation/AppBar';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import Card from '../../components/common/Card/Card';
@@ -26,6 +27,8 @@ const SEGMENTS = {
 };
 
 const HomeScreen = ({ navigation }) => {
+  const { t, theme } = useTheme();
+  const { colors, spacing, layout } = theme;
   const { user } = useAuth();
   const { vehicles } = useVehicles();
 
@@ -34,9 +37,9 @@ const HomeScreen = ({ navigation }) => {
   // Get greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) {return 'Good morning';}
-    if (hour < 18) {return 'Good afternoon';}
-    return 'Good evening';
+    if (hour < 12) {return t?.('home.greeting') || 'Good morning';}
+    if (hour < 18) {return t?.('home.greetingAfternoon') || 'Good afternoon';}
+    return t?.('home.greetingEvening') || 'Good evening';
   };
 
   const userName = user?.fullName?.split(' ')[0] || 'User';
@@ -61,11 +64,16 @@ const HomeScreen = ({ navigation }) => {
 
   // Render segmented control
   const renderSegmentedControl = () => (
-    <View style={styles.segmentedControl}>
+    <View style={[styles.segmentedControl, {
+      backgroundColor: colors.neutralLight,
+      padding: 4,
+      marginBottom: spacing.base,
+    }]}>
       <TouchableOpacity
         style={[
           styles.segment,
-          activeSegment === SEGMENTS.FIND_OWNER && styles.segmentActive,
+          { paddingVertical: spacing.sm },
+          activeSegment === SEGMENTS.FIND_OWNER && { backgroundColor: colors.primary },
         ]}
         onPress={() => setActiveSegment(SEGMENTS.FIND_OWNER)}
         activeOpacity={0.7}
@@ -73,17 +81,20 @@ const HomeScreen = ({ navigation }) => {
         <Text
           style={[
             styles.segmentText,
-            activeSegment === SEGMENTS.FIND_OWNER && styles.segmentTextActive,
+            { 
+              color: activeSegment === SEGMENTS.FIND_OWNER ? colors.white : colors.textSecondary,
+            }
           ]}
         >
-          Find owner
+          {t?.('home.tabs.findOwner') || 'Find owner'}
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[
           styles.segment,
-          activeSegment === SEGMENTS.MY_VEHICLES && styles.segmentActive,
+          { paddingVertical: spacing.sm },
+          activeSegment === SEGMENTS.MY_VEHICLES && { backgroundColor: colors.primary },
         ]}
         onPress={() => setActiveSegment(SEGMENTS.MY_VEHICLES)}
         activeOpacity={0.7}
@@ -91,17 +102,20 @@ const HomeScreen = ({ navigation }) => {
         <Text
           style={[
             styles.segmentText,
-            activeSegment === SEGMENTS.MY_VEHICLES && styles.segmentTextActive,
+            { 
+              color: activeSegment === SEGMENTS.MY_VEHICLES ? colors.white : colors.textSecondary,
+            }
           ]}
         >
-          My vehicles
+          {t?.('home.tabs.myVehicles') || 'My vehicles'}
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[
           styles.segment,
-          activeSegment === SEGMENTS.ACTIVITY && styles.segmentActive,
+          { paddingVertical: spacing.sm },
+          activeSegment === SEGMENTS.ACTIVITY && { backgroundColor: colors.primary },
         ]}
         onPress={() => setActiveSegment(SEGMENTS.ACTIVITY)}
         activeOpacity={0.7}
@@ -109,10 +123,12 @@ const HomeScreen = ({ navigation }) => {
         <Text
           style={[
             styles.segmentText,
-            activeSegment === SEGMENTS.ACTIVITY && styles.segmentTextActive,
+            { 
+              color: activeSegment === SEGMENTS.ACTIVITY ? colors.white : colors.textSecondary,
+            }
           ]}
         >
-          Activity
+          {t?.('home.tabs.activity') || 'Activity'}
         </Text>
       </TouchableOpacity>
     </View>
@@ -121,21 +137,32 @@ const HomeScreen = ({ navigation }) => {
   // Render Find Owner card
   const renderFindOwnerCard = () => (
     <Card>
-      <Text style={styles.cardTitle}>Find vehicle owner</Text>
-      <Text style={styles.cardBody}>
-        Search by plate and contact the owner if needed
+      <Text style={[styles.cardTitle, {
+        color: colors.textPrimary,
+        marginBottom: spacing.sm,
+      }]}>
+        {t?.('home.findOwner.title') || 'Find vehicle owner'}
+      </Text>
+      <Text style={[styles.cardBody, {
+        color: colors.textSecondary,
+        marginBottom: spacing.base,
+      }]}>
+        {t?.('home.findOwner.body') || 'Search by plate and contact the owner if needed'}
       </Text>
 
       <PrimaryButton
-        title="Start search"
+        title={t?.('home.findOwner.body') || 'Start search'}
         onPress={handleFindOwner}
         fullWidth
-        icon={<Text style={styles.buttonIcon}>🔍</Text>}
-        style={styles.primaryButton}
+        icon={<Text style={{ color: colors.white, fontSize: 20 }}>🔍</Text>}
+        style={{ marginTop: spacing.sm }}
       />
 
-      <Text style={styles.cardFooter}>
-        Works even if vehicle owner is not in your contacts
+      <Text style={[styles.cardFooter, {
+        color: colors.textSecondary,
+        marginTop: spacing.sm,
+      }]}>
+        {t?.('home.findOwner.helper') || 'Works even if vehicle owner is not in your contacts'}
       </Text>
     </Card>
   );
@@ -143,37 +170,50 @@ const HomeScreen = ({ navigation }) => {
   // Render My Vehicles card
   const renderMyVehiclesCard = () => (
     <Card>
-      <Text style={styles.cardTitle}>My vehicles</Text>
-      <Text style={styles.cardBody}>
+      <Text style={[styles.cardTitle, {
+        color: colors.textPrimary,
+        marginBottom: spacing.sm,
+      }]}>
+        {t?.('home.myVehicles.title') || 'My vehicles'}
+      </Text>
+      <Text style={[styles.cardBody, {
+        color: colors.textSecondary,
+        marginBottom: spacing.base,
+      }]}>
         {hasVehicles
-          ? 'View and manage the vehicles linked to your profile'
-          : "You haven't added any vehicles yet"}
+          ? (t?.('home.myVehicles.body') || 'View and manage the vehicles linked to your profile')
+          : (t?.('home.noVehicles.bodyEmpty') || "You haven't added any vehicles yet")}
       </Text>
 
       {hasVehicles ? (
         <>
           <PrimaryButton
-            title="Open my vehicles"
+            title={t?.('home.myVehicles.button') || 'Open my vehicles'}
             onPress={handleMyVehicles}
             fullWidth
-            icon={<Text style={styles.buttonIcon}>🚗</Text>}
-            style={styles.primaryButton}
+            icon={<Text style={{ color: colors.white, fontSize: 20 }}>🚗</Text>}
+            style={{ marginTop: spacing.sm }}
           />
 
           <TouchableOpacity
-            style={styles.secondaryAction}
+            style={[styles.secondaryAction, { 
+              paddingVertical: spacing.sm,
+              marginTop: spacing.sm,
+            }]}
             onPress={handleAddVehicle}
           >
-            <Text style={styles.secondaryActionText}>Add new vehicle</Text>
+            <Text style={[styles.secondaryActionText, { color: colors.primary }]}>
+              {t?.('home.myVehicles.addButton') || 'Add new vehicle'}
+            </Text>
           </TouchableOpacity>
         </>
       ) : (
         <PrimaryButton
-          title="Add your first vehicle"
+          title={t?.('home.myVehicles.buttonEmpty') || 'Add your first vehicle'}
           onPress={handleAddVehicle}
           fullWidth
-          icon={<Text style={styles.buttonIcon}>✚</Text>}
-          style={styles.primaryButton}
+          icon={<Text style={{ color: colors.white, fontSize: 20 }}>✚</Text>}
+          style={{ marginTop: spacing.sm }}
         />
       )}
     </Card>
@@ -182,21 +222,32 @@ const HomeScreen = ({ navigation }) => {
   // Render Activity card
   const renderActivityCard = () => (
     <Card>
-      <Text style={styles.cardTitle}>Recent activity</Text>
-      <Text style={styles.cardBody}>
-        See recent searches and contact requests related to your vehicles
+      <Text style={[styles.cardTitle, {
+        color: colors.textPrimary,
+        marginBottom: spacing.sm,
+      }]}>
+        {t?.('home.activity.title') || 'Recent activity'}
+      </Text>
+      <Text style={[styles.cardBody, {
+        color: colors.textSecondary,
+        marginBottom: spacing.base,
+      }]}>
+        {t?.('home.activity.body') || 'See recent searches and contact requests related to your vehicles'}
       </Text>
 
       <PrimaryButton
-        title="View activity"
+        title={t?.('home.activity.button') || 'View activity'}
         onPress={handleActivity}
         fullWidth
-        icon={<Text style={styles.buttonIcon}>📊</Text>}
-        style={styles.primaryButton}
+        icon={<Text style={{ color: colors.white, fontSize: 20 }}>📊</Text>}
+        style={{ marginTop: spacing.sm }}
       />
 
-      <Text style={styles.cardFooter}>
-        Only you can see this activity
+      <Text style={[styles.cardFooter, {
+        color: colors.textSecondary,
+        marginTop: spacing.sm,
+      }]}>
+        {t?.('home.activity.helper') || 'Only you can see this activity'}
       </Text>
     </Card>
   );
@@ -216,25 +267,31 @@ const HomeScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <AppBar
-        title="QR Parking"
-        showNotification
-        onNotificationPress={() => navigation.navigate('Profile', { screen: 'Notifications' })}
+        title={t?.('common.appName') || 'QR Parking'}
+        rightIcon={<Text style={{ fontSize: 24 }}>🔔</Text>}
+        onRightPress={() => navigation.navigate('Profile', { screen: 'Notifications' })}
       />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, {
+          padding: layout.screenPadding,
+          paddingBottom: spacing.xxxl,
+        }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Greeting Section */}
-        <View style={styles.greetingSection}>
-          <Text style={styles.greeting}>
+        <View style={[styles.greetingSection, { marginBottom: spacing.xl }]}>
+          <Text style={[styles.greeting, {
+            color: colors.textPrimary,
+            marginBottom: spacing.xs,
+          }]}>
             {getGreeting()}, {userName}
           </Text>
-          <Text style={styles.subGreeting}>
-            What do you want to do today?
+          <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>
+            {t?.('home.subtitle') || 'What do you want to do today?'}
           </Text>
         </View>
 
@@ -242,7 +299,7 @@ const HomeScreen = ({ navigation }) => {
         {renderSegmentedControl()}
 
         {/* Active Content */}
-        <View style={styles.contentSection}>
+        <View style={[styles.contentSection, { marginTop: spacing.base }]}>
           {renderActiveContent()}
         </View>
       </ScrollView>
@@ -253,83 +310,55 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: LAYOUT.screenPadding,
-    paddingBottom: SPACING.xxxl,
+    // Styles applied dynamically
   },
   greetingSection: {
-    marginBottom: SPACING.xl,
+    // Styles applied dynamically
   },
   greeting: {
-    ...TYPOGRAPHY.h1,
-    marginBottom: SPACING.xs,
+    fontSize: 28,
+    fontWeight: '700',
   },
   subGreeting: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    fontSize: 15,
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: COLORS.neutralBg,
     borderRadius: 8,
-    padding: 4,
-    marginBottom: SPACING.base,
   },
   segment: {
     flex: 1,
-    paddingVertical: SPACING.sm,
     alignItems: 'center',
     borderRadius: 6,
   },
-  segmentActive: {
-    backgroundColor: COLORS.primary,
-  },
   segmentText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    fontSize: 15,
     fontWeight: '500',
   },
-  segmentTextActive: {
-    color: COLORS.white,
-  },
   contentSection: {
-    marginTop: SPACING.base,
+    // Styles applied dynamically
   },
   cardTitle: {
-    ...TYPOGRAPHY.h2,
-    marginBottom: SPACING.sm,
+    fontSize: 20,
+    fontWeight: '600',
   },
   cardBody: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.base,
-  },
-  primaryButton: {
-    marginTop: SPACING.sm,
-  },
-  buttonIcon: {
-    color: COLORS.white,
-    fontSize: 20,
+    fontSize: 15,
   },
   cardFooter: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.sm,
+    fontSize: 13,
     textAlign: 'center',
   },
   secondaryAction: {
-    paddingVertical: SPACING.sm,
     alignItems: 'center',
-    marginTop: SPACING.sm,
   },
   secondaryActionText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.primary,
+    fontSize: 15,
     fontWeight: '500',
   },
 });

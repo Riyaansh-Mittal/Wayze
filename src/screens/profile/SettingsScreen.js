@@ -22,6 +22,7 @@ import {useToast} from '../../components/common/Toast/ToastProvider';
 import {LANGUAGES} from '../../config/constants';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
+import { InfoIcon } from '../../assets/icons';
 
 const SettingsScreen = ({navigation}) => {
   const {user, updateUserPreferences} = useAuth();
@@ -190,7 +191,7 @@ const SettingsScreen = ({navigation}) => {
             />
             <Divider color={colors.neutralBorder} />
             <MenuItem
-              icon="ℹ️"
+              icon={<InfoIcon width={15} height={15} fill={colors.primary}/>}
               label={t('profile.settings.privacy.dataPolicy')}
               onPress={() => showSuccess(t('common.comingSoon'))}
               theme={theme}

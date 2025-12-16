@@ -1,6 +1,7 @@
 /**
  * Center Modal Component
  * Modal that appears in center of screen
+ * FULLY THEME-AWARE
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -15,14 +16,7 @@ import {
   ScrollView,
 } from 'react-native';
 import PropTypes from 'prop-types';
-import {
-  COLORS,
-  SPACING,
-  RADIUS,
-  SHADOWS,
-  TYPOGRAPHY,
-  ANIMATIONS,
-} from '../../../config/theme';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -35,6 +29,9 @@ const CenterModal = ({
   closeOnBackdropPress = true,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const { colors, spacing, radius, shadows, animations } = theme;
+
   const scale = useRef(new Animated.Value(0.3)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -50,7 +47,7 @@ const CenterModal = ({
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: ANIMATIONS.modal,
+          duration: animations.modal,
           useNativeDriver: true,
         }),
       ]).start();
@@ -59,17 +56,17 @@ const CenterModal = ({
       Animated.parallel([
         Animated.timing(scale, {
           toValue: 0.3,
-          duration: ANIMATIONS.modal,
+          duration: animations.modal,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 0,
-          duration: ANIMATIONS.modal,
+          duration: animations.modal,
           useNativeDriver: true,
         }),
       ]).start();
     }
-  }, [visible, opacity, scale]);
+  }, [visible, opacity, scale, animations.modal]);
 
   const handleBackdropPress = () => {
     if (closeOnBackdropPress) {
@@ -83,21 +80,33 @@ const CenterModal = ({
       transparent
       animationType="none"
       onRequestClose={onClose}
-      statusBarTranslucent
       testID={testID}
     >
       <View style={styles.container}>
         {/* Backdrop */}
-        <TouchableWithoutFeedback onPress={handleBackdropPress}>
-          <Animated.View style={[styles.backdrop, { opacity }]} />
-        </TouchableWithoutFeedback>
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              backgroundColor: colors.overlay,
+              opacity,
+            },
+          ]}
+        >
+          <TouchableWithoutFeedback onPress={handleBackdropPress}>
+            <View style={{ flex: 1 }} />
+          </TouchableWithoutFeedback>
+        </Animated.View>
 
         {/* Modal Content */}
         <Animated.View
           style={[
             styles.modal,
             {
+              backgroundColor: colors.white,
+              borderRadius: radius.xlarge,
               maxWidth,
+              ...shadows.modal,
               transform: [{ scale }],
               opacity,
             },
@@ -105,17 +114,22 @@ const CenterModal = ({
         >
           {/* Title */}
           {title && (
-            <View style={styles.header}>
-              <Text style={styles.title}>{title}</Text>
+            <View style={[styles.header, {
+              paddingHorizontal: spacing.lg,
+              paddingTop: spacing.lg,
+              paddingBottom: spacing.md,
+            }]}>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>
+                {title}
+              </Text>
             </View>
           )}
 
           {/* Content */}
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
+          <ScrollView style={[styles.content, {
+            paddingHorizontal: spacing.lg,
+            paddingBottom: spacing.lg,
+          }]}>
             {children}
           </ScrollView>
         </Animated.View>
@@ -130,29 +144,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.overlay,
-  },
   modal: {
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.xlarge,
-    ...SHADOWS.modal,
     maxHeight: '80%',
     width: '100%',
   },
   header: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
+    // Styles applied dynamically
   },
   title: {
-    ...TYPOGRAPHY.h2,
+    fontSize: 20,
+    fontWeight: '600',
     textAlign: 'center',
   },
   content: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.lg,
+    // Styles applied dynamically
   },
 });
 

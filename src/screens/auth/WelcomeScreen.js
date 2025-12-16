@@ -1,26 +1,22 @@
 /**
  * Welcome Screen
  * Google Sign-In entry point
+ * FULLY THEME-AWARE - MATCHES DESIGN
  */
 
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Linking,
-  ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../../hooks';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
-import { EXTERNAL_URLS } from '../../config/constants';
-import PrimaryButton from '../../components/common/Button/PrimaryButton';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, Linking} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useAuth} from '../../hooks';
+import {useTheme} from '../../contexts/ThemeContext';
+import {EXTERNAL_URLS} from '../../config/constants';
 import FullScreenLoader from '../../components/common/Loading/FullScreenLoader';
+import { GoogleIcon } from '../../assets/icons';
 
-const WelcomeScreen = ({ navigation }) => {
-  const { socialLogin } = useAuth();
+const WelcomeScreen = ({navigation}) => {
+  const {t, theme} = useTheme();
+  const {colors, spacing} = theme;
+  const {socialLogin} = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
@@ -28,7 +24,6 @@ const WelcomeScreen = ({ navigation }) => {
 
     try {
       // TODO: Integrate with actual Google Sign-In
-      // For now, use mock data
       const mockGoogleUser = {
         firstName: 'Test',
         lastName: 'User',
@@ -43,12 +38,9 @@ const WelcomeScreen = ({ navigation }) => {
       const result = await socialLogin(mockGoogleUser);
 
       if (result.success) {
-        // Check if first time user
         if (result.isFirstTime) {
-          // New user - go to referral entry
           navigation.replace('ReferralEntry');
         } else {
-          // Returning user - go to main app
           navigation.replace('Main');
         }
       }
@@ -68,169 +60,181 @@ const WelcomeScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.logo}>🚗</Text>
-          <Text style={styles.appName}>QR Parking</Text>
-          <Text style={styles.tagline}>Find vehicle owners instantly</Text>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.background}]}
+      edges={['top', 'bottom']}>
+      <View style={styles.content}>
+        {/* Logo Section */}
+        <View style={styles.logoSection}>
+          {/* App Icon */}
+          <View style={[styles.logoCircle, {backgroundColor: colors.primary}]}>
+            <Text style={[styles.logoIcon, {color: colors.white}]}>
+              {t?.('common.appIcon') || '🚗'}
+            </Text>
+          </View>
+
+          {/* App Name */}
+          <Text
+            style={[
+              styles.appName,
+              {
+                color: colors.textPrimary,
+                marginTop: spacing.xl,
+              },
+            ]}>
+            {t?.('common.appName') || 'Welcome to QR Parking'}
+          </Text>
+
+          {/* Subtitle */}
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color: colors.textSecondary,
+                marginTop: spacing.sm,
+              },
+            ]}>
+            {t?.('auth.welcome.subtitle') ||
+              'Sign in to save your vehicles and be reachable when needed'}
+          </Text>
         </View>
 
-        {/* Features */}
-        <View style={styles.featuresContainer}>
-          <FeatureItem
-            icon="🔍"
-            title="Search Vehicles"
-            description="Find vehicle owners by plate number"
-          />
-          <FeatureItem
-            icon="📱"
-            title="Contact Owners"
-            description="Call or message when you need to"
-          />
-          <FeatureItem
-            icon="🚙"
-            title="Register Your Vehicles"
-            description="Be reachable when someone needs you"
-          />
-          <FeatureItem
-            icon="🎁"
-            title="Earn Free Calls"
-            description="Get rewards for referring friends"
-          />
-        </View>
-
-        {/* Sign In Button */}
-        <View style={styles.signInContainer}>
-          <PrimaryButton
-            title="Continue with Google"
+        {/* Sign In Section */}
+        <View style={styles.signInSection}>
+          {/* Google Sign In Button */}
+          <TouchableOpacity
+            style={[
+              styles.googleButton,
+              {
+                backgroundColor: colors.white,
+                borderColor: colors.border,
+              },
+            ]}
             onPress={handleGoogleSignIn}
-            fullWidth
-            icon={<Text style={styles.googleIcon}>G</Text>}
-          />
+            activeOpacity={0.7}>
+            <View style={styles.googleContent}>
+              {/* Google Icon - Replace with actual SVG */}
+              <View style={styles.googleIconContainer}>
+                <GoogleIcon width={20} height={20}/>
+              </View>
+              <Text style={[styles.googleText, {color: colors.textPrimary}]}>
+                {t?.('auth.welcome.googleButton') || 'Continue with Google'}
+              </Text>
+            </View>
+          </TouchableOpacity>
 
           {/* Legal Text */}
-          <View style={styles.legalContainer}>
-            <Text style={styles.legalText}>
-              By continuing, you agree to our{' '}
-              <Text style={styles.legalLink} onPress={openTerms}>
-                Terms
-              </Text>{' '}
-              and{' '}
-              <Text style={styles.legalLink} onPress={openPrivacy}>
-                Privacy Policy
+          <View style={[styles.legalContainer, {marginTop: spacing.md}]}>
+            <Text style={[styles.legalText, {color: colors.textSecondary}]}>
+              {t?.('auth.welcome.legalText') ||
+                'By continuing, you agree to our'}{' '}
+              <Text
+                style={[styles.legalLink, {color: colors.primary}]}
+                onPress={openTerms}>
+                {t?.('auth.welcome.terms') || 'Terms'}
+              </Text>
+              {'\n'}
+              {t?.('auth.welcome.and') || 'and'}{' '}
+              <Text
+                style={[styles.legalLink, {color: colors.primary}]}
+                onPress={openPrivacy}>
+                {t?.('auth.welcome.privacy') || 'Privacy Policy'}
               </Text>
             </Text>
           </View>
         </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Made with ❤️ in India 🇮🇳</Text>
-        </View>
-      </ScrollView>
+      </View>
 
       {/* Loading Overlay */}
-      <FullScreenLoader visible={isLoading} message="Signing in..." />
+      {isLoading && (
+        <FullScreenLoader message={t?.('auth.signingIn') || 'Signing in...'} />
+      )}
     </SafeAreaView>
   );
 };
 
-const FeatureItem = ({ icon, title, description }) => (
-  <View style={styles.featureItem}>
-    <Text style={styles.featureIcon}>{icon}</Text>
-    <View style={styles.featureText}>
-      <Text style={styles.featureTitle}>{title}</Text>
-      <Text style={styles.featureDescription}>{description}</Text>
-    </View>
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: LAYOUT.screenPadding,
+  content: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 80,
+    paddingBottom: 40,
   },
-  header: {
+  logoSection: {
     alignItems: 'center',
-    paddingTop: SPACING.xxxl,
-    paddingBottom: SPACING.xl,
   },
-  logo: {
-    fontSize: 80,
-    marginBottom: SPACING.base,
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  logoIcon: {
+    fontSize: 40,
   },
   appName: {
-    ...TYPOGRAPHY.h1,
-    fontSize: 32,
-    marginBottom: SPACING.xs,
-  },
-  tagline: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    fontSize: 24,
+    fontWeight: '700',
     textAlign: 'center',
   },
-  featuresContainer: {
-    paddingVertical: SPACING.xl,
+  subtitle: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 16,
   },
-  featureItem: {
+  signInSection: {
+    width: '100%',
+  },
+  googleButton: {
+    width: '100%',
+    height: 52,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  googleContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
   },
-  featureIcon: {
-    fontSize: 40,
-    marginRight: SPACING.base,
+  googleIconContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  featureText: {
-    flex: 1,
-  },
-  featureTitle: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.xs,
-  },
-  featureDescription: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  signInContainer: {
-    marginTop: 'auto',
-    paddingTop: SPACING.xl,
-    paddingBottom: SPACING.lg,
-  },
-  googleIcon: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-  legalContainer: {
-    marginTop: SPACING.base,
-    paddingHorizontal: SPACING.base,
-  },
-  legalText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  legalLink: {
-    color: COLORS.primary,
+  googleText: {
+    fontSize: 16,
     fontWeight: '600',
   },
-  footer: {
+  legalContainer: {
     alignItems: 'center',
-    paddingVertical: SPACING.base,
   },
-  footerText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+  legalText: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  legalLink: {
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
 

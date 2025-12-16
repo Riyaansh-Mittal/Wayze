@@ -1,6 +1,7 @@
 /**
  * Bottom Sheet Modal Component
  * Slides up from bottom of screen
+ * FULLY THEME-AWARE
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -16,14 +17,7 @@ import {
   PanResponder,
 } from 'react-native';
 import PropTypes from 'prop-types';
-import {
-  COLORS,
-  SPACING,
-  RADIUS,
-  SHADOWS,
-  TYPOGRAPHY,
-  ANIMATIONS,
-} from '../../../config/theme';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -37,6 +31,9 @@ const BottomSheet = ({
   showHandle = true,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const { colors, spacing, radius, shadows, animations } = theme;
+
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -46,12 +43,12 @@ const BottomSheet = ({
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: 0,
-          duration: ANIMATIONS.modal,
+          duration: animations.modal,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: ANIMATIONS.modal,
+          duration: animations.modal,
           useNativeDriver: true,
         }),
       ]).start();
@@ -60,17 +57,17 @@ const BottomSheet = ({
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: SCREEN_HEIGHT,
-          duration: ANIMATIONS.modal,
+          duration: animations.modal,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 0,
-          duration: ANIMATIONS.modal,
+          duration: animations.modal,
           useNativeDriver: true,
         }),
       ]).start();
     }
-  }, [visible, opacity, translateY]);
+  }, [visible, opacity, translateY, animations.modal]);
 
   // Pan responder for swipe down to close
   const panResponder = useRef(
@@ -111,46 +108,70 @@ const BottomSheet = ({
       transparent
       animationType="none"
       onRequestClose={onClose}
-      statusBarTranslucent
       testID={testID}
     >
       <View style={styles.container}>
         {/* Backdrop */}
-        <TouchableWithoutFeedback onPress={handleBackdropPress}>
-          <Animated.View style={[styles.backdrop, { opacity }]} />
-        </TouchableWithoutFeedback>
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              backgroundColor: colors.overlay,
+              opacity,
+            },
+          ]}
+        >
+          <TouchableWithoutFeedback onPress={handleBackdropPress}>
+            <View style={{ flex: 1 }} />
+          </TouchableWithoutFeedback>
+        </Animated.View>
 
         {/* Bottom Sheet */}
         <Animated.View
           style={[
             styles.sheet,
             {
+              backgroundColor: colors.white,
+              borderTopLeftRadius: radius.xlarge,
+              borderTopRightRadius: radius.xlarge,
               maxHeight,
+              ...shadows.bottomSheet,
               transform: [{ translateY }],
-            },
+            }
           ]}
-          {...(showHandle ? panResponder.panHandlers : {})}
         >
           {/* Handle */}
           {showHandle && (
-            <View style={styles.handleContainer}>
-              <View style={styles.handle} />
+            <View
+              {...panResponder.panHandlers}
+              style={[styles.handleContainer, {
+                paddingTop: spacing.md,
+                paddingBottom: spacing.sm,
+              }]}
+            >
+              <View style={[styles.handle, {
+                backgroundColor: colors.neutralBorder,
+                borderRadius: radius.round,
+              }]} />
             </View>
           )}
 
           {/* Title */}
           {title && (
-            <View style={styles.header}>
-              <Text style={styles.title}>{title}</Text>
+            <View style={[styles.header, {
+              paddingHorizontal: spacing.lg,
+              paddingBottom: spacing.base,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.neutralBorder,
+            }]}>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>
+                {title}
+              </Text>
             </View>
           )}
 
           {/* Content */}
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
+          <ScrollView style={[styles.content, { padding: spacing.lg }]}>
             {children}
           </ScrollView>
         </Animated.View>
@@ -164,38 +185,25 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.overlay,
-  },
   sheet: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: RADIUS.xlarge,
-    borderTopRightRadius: RADIUS.xlarge,
-    ...SHADOWS.bottomSheet,
+    // Styles applied dynamically
   },
   handleContainer: {
     alignItems: 'center',
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.sm,
   },
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: COLORS.neutralBorder,
-    borderRadius: RADIUS.round,
   },
   header: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.base,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.neutralBorder,
+    // Styles applied dynamically
   },
   title: {
-    ...TYPOGRAPHY.h2,
+    fontSize: 20,
+    fontWeight: '600',
   },
   content: {
-    padding: SPACING.lg,
+    // Styles applied dynamically
   },
 });
 

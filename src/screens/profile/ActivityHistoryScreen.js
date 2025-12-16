@@ -22,6 +22,7 @@ import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
+import { CallIcon, CarIcon, EditIcon, SearchIcon, TrashIcon } from '../../assets/icons';
 
 const FILTER_TYPES = {
   ALL: 'all',
@@ -70,9 +71,9 @@ const ActivityHistoryScreen = ({ navigation }) => {
       />
 
       {/* Compact Filter Chips */}
-      <View style={[styles.filtersContainer, { 
-        backgroundColor: colors.white, 
-        borderBottomColor: colors.neutralBorder 
+      <View style={[styles.filtersContainer, {
+        backgroundColor: colors.white,
+        borderBottomColor: colors.neutralBorder,
       }]}>
         <ScrollView
           horizontal
@@ -202,15 +203,15 @@ const TimelineItem = ({ item, isLast, t, theme }) => {
   const getActivityIcon = (type) => {
     switch (type) {
       case ACTIVITY_TYPES.VEHICLE_ADDED:
-        return { emoji: '🚗', bg: '#E8F5E9' };
+        return { emoji: <CarIcon width={30} height={30} fill={colors.primary}/> };
       case ACTIVITY_TYPES.VEHICLE_EDITED:
-        return { emoji: '✏️', bg: '#FFF3E0' };
+        return { emoji: <EditIcon width={30} height={30} fill={colors.warning}/>};
       case ACTIVITY_TYPES.VEHICLE_DELETED:
-        return { emoji: '🗑️', bg: '#FFEBEE' };
+        return { emoji: <TrashIcon width={30} height={30} fill={colors.error}/>};
       case ACTIVITY_TYPES.VEHICLE_SEARCHED:
-        return { emoji: '🔍', bg: '#E3F2FD' };
+        return { emoji: <SearchIcon width={30} height={30} fill={colors.primary}/> };
       case ACTIVITY_TYPES.OWNER_CONTACTED:
-        return { emoji: '📞', bg: '#F3E5F5' };
+        return { emoji: <CallIcon width={30} height={30} fill={colors.primary}/> };
       default:
         return { emoji: '•', bg: colors.neutralLight };
     }

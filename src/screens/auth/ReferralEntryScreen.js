@@ -1,9 +1,10 @@
 /**
  * Referral Entry Screen
  * Optional referral code entry for new users
+ * FULLY THEME-AWARE - MATCHES DESIGN
  */
 
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -11,33 +12,43 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TextInput,
+  TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useReferral, useAuth } from '../../hooks';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
-import { REFERRAL } from '../../config/constants';
-import { validateReferralCode } from '../../utils/validators';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useReferral, useAuth} from '../../hooks';
+import {useTheme} from '../../contexts/ThemeContext';
+import {REFERRAL} from '../../config/constants';
+import {validateReferralCode} from '../../utils/validators';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
-import SecondaryButton from '../../components/common/Button/SecondaryButton';
-import TextInput from '../../components/common/Input/TextInput';
-import Card from '../../components/common/Card/Card';
 
-const ReferralEntryScreen = ({ navigation }) => {
-  const { validateReferralCode: validateCode, applyReferralCode, isLoading } = useReferral();
-  const { completeOnboarding } = useAuth();
+const ReferralEntryScreen = ({navigation}) => {
+  const {t, theme} = useTheme();
+  const {colors, spacing} = theme;
+  const {
+    validateReferralCode: validateCode,
+    applyReferralCode,
+    isLoading,
+  } = useReferral();
+  const {completeOnboarding} = useAuth();
 
   const [referralCode, setReferralCode] = useState('');
   const [error, setError] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [validatedCode, setValidatedCode] = useState(null);
 
-  const handleCodeChange = (text) => {
+  const handleCodeChange = text => {
     setReferralCode(text.toUpperCase());
     setError('');
     setValidatedCode(null);
   };
 
-  const handleValidate = async () => {
+  const handleApply = async () => {
+    if (!referralCode.trim()) {
+      handleSkip();
+      return;
+    }
+
     // Validate format first
     const validation = validateReferralCode(referralCode);
     if (!validation.valid) {
@@ -52,131 +63,196 @@ const ReferralEntryScreen = ({ navigation }) => {
       const result = await validateCode(referralCode);
 
       if (result.success && result.data.valid) {
-        setValidatedCode(result.data);
-        setError('');
+        // Apply the code
+        const applyResult = await applyReferralCode(referralCode);
+
+        if (applyResult.success) {
+          await completeOnboarding();
+          navigation.replace('Main');
+        }
       } else {
-        setError('Invalid referral code');
+        setError(t?.('auth.referral.invalidCode') || 'Invalid referral code');
       }
     } catch (err) {
-      setError(err.message || 'Failed to validate code');
+      setError(
+        err.message ||
+          t?.('auth.referral.validateError') ||
+          'Failed to validate code',
+      );
     } finally {
       setIsValidating(false);
     }
   };
 
-  const handleApply = async () => {
-    if (!validatedCode) {return;}
-
-    const result = await applyReferralCode(referralCode);
-
-    if (result.success) {
-      // Mark onboarding as complete
-      await completeOnboarding();
-      // Navigate to main app
-      navigation.replace('Main');
-    }
-  };
-
   const handleSkip = async () => {
-    // Mark onboarding as complete
     await completeOnboarding();
-    // Navigate to main app
     navigation.replace('Main');
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.background}]}
+      edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.icon}>🎁</Text>
-            <Text style={styles.title}>Got a referral code?</Text>
-            <Text style={styles.subtitle}>
-              Enter code and get bonus calls for free!
-            </Text>
-          </View>
-
-          {/* Reward Card */}
-          <Card style={styles.rewardCard}>
-            <Text style={styles.rewardIcon}>🎉</Text>
-            <Text style={styles.rewardText}>
-              Get {REFERRAL.REWARD_AMOUNT} free calls
-            </Text>
-            <Text style={styles.rewardSubtext}>
-              Use them to contact vehicle owners
-            </Text>
-          </Card>
-
-          {/* Input */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              label="Referral Code (Optional)"
-              value={referralCode}
-              onChangeText={handleCodeChange}
-              placeholder="Enter code"
-              autoCapitalize="characters"
-              maxLength={8}
-              error={error}
-              helperText={!error ? 'Get this code from friends who use the app' : undefined}
-              disabled={isLoading || isValidating}
+          keyboardShouldPersistTaps="handled">
+          {/* Decorative Border Frame */}
+          <View style={[styles.borderFrame, {borderColor: colors.primary}]}>
+            {/* Corner Decorations */}
+            <View
+              style={[styles.cornerTopLeft, {borderColor: colors.primary}]}
+            />
+            <View
+              style={[styles.cornerTopRight, {borderColor: colors.primary}]}
+            />
+            <View
+              style={[styles.cornerBottomLeft, {borderColor: colors.primary}]}
+            />
+            <View
+              style={[styles.cornerBottomRight, {borderColor: colors.primary}]}
             />
 
-            {/* Validated Code Display */}
-            {validatedCode && (
-              <Card style={styles.validatedCard}>
-                <Text style={styles.validatedIcon}>✅</Text>
-                <Text style={styles.validatedText}>
-                  Valid code from {validatedCode.referrerName}
-                </Text>
-                <Text style={styles.validatedReward}>
-                  You'll get {validatedCode.reward} free calls
-                </Text>
-              </Card>
-            )}
-          </View>
+            {/* Content */}
+            <View style={styles.content}>
+              {/* Icon */}
+              <View style={[styles.iconContainer, {marginBottom: spacing.lg}]}>
+                <Text style={styles.icon}>🎁</Text>
+              </View>
 
-          {/* Buttons */}
-          <View style={styles.buttonContainer}>
-            {!validatedCode ? (
+              {/* Title */}
+              <Text
+                style={[
+                  styles.title,
+                  {
+                    color: colors.textPrimary,
+                    marginBottom: spacing.sm,
+                  },
+                ]}>
+                {t?.('auth.referral.title') || 'Got a referral code?'}
+              </Text>
+
+              {/* Subtitle */}
+              <Text
+                style={[
+                  styles.subtitle,
+                  {
+                    color: colors.textSecondary,
+                    marginBottom: spacing.xl,
+                  },
+                ]}>
+                {t?.('auth.referral.subtitle') ||
+                  'Enter code and get bonus calls for free!'}
+              </Text>
+
+              {/* Reward Badge */}
+              <View
+                style={[
+                  styles.rewardBadge,
+                  {
+                    backgroundColor: colors.warningLight,
+                    marginBottom: spacing.xl,
+                  },
+                ]}>
+                <Text style={styles.rewardIcon}>⚡</Text>
+                <Text style={[styles.rewardText, {color: colors.textPrimary}]}>
+                  {t?.('auth.referral.rewardShort') ||
+                    `Get ${REFERRAL.REWARD_AMOUNT} free calls`}
+                </Text>
+              </View>
+
+              {/* Input */}
+              <View style={[styles.inputContainer, {marginBottom: spacing.sm}]}>
+                <Text
+                  style={[
+                    styles.inputLabel,
+                    {
+                      color: colors.textSecondary,
+                      marginBottom: spacing.sm,
+                    },
+                  ]}>
+                  {t?.('auth.referral.codeLabel') || 'Referral Code (Optional)'}
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.white,
+                      borderColor: error ? colors.error : colors.border,
+                      color: colors.textPrimary,
+                    },
+                  ]}
+                  value={referralCode}
+                  onChangeText={handleCodeChange}
+                  placeholder={
+                    t?.('auth.referral.codePlaceholder') || 'ENTER CODE'
+                  }
+                  placeholderTextColor={colors.textDisabled}
+                  autoCapitalize="characters"
+                  maxLength={8}
+                  editable={!isLoading && !isValidating}
+                />
+                {error && (
+                  <Text style={[styles.errorText, {color: colors.error}]}>
+                    {error}
+                  </Text>
+                )}
+              </View>
+
+              {/* Helper Text */}
+              <Text
+                style={[
+                  styles.helperText,
+                  {
+                    color: colors.textSecondary,
+                    marginBottom: spacing.xl,
+                  },
+                ]}>
+                {t?.('auth.referral.codeHelper') ||
+                  'Get this code from friends who use the app'}
+              </Text>
+
+              {/* Apply Button */}
               <PrimaryButton
-                title="Validate Code"
-                onPress={handleValidate}
-                loading={isValidating}
-                disabled={referralCode.length < 6 || isLoading}
-                fullWidth
-              />
-            ) : (
-              <PrimaryButton
-                title="Apply & Continue"
+                title={t?.('auth.referral.applyButton') || 'Apply & Continue'}
                 onPress={handleApply}
-                loading={isLoading}
+                loading={isLoading || isValidating}
                 fullWidth
-                icon={<Text style={{ color: COLORS.white }}>→</Text>}
+                style={{marginBottom: spacing.md}}
               />
-            )}
 
-            <SecondaryButton
-              title="Skip for now"
-              onPress={handleSkip}
-              disabled={isLoading || isValidating}
-              fullWidth
-              style={{ marginTop: SPACING.md }}
-            />
+              {/* Skip Button */}
+              <TouchableOpacity
+                onPress={handleSkip}
+                disabled={isLoading || isValidating}
+                style={styles.skipButton}>
+                <Text style={[styles.skipText, {color: colors.textSecondary}]}>
+                  {t?.('auth.referral.skipButton') || 'Skip for now'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Info */}
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>
-              💡 You can also enter a referral code later from your profile settings
-            </Text>
+          {/* Bottom Progress Indicator */}
+          <View style={[styles.progressContainer, {marginTop: spacing.xl}]}>
+            <View
+              style={[
+                styles.progressBar,
+                {backgroundColor: colors.neutralLight},
+              ]}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    backgroundColor: colors.primary,
+                    width: '50%',
+                  },
+                ]}
+              />
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -187,90 +263,141 @@ const ReferralEntryScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: LAYOUT.screenPadding,
-    paddingTop: SPACING.xl,
+    padding: 16,
+    paddingTop: 40,
   },
-  header: {
+  borderFrame: {
+    flex: 1,
+    borderWidth: 3,
+    borderRadius: 16,
+    padding: 24,
+    position: 'relative',
+  },
+  cornerTopLeft: {
+    position: 'absolute',
+    top: -3,
+    left: -3,
+    width: 20,
+    height: 20,
+    borderTopWidth: 6,
+    borderLeftWidth: 6,
+    borderTopLeftRadius: 16,
+  },
+  cornerTopRight: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    width: 20,
+    height: 20,
+    borderTopWidth: 6,
+    borderRightWidth: 6,
+    borderTopRightRadius: 16,
+  },
+  cornerBottomLeft: {
+    position: 'absolute',
+    bottom: -3,
+    left: -3,
+    width: 20,
+    height: 20,
+    borderBottomWidth: 6,
+    borderLeftWidth: 6,
+    borderBottomLeftRadius: 16,
+  },
+  cornerBottomRight: {
+    position: 'absolute',
+    bottom: -3,
+    right: -3,
+    width: 20,
+    height: 20,
+    borderBottomWidth: 6,
+    borderRightWidth: 6,
+    borderBottomRightRadius: 16,
+  },
+  content: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+  },
+  iconContainer: {
+    alignItems: 'center',
   },
   icon: {
-    fontSize: 60,
-    marginBottom: SPACING.base,
+    fontSize: 64,
   },
   title: {
-    ...TYPOGRAPHY.h1,
-    marginBottom: SPACING.sm,
+    fontSize: 22,
+    fontWeight: '700',
     textAlign: 'center',
   },
   subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    fontSize: 15,
     textAlign: 'center',
+    lineHeight: 22,
   },
-  rewardCard: {
+  rewardBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.lg,
-    backgroundColor: COLORS.successLight,
-    borderColor: COLORS.success,
-    marginBottom: SPACING.xl,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   rewardIcon: {
-    fontSize: 40,
-    marginBottom: SPACING.sm,
+    fontSize: 20,
+    marginRight: 8,
   },
   rewardText: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.success,
-    marginBottom: SPACING.xs,
-  },
-  rewardSubtext: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 15,
+    fontWeight: '600',
   },
   inputContainer: {
-    marginBottom: SPACING.xl,
+    width: '100%',
   },
-  validatedCard: {
-    alignItems: 'center',
-    paddingVertical: SPACING.base,
-    backgroundColor: COLORS.successLight,
-    borderColor: COLORS.success,
-    marginTop: SPACING.base,
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
   },
-  validatedIcon: {
-    fontSize: 30,
-    marginBottom: SPACING.xs,
-  },
-  validatedText: {
-    ...TYPOGRAPHY.bodyBold,
-    color: COLORS.success,
-    marginBottom: SPACING.xs,
-  },
-  validatedReward: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  buttonContainer: {
-    marginBottom: SPACING.xl,
-  },
-  infoContainer: {
-    backgroundColor: COLORS.primaryLight,
-    padding: SPACING.base,
+  input: {
+    width: '100%',
+    height: 50,
+    borderWidth: 1,
     borderRadius: 8,
-    marginBottom: SPACING.xl,
-  },
-  infoText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  helperText: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  skipButton: {
+    paddingVertical: 12,
+  },
+  skipText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  progressContainer: {
+    alignItems: 'center',
+  },
+  progressBar: {
+    width: 120,
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
   },
 });
 

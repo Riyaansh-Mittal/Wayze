@@ -1,6 +1,7 @@
 /**
  * App Bar Component
  * Top navigation bar with title and actions
+ * FULLY THEME-AWARE
  */
 
 import React from 'react';
@@ -14,69 +15,83 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
-import { COLORS, COMPONENTS, TYPOGRAPHY, SPACING } from '../../config/theme';
+import { useTheme } from '../../contexts/ThemeContext';
+import { LeftArrowIcon } from '../../assets/icons';
 
 const AppBar = ({
   title,
+  showBack = false,
+  onBackPress,
   leftIcon,
   onLeftPress,
   rightIcon,
   onRightPress,
-  backgroundColor = COLORS.white,
+  backgroundColor,
   style,
   testID,
 }) => {
+  const { theme, isDarkMode } = useTheme();
+  const { colors, components, spacing } = theme;
   const insets = useSafeAreaInsets();
+
+  const bgColor = backgroundColor || colors.white;
+  const statusBarStyle = isDarkMode() ? 'light-content' : 'dark-content';
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={backgroundColor} />
-      <View
-        style={[
-          styles.container,
-          {
-            paddingTop: insets.top,
-            backgroundColor,
-          },
-          style,
-        ]}
-        testID={testID}
+      <StatusBar
+        barStyle={statusBarStyle}
+        backgroundColor={bgColor}
+      />
+      <View style={[
+        styles.container,
+        { 
+          backgroundColor: bgColor,
+          borderBottomWidth: components.appBar.borderBottomWidth,
+          borderBottomColor: colors.neutralBorder,
+          paddingTop: Platform.OS === 'android' ? 0 : insets.top,
+        },
+        style,
+      ]}
+      testID={testID}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, {
+          height: components.appBar.height,
+          paddingHorizontal: components.appBar.paddingHorizontal,
+        }]}>
           {/* Left Icon/Button */}
-          {leftIcon && (
+          {(showBack || leftIcon || onLeftPress) && (
             <TouchableOpacity
               style={styles.iconButton}
-              onPress={onLeftPress}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel="Back"
+              onPress={onBackPress || onLeftPress}
+              activeOpacity={0.7}
             >
-              {leftIcon}
+              {leftIcon || <Text style={{ fontSize: 24 }}><LeftArrowIcon width={25} height={25}/></Text>}
             </TouchableOpacity>
           )}
-          {!leftIcon && <View style={styles.iconButton} />}
+          {!showBack && !leftIcon && !onLeftPress && <View style={{ width: 48 }} />}
 
           {/* Title */}
-          <View style={styles.titleContainer}>
-            <Text style={styles.title} numberOfLines={1}>
+          <View style={[styles.titleContainer, { paddingHorizontal: spacing.sm }]}>
+            <Text
+              style={[styles.title, { color: colors.textPrimary }]}
+              numberOfLines={1}
+            >
               {title}
             </Text>
           </View>
 
           {/* Right Icon/Button */}
-          {rightIcon && (
+          {(rightIcon || onRightPress) && (
             <TouchableOpacity
               style={styles.iconButton}
               onPress={onRightPress}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel="Action"
+              activeOpacity={0.7}
             >
               {rightIcon}
             </TouchableOpacity>
           )}
-          {!rightIcon && <View style={styles.iconButton} />}
+          {!rightIcon && !onRightPress && <View style={{ width: 48 }} />}
         </View>
       </View>
     </>
@@ -85,14 +100,11 @@ const AppBar = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderBottomWidth: COMPONENTS.appBar.borderBottomWidth,
-    borderBottomColor: COMPONENTS.appBar.borderBottomColor,
+    // Styles applied dynamically
   },
   content: {
-    height: COMPONENTS.appBar.height,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: COMPONENTS.appBar.paddingHorizontal,
   },
   iconButton: {
     width: 48,
@@ -104,21 +116,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
   },
   title: {
-    ...TYPOGRAPHY.h2,
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 
 AppBar.propTypes = {
   title: PropTypes.string.isRequired,
+  showBack: PropTypes.bool,
+  onBackPress: PropTypes.func,
   leftIcon: PropTypes.node,
   onLeftPress: PropTypes.func,
   rightIcon: PropTypes.node,
   onRightPress: PropTypes.func,
   backgroundColor: PropTypes.string,
-  style: PropTypes.object,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   testID: PropTypes.string,
 };
 

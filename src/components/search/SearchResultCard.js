@@ -1,14 +1,18 @@
 /**
  * Search Result Card Component
  * Displays owner info with privacy masking
+ * FULLY THEME-AWARE
  */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import Card from '../common/Card/Card';
 
 const SearchResultCard = ({ vehicle }) => {
+  const { t, theme } = useTheme();
+  const { colors, spacing } = theme;
+
   const getVehicleIcon = () => {
     switch (vehicle.vehicleType) {
       case '2-wheeler':
@@ -32,39 +36,66 @@ const SearchResultCard = ({ vehicle }) => {
   };
 
   return (
-    <Card style={styles.container}>
+    <Card style={{ marginVertical: spacing.md }}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.vehicleIcon}>{getVehicleIcon()}</Text>
+      <View style={[styles.header, { marginBottom: spacing.base }]}>
+        <Text style={[styles.vehicleIcon, { marginRight: spacing.md }]}>
+          {getVehicleIcon()}
+        </Text>
         <View style={styles.headerText}>
-          <Text style={styles.plateNumber}>{vehicle.plateNumber}</Text>
-          <Text style={styles.vehicleType}>
+          <Text style={[styles.plateNumber, {
+            color: colors.textPrimary,
+            marginBottom: spacing.xs,
+          }]}>
+            {vehicle.plateNumber}
+          </Text>
+          <Text style={[styles.vehicleType, { color: colors.textSecondary }]}>
             {vehicle.vehicleType.replace('-', ' ')}
           </Text>
         </View>
-        <View style={styles.verifiedBadge}>
-          <Text style={styles.verifiedIcon}>✓</Text>
+        <View style={[styles.verifiedBadge, { backgroundColor: colors.success }]}>
+          <Text style={[styles.verifiedIcon, { color: colors.white }]}>✓</Text>
         </View>
       </View>
 
       {/* Divider */}
-      <View style={styles.divider} />
+      <View style={[styles.divider, {
+        backgroundColor: colors.neutralBorder,
+        marginVertical: spacing.base,
+      }]} />
 
       {/* Owner Info */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Owner Information</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Name:</Text>
-          <Text style={styles.infoValue}>{vehicle.owner?.name || 'Private'}</Text>
+      <View style={[styles.section, { marginBottom: spacing.base }]}>
+        <Text style={[styles.sectionTitle, {
+          color: colors.textSecondary,
+          marginBottom: spacing.sm,
+        }]}>
+          {t?.('search.ownerInfo') || 'Owner Information'}
+        </Text>
+        <View style={[styles.infoRow, { paddingVertical: spacing.sm }]}>
+          <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+            {t?.('search.name') || 'Name:'}
+          </Text>
+          <Text style={[styles.infoValue, { color: colors.textPrimary }]}>
+            {vehicle.owner?.name || 'Private'}
+          </Text>
         </View>
       </View>
 
       {/* Contact Methods */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Available Contact Methods</Text>
-        <View style={styles.contactMethods}>
+      <View style={[styles.section, { marginBottom: spacing.base }]}>
+        <Text style={[styles.sectionTitle, {
+          color: colors.textSecondary,
+          marginBottom: spacing.sm,
+        }]}>
+          {t?.('search.contactMethods') || 'Available Contact Methods'}
+        </Text>
+        <View style={[styles.contactMethods, { gap: spacing.sm }]}>
           {getContactMethodIcons().map((icon, index) => (
-            <View key={index} style={styles.contactMethodBadge}>
+            <View
+              key={index}
+              style={[styles.contactMethodBadge, { backgroundColor: colors.primaryLight }]}
+            >
               <Text style={styles.contactMethodIcon}>{icon}</Text>
             </View>
           ))}
@@ -72,10 +103,14 @@ const SearchResultCard = ({ vehicle }) => {
       </View>
 
       {/* Info Box */}
-      <View style={styles.infoBox}>
-        <Text style={styles.infoBoxIcon}>🔒</Text>
-        <Text style={styles.infoBoxText}>
-          Full contact details will be shared after confirmation
+      <View style={[styles.infoBox, {
+        backgroundColor: colors.primaryLight,
+        padding: spacing.md,
+        marginTop: spacing.sm,
+      }]}>
+        <Text style={[styles.infoBoxIcon, { marginRight: spacing.sm }]}>🔒</Text>
+        <Text style={[styles.infoBoxText, { color: colors.textSecondary }]}>
+          {t?.('search.privacyNote') || 'Full contact details will be shared after confirmation'}
         </Text>
       </View>
     </Card>
@@ -83,80 +118,66 @@ const SearchResultCard = ({ vehicle }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: SPACING.md,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.base,
   },
   vehicleIcon: {
     fontSize: 48,
-    marginRight: SPACING.md,
   },
   headerText: {
     flex: 1,
   },
   plateNumber: {
-    ...TYPOGRAPHY.h2,
-    marginBottom: SPACING.xs,
+    fontSize: 20,
+    fontWeight: '600',
   },
   vehicleType: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
     textTransform: 'capitalize',
   },
   verifiedBadge: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.success,
     justifyContent: 'center',
     alignItems: 'center',
   },
   verifiedIcon: {
-    color: COLORS.white,
     fontSize: 16,
     fontWeight: '700',
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.neutralBorder,
-    marginVertical: SPACING.base,
   },
   section: {
-    marginBottom: SPACING.base,
+    // Styles applied dynamically
   },
   sectionTitle: {
-    ...TYPOGRAPHY.captionBold,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
+    fontSize: 12,
+    fontWeight: '600',
     textTransform: 'uppercase',
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
   },
   infoLabel: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    fontSize: 15,
   },
   infoValue: {
-    ...TYPOGRAPHY.bodyBold,
+    fontSize: 15,
+    fontWeight: '600',
   },
   contactMethods: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.sm,
   },
   contactMethodBadge: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -166,18 +187,13 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primaryLight,
-    padding: SPACING.md,
     borderRadius: 8,
-    marginTop: SPACING.sm,
   },
   infoBoxIcon: {
     fontSize: 20,
-    marginRight: SPACING.sm,
   },
   infoBoxText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
     flex: 1,
   },
 });

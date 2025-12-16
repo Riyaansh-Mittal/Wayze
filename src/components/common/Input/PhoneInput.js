@@ -1,6 +1,7 @@
 /**
  * Phone Input Component
  * Specialized input for Indian phone numbers with validation
+ * FULLY THEME-AWARE
  */
 
 import React, { useEffect, useState } from 'react';
@@ -9,19 +10,21 @@ import PropTypes from 'prop-types';
 import TextInput from './TextInput';
 import { validatePhoneNumber } from '../../../utils/validators';
 import { formatPhoneNumber } from '../../../utils/formatters';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const PhoneInput = ({
-  label = 'Phone Number',
+  label,
   value,
   onChangeText,
   onValidChange,
-  placeholder = '+91 98765 43210',
+  placeholder,
   error,
-  helperText = 'Enter 10-digit mobile number',
+  helperText,
   disabled = false,
   style,
   testID,
 }) => {
+  const { t } = useTheme();
   const [internalError, setInternalError] = useState(error);
 
   useEffect(() => {
@@ -31,6 +34,7 @@ const PhoneInput = ({
   const handleChange = (text) => {
     // Remove all non-digit characters
     const digits = text.replace(/\D/g, '');
+
     // Limit to 10 digits
     const limitedDigits = digits.slice(0, 10);
     onChangeText(limitedDigits);
@@ -54,21 +58,20 @@ const PhoneInput = ({
   // Format display value
   const displayValue = value ? formatPhoneNumber(value) : '';
 
-  const leftIcon = <Text style={{ fontSize: 16, color: '#616161' }}>📱</Text>;
+  const leftIcon = <Text style={{ fontSize: 20 }}>📱</Text>;
 
   return (
     <TextInput
-      label={label}
+      label={label || t?.('auth.phoneLabel') || 'Phone Number'}
       value={displayValue}
       onChangeText={handleChange}
-      placeholder={placeholder}
+      placeholder={placeholder || '+91 98765 43210'}
       error={internalError}
-      helperText={!internalError ? helperText : undefined}
+      helperText={helperText || 'Enter 10-digit mobile number'}
       disabled={disabled}
       keyboardType="phone-pad"
-      autoCapitalize="none"
-      maxLength={17} // +91 XXXXX XXXXX format
       leftIcon={leftIcon}
+      maxLength={15} // Formatted length
       style={style}
       testID={testID}
     />
@@ -84,7 +87,7 @@ PhoneInput.propTypes = {
   error: PropTypes.string,
   helperText: PropTypes.string,
   disabled: PropTypes.bool,
-  style: PropTypes.object,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   testID: PropTypes.string,
 };
 

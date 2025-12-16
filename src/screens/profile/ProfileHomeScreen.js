@@ -4,7 +4,7 @@
  * FULLY THEME-AWARE
  */
 
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import {
   View,
   Text,
@@ -14,26 +14,38 @@ import {
   Share,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
-import { useAuth } from '../../contexts/AuthContext';
-import { useBalance } from '../../contexts/BalanceContext';
-import { useVehicles } from '../../contexts/VehicleContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useToast } from '../../components/common/Toast/ToastProvider';
+import {useAuth} from '../../contexts/AuthContext';
+import {useBalance} from '../../contexts/BalanceContext';
+import {useVehicles} from '../../contexts/VehicleContext';
+import {useTheme} from '../../contexts/ThemeContext';
+import {useToast} from '../../components/common/Toast/ToastProvider';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
+import {
+  GiftIcon,
+  HistoryIcon,
+  SettingsIcon,
+  InfoIcon,
+  SosIcon,
+  LogoutIcon,
+  TrashIcon,
+  BoltIcon,
+  WarningIcon,
+} from '../../assets/icons';
 
-const ProfileHomeScreen = ({ navigation }) => {
-  const { user, logout } = useAuth();
-  const { balance, referralStats, getReferralStats, getReferralCode } = useBalance();
-  const { vehicles } = useVehicles();
-  const { t, theme } = useTheme();
-  const { showSuccess, showError } = useToast();
+const ProfileHomeScreen = ({navigation}) => {
+  const {user, logout} = useAuth();
+  const {balance, referralStats, getReferralStats, getReferralCode} =
+    useBalance();
+  const {vehicles} = useVehicles();
+  const {t, theme} = useTheme();
+  const {showSuccess, showError} = useToast();
 
-  const { colors, typography, spacing, layout } = theme;
+  const {colors, typography, spacing, layout} = theme;
   const referralCode = getReferralCode();
   const isBalanceLow = balance < 5;
 
@@ -51,30 +63,26 @@ const ProfileHomeScreen = ({ navigation }) => {
   const handleShareCode = async () => {
     try {
       const message = `Join QR Parking using my referral code ${referralCode} and get 10 free calls! Download now: https://qrparking.com/refer/${referralCode}`;
-      await Share.share({ message, title: t('common.share') });
+      await Share.share({message, title: t('common.share')});
     } catch (error) {
       console.error('Share failed:', error);
     }
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      t('auth.logout.title'),
-      t('auth.logout.message'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('auth.logout.button'),
-          style: 'destructive',
-          onPress: async () => {
-            const result = await logout();
-            if (!result.success) {
-              showError('Logout failed. Please try again.');
-            }
-          },
+    Alert.alert(t('auth.logout.title'), t('auth.logout.message'), [
+      {text: t('common.cancel'), style: 'cancel'},
+      {
+        text: t('auth.logout.button'),
+        style: 'destructive',
+        onPress: async () => {
+          const result = await logout();
+          if (!result.success) {
+            showError('Logout failed. Please try again.');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDeleteAccount = () => {
@@ -85,42 +93,58 @@ const ProfileHomeScreen = ({ navigation }) => {
   const userEmail = user?.email || '';
   const userPhone = user?.phone ? `+91 *****${user.phone.slice(-4)}` : '';
   const memberSince = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    ? new Date(user.createdAt).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
     : 'June 2024';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.neutralLight }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.neutralLight}]}
+      edges={['top']}>
       <AppBar title={t('profile.title')} />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-      >
+        contentContainerStyle={[
+          styles.scrollContent,
+          {paddingHorizontal: layout.screenPadding},
+        ]}
+        showsVerticalScrollIndicator={false}>
         {/* User Card */}
         <Card style={styles.userCard}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.avatarText, { color: colors.white }]}>
+          <View style={[styles.avatar, {backgroundColor: colors.primary}]}>
+            <Text style={[styles.avatarText, {color: colors.white}]}>
               {userName.charAt(0).toUpperCase()}
             </Text>
           </View>
 
-          <Text style={[typography.h2, { marginBottom: spacing.xs }]}>{userName}</Text>
-          <Text style={[typography.caption, { marginBottom: spacing.xs }]}>{userEmail}</Text>
-          {userPhone && <Text style={[typography.caption, { marginBottom: spacing.sm }]}>{userPhone}</Text>}
+          <Text style={[typography.h2, {marginBottom: spacing.xs}]}>
+            {userName}
+          </Text>
+          <Text style={[typography.caption, {marginBottom: spacing.xs}]}>
+            {userEmail}
+          </Text>
+          {userPhone && (
+            <Text style={[typography.caption, {marginBottom: spacing.sm}]}>
+              {userPhone}
+            </Text>
+          )}
 
           {/* Verification Badges */}
-          <View style={[styles.badges, { gap: spacing.sm, marginTop: spacing.sm }]}>
+          <View
+            style={[styles.badges, {gap: spacing.sm, marginTop: spacing.sm}]}>
             {user?.verification?.email && (
-              <View style={[styles.badge, { backgroundColor: colors.success }]}>
-                <Text style={[styles.badgeText, { color: colors.white }]}>
+              <View style={[styles.badge, {backgroundColor: colors.success}]}>
+                <Text style={[styles.badgeText, {color: colors.white}]}>
                   {t('profile.verified.email')}
                 </Text>
               </View>
             )}
             {user?.verification?.phone && (
-              <View style={[styles.badge, { backgroundColor: colors.success }]}>
-                <Text style={[styles.badgeText, { color: colors.white }]}>
+              <View style={[styles.badge, {backgroundColor: colors.success}]}>
+                <Text style={[styles.badgeText, {color: colors.white}]}>
                   {t('profile.verified.phone')}
                 </Text>
               </View>
@@ -129,26 +153,42 @@ const ProfileHomeScreen = ({ navigation }) => {
         </Card>
 
         {/* Balance Card */}
-        <Card style={[styles.balanceCard, { backgroundColor: colors.primary, marginBottom: spacing.base }]}>
+        <Card
+          style={[
+            styles.balanceCard,
+            {backgroundColor: colors.primary, marginBottom: spacing.base},
+          ]}>
           <View style={styles.balanceHeader}>
             <View style={styles.balanceLeft}>
-              <Text style={[styles.balanceLabel, { color: colors.white }]}>
+              <Text style={[styles.balanceLabel, {color: colors.white}]}>
                 {t('profile.balance.title')}
               </Text>
-              <Text style={[styles.balanceValue, { color: colors.white, marginTop: spacing.xs }]}>
-                {t('profile.balance.calls', { count: balance })}
+              <Text
+                style={[
+                  styles.balanceValue,
+                  {color: colors.white, marginTop: spacing.xs},
+                ]}>
+                {t('profile.balance.calls', {count: balance})}
               </Text>
-              <Text style={[styles.balanceHelper, { color: colors.white, marginTop: spacing.xs }]}>
+              <Text
+                style={[
+                  styles.balanceHelper,
+                  {color: colors.white, marginTop: spacing.xs},
+                ]}>
                 {t('profile.balance.helper')}
               </Text>
             </View>
-            <Text style={styles.balanceIcon}>⚡</Text>
+            <BoltIcon width={48} height={48} fill={colors.white} />
           </View>
 
           {isBalanceLow && (
-            <View style={[styles.lowBalanceWarning, { marginTop: spacing.base }]}>
-              <Text style={styles.warningIcon}>⚠️</Text>
-              <Text style={[styles.warningText, { color: colors.white, marginLeft: spacing.sm }]}>
+            <View style={[styles.lowBalanceWarning, {marginTop: spacing.base}]}>
+              <WarningIcon width={20} height={20} fill={colors.warning}/>
+              <Text
+                style={[
+                  styles.warningText,
+                  {color: colors.white, marginLeft: spacing.sm},
+                ]}>
                 {t('profile.balance.lowBalance')}
               </Text>
             </View>
@@ -156,51 +196,65 @@ const ProfileHomeScreen = ({ navigation }) => {
         </Card>
 
         {/* Referral Card */}
-        <Card style={[styles.referralCard, {
-          borderColor: colors.primary,
-          backgroundColor: colors.primaryLight,
-          marginBottom: spacing.base,
-        }]}>
-          <View style={[styles.referralHeader, { marginBottom: spacing.sm }]}>
-            <Text style={styles.referralIcon}>🎁</Text>
-            <Text style={[typography.h2, { marginLeft: spacing.sm }]}>
+        <Card
+          style={[
+            styles.referralCard,
+            {
+              borderColor: colors.primary,
+              backgroundColor: colors.primaryLight,
+              marginBottom: spacing.base,
+            },
+          ]}>
+          <View style={[styles.referralHeader, {marginBottom: spacing.sm}]}>
+            <GiftIcon width={28} height={28} fill={colors.primary} />
+            <Text style={[typography.h2, {marginLeft: spacing.sm}]}>
               {t('profile.referral.title')}
             </Text>
           </View>
 
-          <Text style={[typography.caption, { marginBottom: spacing.base }]}>
-            {t('profile.referral.message', { give: 10, get: 10 })}
+          <Text style={[typography.caption, {marginBottom: spacing.base}]}>
+            {t('profile.referral.message', {give: 10, get: 10})}
           </Text>
 
-          <View style={{ marginBottom: spacing.base }}>
-            <Text style={[typography.caption, { marginBottom: spacing.xs }]}>
+          <View style={{marginBottom: spacing.base}}>
+            <Text style={[typography.caption, {marginBottom: spacing.xs}]}>
               {t('profile.referral.yourCode')}
             </Text>
-            <View style={[styles.codeBox, {
-              backgroundColor: colors.white,
-              borderColor: colors.primary,
-              padding: spacing.sm,
-            }]}>
-              <Text style={[styles.codeText, { color: colors.primary }]}>{referralCode}</Text>
+            <View
+              style={[
+                styles.codeBox,
+                {
+                  backgroundColor: colors.white,
+                  borderColor: colors.primary,
+                  padding: spacing.sm,
+                },
+              ]}>
+              <Text style={[styles.codeText, {color: colors.primary}]}>
+                {referralCode}
+              </Text>
             </View>
           </View>
 
-          <View style={[styles.referralActions, { gap: spacing.sm, marginBottom: spacing.sm }]}>
+          <View
+            style={[
+              styles.referralActions,
+              {gap: spacing.sm, marginBottom: spacing.sm},
+            ]}>
             <SecondaryButton
               title={t('profile.referral.copyButton')}
               onPress={handleCopyCode}
-              icon={<Text style={{ fontSize: 20 }}>📋</Text>}
-              style={{ flex: 1 }}
+              icon={<Text style={{fontSize: 20}}>📋</Text>}
+              style={{flex: 1}}
             />
             <PrimaryButton
               title={t('profile.referral.shareButton')}
               onPress={handleShareCode}
-              icon={<Text style={{ color: colors.white, fontSize: 20 }}>📤</Text>}
-              style={{ flex: 1 }}
+              icon={<Text style={{color: colors.white, fontSize: 20}}>📤</Text>}
+              style={{flex: 1}}
             />
           </View>
 
-          <Text style={[typography.small, { textAlign: 'center' }]}>
+          <Text style={[typography.small, {textAlign: 'center'}]}>
             {t('profile.referral.stats', {
               count: referralStats?.totalReferrals || 0,
               earned: referralStats?.totalEarned || 0,
@@ -209,35 +263,57 @@ const ProfileHomeScreen = ({ navigation }) => {
         </Card>
 
         {/* Stats Section */}
-        <View style={{ marginBottom: spacing.lg }}>
-          <Text style={[typography.h2, { marginBottom: spacing.sm }]}>
+        <View style={{marginBottom: spacing.lg}}>
+          <Text style={[typography.h2, {marginBottom: spacing.sm}]}>
             {t('profile.stats.title')}
           </Text>
-          <View style={[styles.statsGrid, { gap: spacing.sm }]}>
+          <View style={[styles.statsGrid, {gap: spacing.sm}]}>
             <Card style={styles.statCard}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{vehicles.length}</Text>
-              <Text style={[typography.caption, { textAlign: 'center', marginTop: spacing.xs }]}>
+              <Text style={[styles.statValue, {color: colors.primary}]}>
+                {vehicles.length}
+              </Text>
+              <Text
+                style={[
+                  typography.caption,
+                  {textAlign: 'center', marginTop: spacing.xs},
+                ]}>
                 {t('profile.stats.vehicles')}
               </Text>
             </Card>
 
             <Card style={styles.statCard}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>12</Text>
-              <Text style={[typography.caption, { textAlign: 'center', marginTop: spacing.xs }]}>
+              <Text style={[styles.statValue, {color: colors.primary}]}>
+                12
+              </Text>
+              <Text
+                style={[
+                  typography.caption,
+                  {textAlign: 'center', marginTop: spacing.xs},
+                ]}>
                 {t('profile.stats.searches')}
               </Text>
             </Card>
 
             <Card style={styles.statCard}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>3</Text>
-              <Text style={[typography.caption, { textAlign: 'center', marginTop: spacing.xs }]}>
+              <Text style={[styles.statValue, {color: colors.primary}]}>3</Text>
+              <Text
+                style={[
+                  typography.caption,
+                  {textAlign: 'center', marginTop: spacing.xs},
+                ]}>
                 {t('profile.stats.contacted')}
               </Text>
             </Card>
 
             <Card style={styles.statCard}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{memberSince}</Text>
-              <Text style={[typography.caption, { textAlign: 'center', marginTop: spacing.xs }]}>
+              <Text style={[styles.statValue, {color: colors.primary}]}>
+                {memberSince}
+              </Text>
+              <Text
+                style={[
+                  typography.caption,
+                  {textAlign: 'center', marginTop: spacing.xs},
+                ]}>
                 {t('profile.stats.memberSince')}
               </Text>
             </Card>
@@ -245,34 +321,40 @@ const ProfileHomeScreen = ({ navigation }) => {
         </View>
 
         {/* Settings Menu */}
-        <View style={{ marginBottom: spacing.lg }}>
-          <Text style={[typography.h2, { marginBottom: spacing.sm }]}>
+        <View style={{marginBottom: spacing.lg}}>
+          <Text style={[typography.h2, {marginBottom: spacing.sm}]}>
             {t('profile.menu.settings')}
           </Text>
           <Card>
             <MenuItem
-              icon="📜"
+              icon={
+                <HistoryIcon width={24} height={24} fill={colors.primary} />
+              }
               label={t('profile.menu.activity')}
               onPress={() => navigation.navigate('ActivityHistory')}
               theme={theme}
             />
             <Divider color={colors.neutralBorder} />
             <MenuItem
-              icon="⚙️"
+              icon={
+                <SettingsIcon width={24} height={24} fill={colors.primary} />
+              }
               label={t('profile.menu.settingsItem')}
               onPress={() => navigation.navigate('Settings')}
               theme={theme}
             />
             <Divider color={colors.neutralBorder} />
             <MenuItem
-              icon="🆘"
+              icon={
+                <SosIcon width={24} height={24} fill={colors.textPrimary} />
+              }
               label={t('profile.menu.help')}
               onPress={() => navigation.navigate('HelpSupport')}
               theme={theme}
             />
             <Divider color={colors.neutralBorder} />
             <MenuItem
-              icon="ℹ️"
+              icon={<InfoIcon width={24} height={24} fill={colors.primary} />}
               label={t('profile.menu.about')}
               onPress={() => navigation.navigate('About')}
               theme={theme}
@@ -281,18 +363,26 @@ const ProfileHomeScreen = ({ navigation }) => {
         </View>
 
         {/* Account Actions */}
-        <View style={{ marginTop: spacing.base }}>
+        <View style={{marginTop: spacing.base}}>
           <SecondaryButton
-            title={`🚪 ${t('profile.menu.logout')}`}
+            icon={<LogoutIcon width={20} height={20} fill={colors.primary} />}
+            title={`${t('profile.menu.logout')}`}
             onPress={handleLogout}
             fullWidth
           />
 
           <SecondaryButton
-            title={`🗑️ ${t('profile.menu.deleteAccount')}`}
+            icon={<TrashIcon width={20} height={20} fill={colors.error} />}
+            title={t('profile.menu.deleteAccount')}
             onPress={handleDeleteAccount}
             fullWidth
-            style={{ marginTop: spacing.md, borderColor: colors.error }}
+            style={{
+              marginTop: spacing.md,
+              borderColor: colors.error,
+            }}
+            textStyle={{
+              color: colors.error,
+            }}
           />
         </View>
       </ScrollView>
@@ -301,23 +391,26 @@ const ProfileHomeScreen = ({ navigation }) => {
 };
 
 // Menu Item Component
-const MenuItem = ({ icon, label, onPress, theme }) => {
-  const { colors, typography, spacing } = theme;
+const MenuItem = ({icon, label, onPress, theme}) => {
+  const {colors, typography, spacing} = theme;
   return (
     <TouchableOpacity
-      style={[styles.menuItem, { padding: spacing.base }]}
+      style={[styles.menuItem, {padding: spacing.base}]}
       onPress={onPress}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       <Text style={styles.menuIcon}>{icon}</Text>
-      <Text style={[typography.body, { flex: 1, marginLeft: spacing.base }]}>{label}</Text>
-      <Text style={[styles.menuChevron, { color: colors.textSecondary }]}>›</Text>
+      <Text style={[typography.body, {flex: 1, marginLeft: spacing.base}]}>
+        {label}
+      </Text>
+      <Text style={[styles.menuChevron, {color: colors.textSecondary}]}>›</Text>
     </TouchableOpacity>
   );
 };
 
 // Divider Component
-const Divider = ({ color }) => <View style={[styles.divider, { backgroundColor: color }]} />;
+const Divider = ({color}) => (
+  <View style={[styles.divider, {backgroundColor: color}]} />
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -391,9 +484,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     padding: 12,
     borderRadius: 8,
-  },
-  warningIcon: {
-    fontSize: 20,
   },
   warningText: {
     flex: 1,

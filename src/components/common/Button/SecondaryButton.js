@@ -1,6 +1,7 @@
 /**
  * Secondary Button Component
  * Secondary action button with border and transparent background
+ * FULLY THEME-AWARE
  */
 
 import React from 'react';
@@ -12,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import PropTypes from 'prop-types';
-import { COLORS, COMPONENTS, TYPOGRAPHY, SPACING } from '../../../config/theme';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const SecondaryButton = ({
   title,
@@ -25,16 +26,35 @@ const SecondaryButton = ({
   textStyle,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const { colors, components, spacing } = theme;
+
   const isDisabled = disabled || loading;
+
+  const buttonStyle = [
+    styles.button,
+    {
+      height: components.secondaryButton.height,
+      backgroundColor: 'transparent',
+      borderRadius: components.secondaryButton.borderRadius,
+      borderWidth: components.secondaryButton.borderWidth,
+      borderColor: isDisabled ? colors.neutralBorder : colors.primary,
+      paddingHorizontal: components.secondaryButton.paddingHorizontal,
+    },
+    fullWidth && styles.fullWidth,
+    isDisabled && { opacity: 0.6 },
+    style,
+  ];
+
+  const textStyles = [
+    styles.text,
+    { color: isDisabled ? colors.textDisabled : colors.primary },
+    textStyle,
+  ];
 
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        fullWidth && styles.fullWidth,
-        isDisabled && styles.disabled,
-        style,
-      ]}
+      style={buttonStyle}
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
@@ -44,13 +64,15 @@ const SecondaryButton = ({
       testID={testID}
     >
       {loading ? (
-        <ActivityIndicator color={COLORS.primary} size="small" />
+        <ActivityIndicator color={colors.primary} size="small" />
       ) : (
         <View style={styles.content}>
-          {icon && <View style={styles.iconContainer}>{icon}</View>}
-          <Text style={[styles.text, isDisabled && styles.textDisabled, textStyle]}>
-            {title}
-          </Text>
+          {icon && (
+            <View style={{ marginRight: spacing.sm }}>
+              {icon}
+            </View>
+          )}
+          <Text style={textStyles}>{title}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -59,12 +81,6 @@ const SecondaryButton = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: COMPONENTS.secondaryButton.height,
-    backgroundColor: COMPONENTS.secondaryButton.backgroundColor,
-    borderRadius: COMPONENTS.secondaryButton.borderRadius,
-    borderWidth: COMPONENTS.secondaryButton.borderWidth,
-    borderColor: COMPONENTS.secondaryButton.borderColor,
-    paddingHorizontal: COMPONENTS.secondaryButton.paddingHorizontal,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
@@ -73,24 +89,14 @@ const styles = StyleSheet.create({
   fullWidth: {
     width: '100%',
   },
-  disabled: {
-    borderColor: COLORS.neutralBorder,
-    opacity: 0.6,
-  },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconContainer: {
-    marginRight: COMPONENTS.secondaryButton.iconSpacing,
-  },
   text: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.primary,
-  },
-  textDisabled: {
-    color: COLORS.textDisabled,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
@@ -101,8 +107,8 @@ SecondaryButton.propTypes = {
   loading: PropTypes.bool,
   icon: PropTypes.node,
   fullWidth: PropTypes.bool,
-  style: PropTypes.object,
-  textStyle: PropTypes.object,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  textStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   testID: PropTypes.string,
 };
 

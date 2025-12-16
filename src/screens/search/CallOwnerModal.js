@@ -1,6 +1,7 @@
 /**
  * Call Owner Modal
  * Paid action to reveal phone and call owner (costs 1 credit)
+ * FULLY THEME-AWARE WITH CORRECT TRANSLATION KEYS
  */
 
 import React, { useState } from 'react';
@@ -14,14 +15,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBalance } from '../../contexts/BalanceContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { ContactService } from '../../services/api';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
 import AppBar from '../../components/navigation/AppBar';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
 import Card from '../../components/common/Card/Card';
+import { InfoIcon } from '../../assets/icons';
 
 const CallOwnerModal = ({ navigation, route }) => {
+  const { t, theme } = useTheme();
+  const { colors, spacing, layout } = theme;
   const { vehicle, searchQuery } = route.params;
   const { deductBalance } = useBalance();
 
@@ -36,7 +40,7 @@ const CallOwnerModal = ({ navigation, route }) => {
       // Deduct balance
       const deductResult = await deductBalance(1);
       if (!deductResult.success) {
-        Alert.alert('Error', 'Failed to deduct credit. Please try again.');
+        Alert.alert(t('common.error'), t('search.contact.failed'));
         setIsProcessing(false);
         return;
       }
@@ -52,10 +56,10 @@ const CallOwnerModal = ({ navigation, route }) => {
         setPhoneNumber(response.data.phoneNumber);
         setContactRevealed(true);
       } else {
-        Alert.alert('Error', 'Failed to reveal contact details.');
+        Alert.alert(t('common.error'), t('search.contact.failed'));
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to process request. Please try again.');
+      Alert.alert(t('common.error'), t('search.contact.failed'));
     } finally {
       setIsProcessing(false);
     }
@@ -70,71 +74,118 @@ const CallOwnerModal = ({ navigation, route }) => {
         await Linking.openURL(url);
         navigation.navigate('FindVehicle');
       } else {
-        Alert.alert('Error', 'Cannot open phone app. Please check your device settings.');
+        Alert.alert(t('common.error'), t('search.contact.failed'));
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to open phone app.');
+      Alert.alert(t('common.error'), t('search.contact.failed'));
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView 
+      style={[styles.container, { backgroundColor: colors.background }]} 
+      edges={['top']}
+    >
       <AppBar
-        title="Call Owner"
+        title={t('search.contact.title')}
         showBack
         onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { 
+          padding: layout.screenPadding,
+          paddingBottom: spacing.xxxl,
+        }]}
         showsVerticalScrollIndicator={false}
       >
         {!contactRevealed ? (
           // Before revealing contact
           <>
-            <View style={styles.header}>
-              <Text style={styles.icon}>🔒</Text>
-              <Text style={styles.title}>Confirm Call Request</Text>
-              <Text style={styles.subtitle}>
-                You're about to call the owner of {searchQuery}
+            <View style={[styles.header, { 
+              alignItems: 'center',
+              marginBottom: spacing.xl,
+            }]}>
+              <Text style={[styles.icon, { marginBottom: spacing.md }]}>
+                🔒
+              </Text>
+              <Text style={[styles.title, { 
+                color: colors.textPrimary,
+                marginBottom: spacing.sm,
+              }]}>
+                {t('search.contact.title')}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                {t('search.contact.message', { 
+                  name: vehicle.owner?.maskedName || 'owner',
+                  plate: searchQuery,
+                })}
               </Text>
             </View>
 
             {/* Vehicle Summary */}
-            <Card>
+            <Card style={{ marginBottom: spacing.md }}>
               <View style={styles.vehicleRow}>
-                <Text style={styles.vehicleIcon}>
+                <Text style={[styles.vehicleIcon, { marginRight: spacing.md }]}>
                   {vehicle.vehicleType === '2-wheeler' ? '🏍️' : '🚗'}
                 </Text>
                 <View style={styles.vehicleInfo}>
-                  <Text style={styles.plateNumber}>{vehicle.plateNumber}</Text>
-                  <Text style={styles.ownerName}>{vehicle.owner?.name}</Text>
+                  <Text style={[styles.plateNumber, { 
+                    color: colors.textPrimary,
+                    marginBottom: spacing.xs,
+                  }]}>
+                    {vehicle.plateNumber}
+                  </Text>
+                  <Text style={[styles.ownerName, { color: colors.textSecondary }]}>
+                    {vehicle.owner?.maskedName}
+                  </Text>
                 </View>
               </View>
             </Card>
 
             {/* Cost Info */}
-            <Card style={styles.costCard}>
+            <Card style={[styles.costCard, { 
+              backgroundColor: colors.warningLight,
+              borderColor: colors.warning,
+              borderWidth: 1,
+              marginBottom: spacing.md,
+            }]}>
               <View style={styles.costRow}>
-                <Text style={styles.costIcon}>💰</Text>
+                <Text style={[styles.costIcon, { marginRight: spacing.md }]}>
+                  💰
+                </Text>
                 <View style={styles.costInfo}>
-                  <Text style={styles.costLabel}>Contact Cost</Text>
-                  <Text style={styles.costValue}>1 Credit</Text>
+                  <Text style={[styles.costLabel, { 
+                    color: colors.textSecondary,
+                    marginBottom: spacing.xs,
+                  }]}>
+                    {t('profile.balance.title')}
+                  </Text>
+                  <Text style={[styles.costValue, { color: colors.textPrimary }]}>
+                    {t('profile.balance.calls', { count: 1 })}
+                  </Text>
                 </View>
               </View>
             </Card>
 
-            {/* Agreement */}
-            <Card style={styles.agreementCard}>
+            {/* Info */}
+            <Card style={[styles.agreementCard, { 
+              backgroundColor: colors.primaryLight,
+              marginBottom: spacing.lg,
+            }]}>
               <View style={styles.agreementRow}>
-                <Text style={styles.agreementIcon}>✓</Text>
-                <Text style={styles.agreementText}>
-                  By proceeding, you agree that:{'\n'}
-                  • Phone number will be revealed{'\n'}
-                  • Your details will be shared with owner{'\n'}
-                  • This contact will be logged{'\n'}
-                  • 1 credit will be deducted
+                <Text style={[styles.agreementIcon, { 
+                  color: colors.primary,
+                  marginRight: spacing.md,
+                }]}>
+                  <InfoIcon width={15} height={15} fill={colors.primary}/>
+                </Text>
+                <Text style={[styles.agreementText, { 
+                  color: colors.textSecondary,
+                  flex: 1,
+                }]}>
+                  {t('search.contact.logInfo')}
                 </Text>
               </View>
             </Card>
@@ -142,46 +193,63 @@ const CallOwnerModal = ({ navigation, route }) => {
             {/* Action Button */}
             <View style={styles.buttonContainer}>
               <PrimaryButton
-                title={isProcessing ? 'Processing...' : 'Reveal & Call'}
+                title={t('search.contact.confirmCall')}
                 onPress={handleRevealAndCall}
                 loading={isProcessing}
                 fullWidth
               />
 
               <SecondaryButton
-                title="Cancel"
+                title={t('common.cancel')}
                 onPress={() => navigation.goBack()}
                 fullWidth
-                style={{ marginTop: SPACING.md }}
+                style={{ marginTop: spacing.md }}
               />
             </View>
           </>
         ) : (
           // After revealing contact
           <>
-            <View style={styles.header}>
-              <Text style={styles.icon}>✅</Text>
-              <Text style={styles.title}>Contact Revealed</Text>
-              <Text style={styles.subtitle}>
-                You can now call the owner
+            <View style={[styles.header, { 
+              alignItems: 'center',
+              marginBottom: spacing.xl,
+            }]}>
+              <Text style={[styles.icon, { marginBottom: spacing.md }]}>
+                ✅
+              </Text>
+              <Text style={[styles.title, { 
+                color: colors.textPrimary,
+                marginBottom: spacing.sm,
+              }]}>
+                {t('search.contact.logged')}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                {t('search.results.found.callButton')}
               </Text>
             </View>
 
             {/* Contact Details */}
-            <Card style={styles.contactCard}>
-              <Text style={styles.sectionTitle}>Owner's Phone Number</Text>
-              <View style={styles.phoneRow}>
-                <Text style={styles.phoneIcon}>📞</Text>
-                <Text style={styles.phoneNumber}>{phoneNumber}</Text>
-              </View>
-            </Card>
-
-            {/* Info */}
-            <Card style={styles.infoCard}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoIcon}>ℹ️</Text>
-                <Text style={styles.infoText}>
-                  Tap "Call Now" to open your phone app and call the owner directly.
+            <Card style={[styles.contactCard, { 
+              backgroundColor: colors.successLight,
+              borderColor: colors.success,
+              borderWidth: 1,
+              marginBottom: spacing.md,
+            }]}>
+              <Text style={[styles.sectionTitle, { 
+                color: colors.textPrimary,
+                marginBottom: spacing.md,
+              }]}>
+                {t('vehicles.details.phoneNumber')}
+              </Text>
+              <View style={[styles.phoneRow, { 
+                backgroundColor: colors.white,
+                padding: spacing.md,
+              }]}>
+                <Text style={[styles.phoneIcon, { marginRight: spacing.sm }]}>
+                  📞
+                </Text>
+                <Text style={[styles.phoneNumber, { color: colors.primary }]}>
+                  {phoneNumber}
                 </Text>
               </View>
             </Card>
@@ -189,17 +257,17 @@ const CallOwnerModal = ({ navigation, route }) => {
             {/* Action Button */}
             <View style={styles.buttonContainer}>
               <PrimaryButton
-                title="Call Now"
+                title={t('search.results.found.callButton')}
                 onPress={handleCallNow}
                 fullWidth
-                icon={<Text style={{ color: COLORS.white, fontSize: 20 }}>📞</Text>}
+                icon={<Text style={{ color: colors.white, fontSize: 18 }}>📞</Text>}
               />
 
               <SecondaryButton
-                title="Done"
+                title={t('common.done')}
                 onPress={() => navigation.navigate('FindVehicle')}
                 fullWidth
-                style={{ marginTop: SPACING.md }}
+                style={{ marginTop: spacing.md }}
               />
             </View>
           </>
@@ -212,31 +280,26 @@ const CallOwnerModal = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: LAYOUT.screenPadding,
-    paddingBottom: SPACING.xxxl,
+    // Styles applied dynamically
   },
   header: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
+    // Styles applied dynamically
   },
   icon: {
     fontSize: 64,
-    marginBottom: SPACING.md,
   },
   title: {
-    ...TYPOGRAPHY.h2,
+    fontSize: 22,
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: SPACING.sm,
   },
   subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    fontSize: 15,
     textAlign: 'center',
   },
   vehicleRow: {
@@ -245,23 +308,19 @@ const styles = StyleSheet.create({
   },
   vehicleIcon: {
     fontSize: 40,
-    marginRight: SPACING.md,
   },
   vehicleInfo: {
     flex: 1,
   },
   plateNumber: {
-    ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.xs,
+    fontSize: 18,
+    fontWeight: '600',
   },
   ownerName: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    fontSize: 14,
   },
   costCard: {
-    backgroundColor: COLORS.warningLight,
-    borderColor: COLORS.warning,
-    marginVertical: SPACING.md,
+    // Styles applied dynamically
   },
   costRow: {
     flexDirection: 'row',
@@ -269,23 +328,19 @@ const styles = StyleSheet.create({
   },
   costIcon: {
     fontSize: 32,
-    marginRight: SPACING.md,
   },
   costInfo: {
     flex: 1,
   },
   costLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+    fontSize: 13,
   },
   costValue: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.text,
+    fontSize: 18,
+    fontWeight: '600',
   },
   agreementCard: {
-    backgroundColor: COLORS.primaryLight,
-    marginBottom: SPACING.lg,
+    // Styles applied dynamically
   },
   agreementRow: {
     flexDirection: 'row',
@@ -293,59 +348,32 @@ const styles = StyleSheet.create({
   },
   agreementIcon: {
     fontSize: 24,
-    color: COLORS.primary,
-    marginRight: SPACING.md,
-    fontWeight: '700',
   },
   agreementText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    flex: 1,
+    fontSize: 14,
     lineHeight: 20,
   },
   buttonContainer: {
-    marginTop: SPACING.base,
+    // Styles applied dynamically
   },
   contactCard: {
-    backgroundColor: COLORS.successLight,
-    borderColor: COLORS.success,
-    marginBottom: SPACING.md,
+    // Styles applied dynamically
   },
   sectionTitle: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.md,
+    fontSize: 16,
+    fontWeight: '600',
   },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    padding: SPACING.md,
     borderRadius: 8,
   },
   phoneIcon: {
     fontSize: 24,
-    marginRight: SPACING.sm,
   },
   phoneNumber: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.primary,
-  },
-  infoCard: {
-    backgroundColor: COLORS.neutralBg,
-    marginBottom: SPACING.lg,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  infoIcon: {
     fontSize: 20,
-    marginRight: SPACING.sm,
-  },
-  infoText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    flex: 1,
+    fontWeight: '600',
   },
 });
 

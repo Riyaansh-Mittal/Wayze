@@ -1,124 +1,165 @@
 /**
  * Vehicle Type Selector Component
  * Radio button group for vehicle type selection
+ * FULLY THEME-AWARE
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../config/theme';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {useTheme} from '../../contexts/ThemeContext';
 
 const VEHICLE_TYPES = [
-  { value: '2-wheeler', label: '2-Wheeler', icon: '🏍️', description: 'Bike, Scooter' },
-  { value: '4-wheeler', label: '4-Wheeler', icon: '🚗', description: 'Car, SUV' },
-  { value: 'heavy-vehicle', label: 'Heavy Vehicle', icon: '🚚', description: 'Truck, Bus' },
+  {
+    value: '2-wheeler',
+    label: '2-Wheeler',
+    icon: '🏍️',
+    description: 'Bike, Scooter',
+  },
+  {value: '4-wheeler', label: '4-Wheeler', icon: '🚗', description: 'Car, SUV'},
+  {
+    value: 'heavy-vehicle',
+    label: 'Heavy Vehicle',
+    icon: '🚚',
+    description: 'Truck, Bus',
+  },
 ];
 
-const VehicleTypeSelector = ({ value, onChange, error }) => {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Vehicle Type *</Text>
+const VehicleTypeSelector = ({value, onChange, error}) => {
+  const {t, theme} = useTheme();
+  const {colors, spacing, shadows} = theme;
 
-      <View style={styles.optionsContainer}>
-        {VEHICLE_TYPES.map((type) => (
-          <TouchableOpacity
-            key={type.value}
-            style={[
-              styles.option,
-              value === type.value && styles.optionSelected,
-              error && !value && styles.optionError,
-            ]}
-            onPress={() => onChange(type.value)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.optionIcon}>{type.icon}</Text>
-            <View style={styles.optionTextContainer}>
-              <Text
-                style={[
-                  styles.optionLabel,
-                  value === type.value && styles.optionLabelSelected,
-                ]}
-              >
-                {type.label}
+  return (
+    <View style={[styles.container, {marginBottom: spacing.base}]}>
+      <Text
+        style={[
+          styles.label,
+          {
+            color: colors.textPrimary,
+            marginBottom: spacing.sm,
+          },
+        ]}>
+        {t?.('vehicles.form.vehicleType') || 'Vehicle Type'} *
+      </Text>
+
+      <View style={[styles.optionsContainer, {gap: spacing.sm}]}>
+        {VEHICLE_TYPES.map(type => {
+          const isSelected = value === type.value;
+          const hasError = error && !value;
+
+          return (
+            <TouchableOpacity
+              key={type.value}
+              style={[
+                styles.option,
+                {
+                  backgroundColor: isSelected
+                    ? colors.primaryLight
+                    : colors.white,
+                  borderWidth: 2,
+                  borderColor: hasError
+                    ? colors.error
+                    : isSelected
+                    ? colors.primary
+                    : colors.neutralBorder,
+                  padding: spacing.base,
+                  ...shadows.small,
+                },
+              ]}
+              onPress={() => onChange(type.value)}
+              activeOpacity={0.7}>
+              <Text style={[styles.optionIcon, {marginRight: spacing.md}]}>
+                {type.icon}
               </Text>
-              <Text style={styles.optionDescription}>{type.description}</Text>
-            </View>
-            {value === type.value && (
-              <View style={styles.checkmark}>
-                <Text style={styles.checkmarkIcon}>✓</Text>
+              <View style={styles.optionTextContainer}>
+                <Text
+                  style={[
+                    styles.optionLabel,
+                    {
+                      color: isSelected ? colors.primary : colors.textPrimary,
+                      fontWeight: isSelected ? '600' : '400',
+                      marginBottom: spacing.xs,
+                    },
+                  ]}>
+                  {type.label}
+                </Text>
+                <Text
+                  style={[
+                    styles.optionDescription,
+                    {color: colors.textSecondary},
+                  ]}>
+                  {type.description}
+                </Text>
               </View>
-            )}
-          </TouchableOpacity>
-        ))}
+              {isSelected && (
+                <View
+                  style={[styles.checkmark, {backgroundColor: colors.primary}]}>
+                  <Text style={[styles.checkmarkIcon, {color: colors.white}]}>
+                    ✓
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <Text
+          style={[
+            styles.errorText,
+            {
+              color: colors.error,
+              marginTop: spacing.xs,
+            },
+          ]}>
+          {error}
+        </Text>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.base,
+    // Styles applied dynamically
   },
   label: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.sm,
+    fontSize: 16,
+    fontWeight: '600',
   },
   optionsContainer: {
-    gap: SPACING.sm,
+    // Gap applied dynamically
   },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderWidth: 2,
-    borderColor: COLORS.neutralBorder,
     borderRadius: 12,
-    padding: SPACING.base,
-    ...SHADOWS.small,
-  },
-  optionSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primaryLight,
-  },
-  optionError: {
-    borderColor: COLORS.error,
   },
   optionIcon: {
     fontSize: 36,
-    marginRight: SPACING.md,
   },
   optionTextContainer: {
     flex: 1,
   },
   optionLabel: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.xs,
-  },
-  optionLabelSelected: {
-    color: COLORS.primary,
+    fontSize: 16,
   },
   optionDescription: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
   },
   checkmark: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkmarkIcon: {
-    color: COLORS.white,
     fontSize: 16,
     fontWeight: '700',
   },
   errorText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.error,
-    marginTop: SPACING.xs,
+    fontSize: 13,
   },
 });
 

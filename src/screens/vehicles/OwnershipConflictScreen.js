@@ -1,23 +1,28 @@
 /**
  * Ownership Conflict Screen
- * Shown when user tries to register an already registered plate
+ * REDESIGNED FOR BEAUTIFUL DARK MODE
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
+import {View, Text, StyleSheet, ScrollView} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useTheme} from '../../contexts/ThemeContext';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
-import { maskName } from '../../utils/formatters';
+import {WarningIcon} from '../../assets/icons';
 
-const OwnershipConflictScreen = ({ navigation, route }) => {
-  const { plateNumber, existingVehicle } = route.params;
+const OwnershipConflictScreen = ({navigation, route}) => {
+  const {t, theme} = useTheme();
+  const {colors, spacing, layout} = theme;
+  const {plateNumber, existingVehicle, newVehicleData} = route.params;
 
   const handleClaimOwnership = () => {
-    navigation.navigate('UploadRC', { plateNumber });
+    navigation.navigate('UploadRC', {
+      plateNumber,
+      newVehicleData,
+    });
   };
 
   const handleGoBack = () => {
@@ -25,106 +30,257 @@ const OwnershipConflictScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.background}]}
+      edges={['top']}>
       <AppBar
-        title="Vehicle Already Registered"
+        title={t('vehicles.ownership.conflict.title')}
         showBack
         onBackPress={handleGoBack}
       />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            padding: layout.screenPadding,
+            paddingBottom: spacing.xxxl,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}>
         {/* Alert Icon */}
-        <View style={styles.iconContainer}>
-          <Text style={styles.icon}>⚠️</Text>
+        <View
+          style={[
+            styles.iconContainer,
+            {
+              alignItems: 'center',
+              marginTop: spacing.lg,
+              marginBottom: spacing.xl,
+            },
+          ]}>
+          <View style={styles.iconCircle}>
+            <WarningIcon width={64} height={64} fill={colors.warning} />
+          </View>
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>Vehicle Already Registered</Text>
-        <Text style={styles.subtitle}>
-          This plate number is already registered by another user
+        <Text
+          style={[
+            styles.title,
+            {
+              color: colors.textPrimary,
+              textAlign: 'center',
+              marginBottom: spacing.sm,
+            },
+          ]}>
+          {t('vehicles.ownership.conflict.heading')}
+        </Text>
+        <Text
+          style={[
+            styles.subtitle,
+            {
+              color: colors.textSecondary,
+              textAlign: 'center',
+              marginBottom: spacing.xl,
+            },
+          ]}>
+          {t('vehicles.ownership.conflict.message')}
         </Text>
 
         {/* Plate Number Card */}
-        <Card style={styles.plateCard}>
-          <Text style={styles.plateLabel}>Plate Number</Text>
-          <Text style={styles.plateNumber}>{plateNumber}</Text>
-        </Card>
-
-        {/* Current Owner Info */}
-        <Card>
-          <Text style={styles.sectionTitle}>Current Registration Details</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Registered By:</Text>
-            <Text style={styles.infoValue}>
-              {maskName(existingVehicle?.owner?.name || 'Unknown')}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Vehicle Type:</Text>
-            <Text style={styles.infoValue}>
-              {existingVehicle?.vehicleType || 'N/A'}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Status:</Text>
-            <Text style={[styles.infoValue, { color: COLORS.success }]}>
-              Verified
-            </Text>
-          </View>
-        </Card>
-
-        {/* Options */}
-        <Card style={styles.optionsCard}>
-          <Text style={styles.optionsTitle}>What would you like to do?</Text>
-
-          <View style={styles.option}>
-            <Text style={styles.optionIcon}>✓</Text>
-            <View style={styles.optionText}>
-              <Text style={styles.optionTitle}>I own this vehicle</Text>
-              <Text style={styles.optionDescription}>
-                Submit ownership claim with RC proof
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.option}>
-            <Text style={styles.optionIcon}>✗</Text>
-            <View style={styles.optionText}>
-              <Text style={styles.optionTitle}>This is not my vehicle</Text>
-              <Text style={styles.optionDescription}>
-                Go back and check the plate number
-              </Text>
-            </View>
-          </View>
-        </Card>
-
-        {/* Info Card */}
-        <Card style={styles.infoCard}>
-          <Text style={styles.infoIcon}>💡</Text>
-          <Text style={styles.infoText}>
-            If you're the rightful owner, submit an ownership claim with your RC
-            document. Our team will verify and update the registration.
+        <Card
+          style={[
+            styles.plateCard,
+            {
+              alignItems: 'center',
+              marginBottom: spacing.lg,
+              backgroundColor: colors.warningLight,
+              borderColor: colors.warning,
+              borderWidth: 1,
+            },
+          ]}>
+          <Text
+            style={[
+              styles.plateLabel,
+              {
+                color: colors.textSecondary,
+                marginBottom: spacing.xs,
+              },
+            ]}>
+            {t('vehicles.ownership.conflict.plate', {plate: ''}).replace(
+              plateNumber,
+              '',
+            )}
           </Text>
+          <Text
+            style={[
+              styles.plateNumber,
+              {
+                color: colors.warning,
+                fontWeight: '700',
+              },
+            ]}>
+            {plateNumber}
+          </Text>
+        </Card>
+
+        {/* What Happens Next */}
+        <Card
+          style={{marginBottom: spacing.lg, backgroundColor: colors.surface}}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.base,
+              },
+            ]}>
+            {t('vehicles.ownership.conflict.whatNext')}
+          </Text>
+
+          <View style={[styles.step, {marginBottom: spacing.md}]}>
+            <View
+              style={[
+                styles.stepNumber,
+                {
+                  backgroundColor: colors.primary,
+                  marginRight: spacing.md,
+                },
+              ]}>
+              <Text style={[styles.stepNumberText, {color: colors.white}]}>
+                1
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.stepText,
+                {
+                  color: colors.textSecondary,
+                  flex: 1,
+                },
+              ]}>
+              {t('vehicles.ownership.conflict.step1')}
+            </Text>
+          </View>
+
+          <View style={[styles.step, {marginBottom: spacing.md}]}>
+            <View
+              style={[
+                styles.stepNumber,
+                {
+                  backgroundColor: colors.primary,
+                  marginRight: spacing.md,
+                },
+              ]}>
+              <Text style={[styles.stepNumberText, {color: colors.white}]}>
+                2
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.stepText,
+                {
+                  color: colors.textSecondary,
+                  flex: 1,
+                },
+              ]}>
+              {t('vehicles.ownership.conflict.step2')}
+            </Text>
+          </View>
+
+          <View style={[styles.step, {marginBottom: spacing.md}]}>
+            <View
+              style={[
+                styles.stepNumber,
+                {
+                  backgroundColor: colors.primary,
+                  marginRight: spacing.md,
+                },
+              ]}>
+              <Text style={[styles.stepNumberText, {color: colors.white}]}>
+                3
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.stepText,
+                {
+                  color: colors.textSecondary,
+                  flex: 1,
+                },
+              ]}>
+              {t('vehicles.ownership.conflict.step3')}
+            </Text>
+          </View>
+
+          <View style={styles.step}>
+            <View
+              style={[
+                styles.stepNumber,
+                {
+                  backgroundColor: colors.primary,
+                  marginRight: spacing.md,
+                },
+              ]}>
+              <Text style={[styles.stepNumberText, {color: colors.white}]}>
+                4
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.stepText,
+                {
+                  color: colors.textSecondary,
+                  flex: 1,
+                },
+              ]}>
+              {t('vehicles.ownership.conflict.step4')}
+            </Text>
+          </View>
+        </Card>
+
+        {/* Privacy Notice */}
+        <Card
+          style={[
+            styles.privacyCard,
+            {
+              backgroundColor: colors.successLight,
+              borderColor: colors.success,
+              borderWidth: 1,
+              marginBottom: spacing.xl,
+            },
+          ]}>
+          <View style={styles.privacyRow}>
+            <Text style={[styles.privacyIcon, {marginRight: spacing.sm}]}>
+              🔒
+            </Text>
+            <Text
+              style={[
+                styles.privacyText,
+                {
+                  color: colors.textPrimary,
+                  flex: 1,
+                },
+              ]}>
+              {t('vehicles.ownership.conflict.security')}
+            </Text>
+          </View>
         </Card>
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
           <PrimaryButton
-            title="Claim Ownership"
+            title={t('vehicles.ownership.conflict.uploadButton')}
             onPress={handleClaimOwnership}
             fullWidth
-            icon={<Text style={{ color: COLORS.white }}>→</Text>}
           />
 
           <SecondaryButton
-            title="Go Back"
+            title={t('common.cancel')}
             onPress={handleGoBack}
             fullWidth
-            style={{ marginTop: SPACING.md }}
+            style={{marginTop: spacing.md}}
           />
         </View>
       </ScrollView>
@@ -135,117 +291,72 @@ const OwnershipConflictScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: LAYOUT.screenPadding,
-    paddingBottom: SPACING.xxxl,
-  },
-  iconContainer: {
-    alignItems: 'center',
-    marginVertical: SPACING.lg,
-  },
-  icon: {
-    fontSize: 80,
-  },
+  scrollContent: {},
+  iconContainer: {},
+  iconCircle: {},
+  icon: {},
   title: {
-    ...TYPOGRAPHY.h1,
-    textAlign: 'center',
-    marginBottom: SPACING.sm,
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 32,
   },
   subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
+    fontSize: 15,
+    lineHeight: 22,
   },
   plateCard: {
-    alignItems: 'center',
-    backgroundColor: COLORS.errorLight,
-    borderColor: COLORS.error,
-    marginBottom: SPACING.md,
+    paddingVertical: 20,
   },
   plateLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   plateNumber: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.error,
+    fontSize: 28,
+    letterSpacing: 2,
   },
   sectionTitle: {
-    ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.base,
+    fontSize: 18,
+    fontWeight: '600',
   },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.neutralBorder,
-  },
-  infoLabel: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-  },
-  infoValue: {
-    ...TYPOGRAPHY.bodyBold,
-    textAlign: 'right',
-    flex: 1,
-    marginLeft: SPACING.md,
-  },
-  optionsCard: {
-    backgroundColor: COLORS.primaryLight,
-    borderColor: COLORS.primary,
-    marginTop: SPACING.md,
-  },
-  optionsTitle: {
-    ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.base,
-  },
-  option: {
+  step: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: SPACING.base,
   },
-  optionIcon: {
-    fontSize: 24,
-    marginRight: SPACING.md,
-  },
-  optionText: {
-    flex: 1,
-  },
-  optionTitle: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.xs,
-  },
-  optionDescription: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  infoCard: {
-    flexDirection: 'row',
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.warningLight,
-    marginTop: SPACING.md,
   },
-  infoIcon: {
+  stepNumberText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  stepText: {
+    fontSize: 15,
+    lineHeight: 22,
+    paddingTop: 4,
+  },
+  privacyCard: {},
+  privacyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  privacyIcon: {
     fontSize: 24,
-    marginRight: SPACING.md,
   },
-  infoText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    flex: 1,
+  privacyText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
-  buttonContainer: {
-    marginTop: SPACING.xl,
-  },
+  buttonContainer: {},
 });
 
 export default OwnershipConflictScreen;

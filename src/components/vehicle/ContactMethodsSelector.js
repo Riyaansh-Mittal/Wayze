@@ -9,7 +9,7 @@ import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
 
 const CONTACT_METHODS = [
   { key: 'phone', label: 'Phone Call', icon: '📞', description: 'Direct phone call' },
-  { key: 'sms', label: 'SMS', icon: '💬', description: 'Text message' }
+  { key: 'sms', label: 'SMS', icon: '💬', description: 'Text message' },
 ];
 
 const ContactMethodsSelector = ({ value, onChange, error }) => {

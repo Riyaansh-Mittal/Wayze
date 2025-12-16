@@ -1,9 +1,10 @@
 /**
  * Find Vehicle Screen
  * Main search screen with input and recent searches
+ * FULLY THEME-AWARE WITH CORRECT TRANSLATION KEYS
  */
 
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,28 +15,33 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {useSearch} from '../../contexts/SearchContext';
-import {validatePlateNumber} from '../../utils/validators';
-import {COLORS, TYPOGRAPHY, SPACING, LAYOUT} from '../../config/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSearch } from '../../contexts/SearchContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import { validatePlateNumber } from '../../utils/validators';
 import AppBar from '../../components/navigation/AppBar';
-import SearchInput from '../../components/search/SearchInput';
-import RecentSearchItem from '../../components/search/RecentSearchItem';
-import EmptyState from '../../components/common/EmptyState/EmptyState';
+import TextInput from '../../components/common/Input/TextInput';
+import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import Card from '../../components/common/Card/Card';
+import {
+  SearchIcon,
+  SearchIcon as SearchSvg,
+} from '../../assets/icons';
 
-const FindVehicleScreen = ({navigation}) => {
+const FindVehicleScreen = ({ navigation }) => {
+  const { t, theme } = useTheme();
+  const { colors, spacing, layout } = theme;
   const {
     searchVehicle,
     recentSearches,
     clearRecentSearches,
+    isLoading,
   } = useSearch();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
 
   const handleSearch = async () => {
-    // Clear previous error
     setError('');
 
     // Validate plate number
@@ -45,7 +51,7 @@ const FindVehicleScreen = ({navigation}) => {
       return;
     }
 
-    // Perform search (no registration check required)
+    // Perform search
     const result = await searchVehicle(searchQuery);
 
     if (result.success) {
@@ -61,140 +67,164 @@ const FindVehicleScreen = ({navigation}) => {
       }
     } else {
       Alert.alert(
-        'Search Failed',
-        result.error || 'Unable to search. Please try again.',
+        t('common.error'),
+        result.error || t('search.searchFailed'),
       );
     }
   };
 
-  const handleRecentSearchPress = search => {
+  const handleRecentSearchPress = (search) => {
     setSearchQuery(search.plateNumber);
   };
 
-  const handleDeleteRecentSearch = plateNumber => {
-    Alert.alert('Clear Search', `Remove ${plateNumber} from recent searches?`, [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => {
-          Alert.alert('Info', 'Use Clear All to remove searches');
+  const handleClearAllSearches = () => {
+    Alert.alert(
+      t('search.recentTitle'),
+      t('search.recentEmpty'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => clearRecentSearches(),
         },
-      },
-    ]);
+      ]
+    );
   };
 
-  const handleClearAllSearches = () => {
-    Alert.alert('Clear All', 'Remove all recent searches?', [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Clear All',
-        style: 'destructive',
-        onPress: () => clearRecentSearches(),
-      },
-    ]);
+  const getTimeAgo = (timestamp) => {
+    const now = Date.now();
+    const diff = now - new Date(timestamp).getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (hours < 1) {return t('time.justNow');}
+    if (hours < 24) {return t('time.hoursAgo', { count: hours });}
+    if (days < 7) {return t('time.daysAgo', { count: days });}
+    return t('time.weeksAgo', { count: Math.floor(days / 7) });
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <AppBar title="Find Vehicle" showBack={false} />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
+      <AppBar
+        title={t('search.title')}
+        showBack={false}
+      />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, {
+            padding: layout.screenPadding,
+            paddingBottom: spacing.xxxl,
+          }]}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          {/* Search Input */}
-          <View style={styles.searchSection}>
-            <SearchInput
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Search Input Section */}
+          <View style={[styles.searchSection, { marginBottom: spacing.lg }]}>
+            <TextInput
+              label={t('search.inputLabel')}
               value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSearch={handleSearch}
+              onChangeText={(text) => {
+                setSearchQuery(text.toUpperCase());
+                setError('');
+              }}
+              placeholder={t('search.inputPlaceholder')}
+              autoCapitalize="characters"
+              maxLength={13}
               error={error}
-              autoFocus={false}
+              helperText={!error ? t('search.inputHelper') : undefined}
+            />
+
+            <PrimaryButton
+              title={t('search.searchButton')}
+              onPress={handleSearch}
+              loading={isLoading}
+              disabled={searchQuery.length < 6}
+              fullWidth
+              icon={<SearchSvg width={20} height={20} fill={colors.white} />}
+              style={{ marginTop: spacing.base }}
             />
           </View>
 
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
-            <View style={styles.recentSection}>
-              <View style={styles.recentHeader}>
-                <Text style={styles.recentTitle}>Recent Searches</Text>
+            <View style={[styles.recentSection, { marginBottom: spacing.lg }]}>
+              <View style={[styles.recentHeader, { marginBottom: spacing.md }]}>
+                <Text style={[styles.recentTitle, { color: colors.textPrimary }]}>
+                  {t('search.recentTitle')}
+                </Text>
                 <TouchableOpacity onPress={handleClearAllSearches}>
-                  <Text style={styles.clearAllText}>Clear All</Text>
+                  <Text style={[styles.clearAllText, { color: colors.error }]}>
+                    {t('common.delete')}
+                  </Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.recentList}>
+              <Card style={{ padding: 0 }}>
                 {recentSearches.map((search, index) => (
-                  <RecentSearchItem
+                  <TouchableOpacity
                     key={`${search.plateNumber}-${index}`}
-                    search={{
-                      ...search,
-                      searchedAt: search.timestamp,
-                    }}
-                    onPress={handleRecentSearchPress}
-                    onDelete={handleDeleteRecentSearch}
-                  />
+                    style={[
+                      styles.recentItem,
+                      {
+                        paddingVertical: spacing.md,
+                        paddingHorizontal: spacing.base,
+                        borderBottomWidth: index < recentSearches.length - 1 ? 1 : 0,
+                        borderBottomColor: colors.border,
+                      }
+                    ]}
+                    onPress={() => handleRecentSearchPress(search)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.searchIcon, { marginRight: spacing.sm }]}>
+                      <SearchSvg width={20} height={20} fill={colors.primary} />
+                    </Text>
+                    <View style={styles.recentInfo}>
+                      <Text style={[styles.recentPlate, { color: colors.textPrimary }]}>
+                        {search.plateNumber}
+                      </Text>
+                    </View>
+                    <Text style={[styles.recentTime, { 
+                      color: colors.textSecondary,
+                      marginRight: spacing.sm,
+                    }]}>
+                      {getTimeAgo(search.timestamp)}
+                    </Text>
+                    <Text style={[styles.chevron, { color: colors.textSecondary }]}>
+                      ›
+                    </Text>
+                  </TouchableOpacity>
                 ))}
-              </View>
+              </Card>
             </View>
           )}
 
           {/* Empty State */}
           {recentSearches.length === 0 && (
-            <EmptyState
-              icon="🔍"
-              title="No Recent Searches"
-              message="Start by entering a vehicle registration number above"
-            />
+            <View style={[styles.emptyState, {
+              paddingVertical: spacing.xxxl,
+              alignItems: 'center',
+            }]}>
+              <SearchSvg width={30} height={30} fill={colors.primary} />
+              <Text style={[styles.emptyTitle, {
+                color: colors.textPrimary,
+                marginBottom: spacing.sm,
+              }]}>
+                {t('search.recentEmpty')}
+              </Text>
+              <Text style={[styles.emptyMessage, { color: colors.textSecondary }]}>
+                {t('search.inputHelper')}
+              </Text>
+            </View>
           )}
-
-          {/* How it Works */}
-          <Card style={styles.howItWorksCard}>
-            <Text style={styles.howItWorksTitle}>How it works</Text>
-
-            <View style={styles.step}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>1</Text>
-              </View>
-              <Text style={styles.stepText}>
-                Enter the vehicle registration number
-              </Text>
-            </View>
-
-            <View style={styles.step}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>2</Text>
-              </View>
-              <Text style={styles.stepText}>
-                View owner's contact preferences
-              </Text>
-            </View>
-
-            <View style={styles.step}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>3</Text>
-              </View>
-              <Text style={styles.stepText}>
-                Use 1 credit to contact via phone, SMS, or WhatsApp
-              </Text>
-            </View>
-          </Card>
-
-          {/* Optional Info Card */}
-          <Card style={styles.infoCard}>
-            <Text style={styles.infoIcon}>💡</Text>
-            <View style={styles.infoText}>
-              <Text style={styles.infoTitle}>Want to be reachable too?</Text>
-              <Text style={styles.infoDescription}>
-                Register your vehicle so others can contact you when they need to reach you
-              </Text>
-            </View>
-          </Card>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -204,7 +234,6 @@ const FindVehicleScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   keyboardView: {
     flex: 1,
@@ -213,84 +242,63 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: LAYOUT.screenPadding,
-    paddingBottom: SPACING.xxxl,
+    // Styles applied dynamically
   },
   searchSection: {
-    marginBottom: SPACING.lg,
+    // Styles applied dynamically
   },
   recentSection: {
-    marginBottom: SPACING.lg,
+    // Styles applied dynamically
   },
   recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
   },
   recentTitle: {
-    ...TYPOGRAPHY.h3,
-  },
-  clearAllText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.error,
+    fontSize: 18,
     fontWeight: '600',
   },
-  recentList: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    overflow: 'hidden',
+  clearAllText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
-  howItWorksCard: {
-    marginTop: SPACING.lg,
-  },
-  howItWorksTitle: {
-    ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.base,
-  },
-  step: {
+  recentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.md,
   },
-  stepNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
+  searchIcon: {
+    fontSize: 20,
   },
-  stepNumberText: {
-    ...TYPOGRAPHY.bodyBold,
-    color: COLORS.white,
-  },
-  stepText: {
-    ...TYPOGRAPHY.body,
+  recentInfo: {
     flex: 1,
   },
-  infoCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: COLORS.primaryLight,
-    marginTop: SPACING.md,
+  recentPlate: {
+    fontSize: 16,
+    fontWeight: '600',
   },
-  infoIcon: {
-    fontSize: 28,
-    marginRight: SPACING.md,
+  recentTime: {
+    fontSize: 14,
   },
-  infoText: {
-    flex: 1,
+  chevron: {
+    fontSize: 24,
+    fontWeight: '300',
   },
-  infoTitle: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.xs,
+  emptyState: {
+    // Styles applied dynamically
   },
-  infoDescription: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    lineHeight: 18,
+  emptyIcon: {
+    fontSize: 64,
+    opacity: 0.5,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  emptyMessage: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 

@@ -1,33 +1,58 @@
 /**
  * Empty State Component
  * Displays when no data is available
+ * FULLY THEME-AWARE
  */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import PropTypes from 'prop-types';
 import PrimaryButton from '../Button/PrimaryButton';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../../config/theme';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const EmptyState = ({
   icon = '📭',
   title,
-  message,
+  description,
   actionLabel,
   onAction,
   style,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const { colors, spacing } = theme;
+
   return (
-    <View style={[styles.container, style]} testID={testID}>
-      {icon && <Text style={styles.icon}>{icon}</Text>}
-      {title && <Text style={styles.title}>{title}</Text>}
-      {message && <Text style={styles.message}>{message}</Text>}
+    <View style={[styles.container, { padding: spacing.lg }, style]} testID={testID}>
+      {icon && (
+        <Text style={[styles.icon, { marginBottom: spacing.base }]}>
+          {icon}
+        </Text>
+      )}
+
+      {title && (
+        <Text style={[styles.title, {
+          color: colors.textPrimary,
+          marginBottom: spacing.sm,
+        }]}>
+          {title}
+        </Text>
+      )}
+
+      {description && (
+        <Text style={[styles.description, {
+          color: colors.textSecondary,
+          marginBottom: spacing.xl,
+        }]}>
+          {description}
+        </Text>
+      )}
+
       {actionLabel && onAction && (
         <PrimaryButton
           title={actionLabel}
           onPress={onAction}
-          style={styles.button}
+          style={{ marginTop: spacing.base }}
         />
       )}
     </View>
@@ -39,37 +64,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: SPACING.lg,
   },
   icon: {
-    fontSize: 80,
-    marginBottom: SPACING.base,
+    fontSize: 64,
   },
   title: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
+    fontSize: 20,
+    fontWeight: '600',
     textAlign: 'center',
   },
-  message: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xl,
+  description: {
+    fontSize: 15,
     textAlign: 'center',
     maxWidth: 280,
-  },
-  button: {
-    marginTop: SPACING.base,
+    lineHeight: 22,
   },
 });
 
 EmptyState.propTypes = {
   icon: PropTypes.string,
   title: PropTypes.string,
-  message: PropTypes.string,
+  description: PropTypes.string,
   actionLabel: PropTypes.string,
   onAction: PropTypes.func,
-  style: PropTypes.object,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   testID: PropTypes.string,
 };
 

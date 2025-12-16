@@ -26,7 +26,9 @@
     "copied": "Copied!",
     "remove": "Remove",
     "apply": "Apply",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "tagline": "Find vehicle owners instantly",
+    "free": "Free"
   },
 
   "auth": {
@@ -38,6 +40,7 @@
       "terms": "Terms",
       "and": "and",
       "privacy": "Privacy Policy",
+      "signingIn": "Signing in...",
       "signinFailed": "Sign in failed. Try again."
     },
     "splash": {
@@ -237,10 +240,13 @@
       "title": "Search Result",
       "found": {
         "vehicleTitle": "Vehicle Found",
-        "registered": "Registered {{time}} ago",
+        "registered": "Registered {{time}}",
         "ownerTitle": "Owner Information",
         "memberSince": "Member since {{date}}",
         "contactTitle": "Contact Owner",
+        "alertTitle": "Send Alert",
+        "alertDescription": "Notify owner for free. They'll see your message.",
+        "alertButton": "Send Alert",
         "callButton": "Call Owner",
         "whatsappButton": "WhatsApp Owner",
         "emailButton": "Email Owner",
@@ -257,6 +263,30 @@
         "searchAgainButton": "Search Again",
         "shareButton": "Share App"
       }
+    },
+    "alert": {
+      "title": "Send Alert",
+      "heading": "Notify Owner",
+      "subtitle": "Send a free alert to the owner of {{plate}}",
+      "freeTitle": "100% Free",
+      "freeDescription": "No credits deducted for sending alerts",
+      "messageLabel": "Your Message",
+      "messagePlaceholder": "e.g., Your vehicle is blocking my car. Please move it.",
+      "charCount": "{{count}}/200",
+      "infoTitle": "What Happens Next?",
+      "infoPoint1": "Owner gets a notification",
+      "infoPoint2": "Your message is delivered",
+      "infoPoint3": "Contact details remain private",
+      "infoPoint4": "This action is logged for safety",
+      "sendButton": "Send Alert",
+      "sending": "Sending...",
+      "cancelButton": "Cancel",
+      "messageRequired": "Message Required",
+      "messageRequiredDesc": "Please enter a message for the owner.",
+      "successTitle": "Alert Sent!",
+      "successMessage": "The vehicle owner has been notified.",
+      "errorTitle": "Error",
+      "errorMessage": "Failed to send alert. Please try again."
     },
     "contact": {
       "title": "Contact Owner?",
@@ -412,15 +442,16 @@
     "deleteAccount": {
       "step1": {
         "title": "Delete Account",
-        "heading": "We're Sorry to See You Go",
-        "subtitle": "Before you proceed, please understand:",
-        "warning1": "All your vehicles will be removed",
-        "warning2": "All activity history will be deleted",
-        "warning3": "RC documents will be permanently deleted",
-        "warning4": "Your call balance will be lost",
-        "warning5": "This action cannot be undone",
+        "heading": "Delete Account?",
+        "subtitle": "This action cannot be undone",
+        "whatWillBeDeleted": "What Will Be Permanently Deleted:",
+        "warning1": "All your registered vehicles",
+        "warning2": "Your activity history",
+        "warning3": "Your profile and contact information",
+        "warning4": "All search records and logs",
+        "finalWarning": "Warning: Once deleted, we cannot recover your account or data.",
         "continueButton": "Continue to Delete",
-        "keepButton": "Keep My Account"
+        "keepButton": "Cancel, Keep My Account"
       },
       "step2": {
         "title": "Confirm Deletion",
@@ -429,6 +460,7 @@
         "placeholder": "Type DELETE here",
         "finalWarning": "This will immediately sign you out and delete all your data within 24 hours.",
         "deleteButton": "Delete My Account",
+        "cancelButton": "Cancel",
         "lastChance": {
           "title": "Last Chance",
           "message": "Proceed with account deletion?",

@@ -1,9 +1,10 @@
 /**
  * Text Input Component
  * Standard text input with label, error states, and validation
+ * FULLY THEME-AWARE
  */
 
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +13,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import PropTypes from 'prop-types';
-import {COLORS, COMPONENTS, TYPOGRAPHY, SPACING} from '../../../config/theme';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { InfoIcon, WarningIcon } from '../../../assets/icons';
 
 const TextInput = ({
   label,
@@ -35,71 +37,106 @@ const TextInput = ({
   inputStyle,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const { colors, components, spacing } = theme;
   const [isFocused, setIsFocused] = useState(false);
 
   const getBorderColor = () => {
-    if (error) {return COLORS.error;}
-    if (isFocused) {return COLORS.primary;}
-    return COLORS.neutralBorder;
+    if (error) {return colors.error;}
+    if (isFocused) {return colors.primary;}
+    return colors.neutralBorder;
   };
+
+  const containerStyle = [
+    styles.inputContainer,
+    {
+      height: multiline ? 'auto' : components.inputField.height,
+      minHeight: multiline ? components.inputField.height : undefined,
+      borderRadius: components.inputField.borderRadius,
+      borderWidth: components.inputField.borderWidth,
+      backgroundColor: disabled ? colors.neutralLight : colors.white,
+      borderColor: disabled ? colors.neutralBorder : getBorderColor(),
+      paddingHorizontal: components.inputField.paddingHorizontal,
+      paddingVertical: multiline ? spacing.sm : 0,
+    },
+  ];
+
+  const inputStyles = [
+    styles.input,
+    {
+      fontSize: components.inputField.fontSize,
+      color: colors.textPrimary,
+    },
+    multiline && styles.inputMultiline,
+    leftIcon && { marginLeft: spacing.sm },
+    rightIcon && { marginRight: spacing.sm },
+    inputStyle,
+  ];
 
   return (
     <View style={[styles.container, style]}>
       {label && (
-        <Text style={[styles.label, disabled && styles.labelDisabled]}>
+        <Text style={[
+          styles.label,
+          {
+            color: disabled ? colors.textDisabled : colors.textSecondary,
+            marginBottom: spacing.sm,
+          },
+        ]}>
           {label}
         </Text>
       )}
-      <View
-        style={[
-          styles.inputContainer,
-          {borderColor: getBorderColor()},
-          disabled && styles.inputContainerDisabled,
-          multiline && styles.inputContainerMultiline,
-        ]}>
-        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+
+      <View style={containerStyle}>
+        {leftIcon && (
+          <View style={{ marginRight: spacing.sm }}>
+            {leftIcon}
+          </View>
+        )}
+
         <RNTextInput
-          style={[
-            styles.input,
-            multiline && styles.inputMultiline,
-            leftIcon && styles.inputWithLeftIcon,
-            rightIcon && styles.inputWithRightIcon,
-            inputStyle,
-          ]}
+          style={inputStyles}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={COLORS.textDisabled}
+          placeholderTextColor={colors.textSecondary}
           editable={!disabled}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           maxLength={maxLength}
           multiline={multiline}
-          numberOfLines={multiline ? numberOfLines : 1}
+          numberOfLines={numberOfLines}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           accessibilityLabel={label || placeholder}
-          accessibilityState={{disabled}}
+          accessibilityState={{ disabled }}
           testID={testID}
         />
+
         {rightIcon && (
           <TouchableOpacity
-            style={styles.rightIcon}
             onPress={onRightIconPress}
             disabled={!onRightIconPress}
-            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+            style={{ marginLeft: spacing.sm }}
+          >
             {rightIcon}
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Helper or Error Text */}
       {(helperText || error) && (
-        <View style={styles.helperContainer}>
-          {error && <Text style={styles.helperIcon}>⚠️</Text>}
-          {!error && helperText && <Text style={styles.helperIcon}>ℹ️</Text>}
-          <Text style={[styles.helperText, error && styles.errorText]}>
+        <View style={[styles.helperContainer, { marginTop: spacing.xs }]}>
+          <Text style={styles.helperIcon}>
+            {error ? <WarningIcon width={20} height={20} fill={colors.warning}/> : <InfoIcon width={15} height={15} fill={colors.primary}/>}
+          </Text>
+          <Text style={[
+            styles.helperText,
+            {
+              color: error ? colors.error : colors.textSecondary,
+              marginLeft: spacing.xs,
+            },
+          ]}>
             {error || helperText}
           </Text>
         </View>
@@ -113,69 +150,31 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
-  },
-  labelDisabled: {
-    color: COLORS.textDisabled,
+    fontSize: 14,
+    fontWeight: '500',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: COMPONENTS.inputField.height,
-    borderRadius: COMPONENTS.inputField.borderRadius,
-    borderWidth: COMPONENTS.inputField.borderWidth,
-    backgroundColor: COMPONENTS.inputField.backgroundColor,
-    paddingHorizontal: COMPONENTS.inputField.paddingHorizontal,
-  },
-  inputContainerDisabled: {
-    backgroundColor: COLORS.neutralLight,
-    borderColor: COLORS.neutralBorder,
-  },
-  inputContainerMultiline: {
-    height: 'auto',
-    minHeight: COMPONENTS.inputField.height,
-    paddingVertical: SPACING.md,
   },
   input: {
     flex: 1,
-    fontSize: COMPONENTS.inputField.fontSize,
-    color: COLORS.textPrimary,
     padding: 0,
   },
   inputMultiline: {
     textAlignVertical: 'top',
     paddingTop: 0,
   },
-  inputWithLeftIcon: {
-    marginLeft: SPACING.sm,
-  },
-  inputWithRightIcon: {
-    marginRight: SPACING.sm,
-  },
-  leftIcon: {
-    marginRight: SPACING.sm,
-  },
-  rightIcon: {
-    marginLeft: SPACING.sm,
-  },
   helperContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: SPACING.xs,
   },
   helperIcon: {
-    fontSize: 16,
-    marginRight: SPACING.xs,
+    fontSize: 14,
   },
   helperText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
     flex: 1,
-  },
-  errorText: {
-    color: COLORS.error,
   },
 });
 
@@ -196,8 +195,8 @@ TextInput.propTypes = {
   leftIcon: PropTypes.node,
   rightIcon: PropTypes.node,
   onRightIconPress: PropTypes.func,
-  style: PropTypes.object,
-  inputStyle: PropTypes.object,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  inputStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   testID: PropTypes.string,
 };
 

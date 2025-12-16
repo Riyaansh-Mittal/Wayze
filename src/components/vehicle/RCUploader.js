@@ -1,9 +1,10 @@
 /**
  * RC Uploader Component
  * Image picker and uploader for RC documents
+ * FULLY THEME-AWARE
  */
 
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,36 +13,38 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import {launchImageLibrary, launchCamera} from 'react-native-image-picker';
-import {COLORS, TYPOGRAPHY, SPACING, SHADOWS} from '../../config/theme';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
   requestCameraPermission,
   requestStoragePermission,
 } from '../../utils/permissions';
 import Spinner from '../common/Loading/Spinner';
 
-const RCUploader = ({value, onChange, error}) => {
+const RCUploader = ({ value, onChange, error }) => {
+  const { t, theme } = useTheme();
+  const { colors, spacing, shadows } = theme;
   const [uploading, setUploading] = useState(false);
 
   const showImageSourceOptions = () => {
     Alert.alert(
-      'Upload RC Photo',
-      'Choose an option',
+      t?.('vehicles.uploadRC') || 'Upload RC Photo',
+      t?.('vehicles.chooseOption') || 'Choose an option',
       [
         {
-          text: 'Take Photo',
+          text: t?.('vehicles.takePhoto') || 'Take Photo',
           onPress: handleCamera,
         },
         {
-          text: 'Choose from Gallery',
+          text: t?.('vehicles.chooseGallery') || 'Choose from Gallery',
           onPress: handleGallery,
         },
         {
-          text: 'Cancel',
+          text: t?.('common.cancel') || 'Cancel',
           style: 'cancel',
         },
       ],
-      {cancelable: true},
+      { cancelable: true },
     );
   };
 
@@ -49,8 +52,8 @@ const RCUploader = ({value, onChange, error}) => {
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) {
       Alert.alert(
-        'Permission Denied',
-        'Camera access is required to take photos',
+        t?.('permissions.denied') || 'Permission Denied',
+        t?.('permissions.cameraRequired') || 'Camera access is required to take photos',
       );
       return;
     }
@@ -72,8 +75,8 @@ const RCUploader = ({value, onChange, error}) => {
     const hasPermission = await requestStoragePermission();
     if (!hasPermission) {
       Alert.alert(
-        'Permission Denied',
-        'Storage access is required to select photos',
+        t?.('permissions.denied') || 'Permission Denied',
+        t?.('permissions.storageRequired') || 'Storage access is required to select photos',
       );
       return;
     }
@@ -91,12 +94,11 @@ const RCUploader = ({value, onChange, error}) => {
     }
   };
 
-  const handleImageSelected = async image => {
+  const handleImageSelected = async (image) => {
     setUploading(true);
 
     try {
       // In production, upload to Firebase Storage or your backend
-      // For now, just use the local URI
       const imageData = {
         uri: image.uri,
         name: image.fileName || 'rc_document.jpg',
@@ -109,75 +111,136 @@ const RCUploader = ({value, onChange, error}) => {
 
       onChange(imageData);
     } catch (err) {
-      // ✅ Changed from 'error' to 'err'
       console.error('Upload failed:', err);
-      Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
+      Alert.alert(
+        t?.('common.uploadFailed') || 'Upload Failed',
+        t?.('common.uploadFailedMessage') || 'Failed to upload image. Please try again.'
+      );
     } finally {
       setUploading(false);
     }
   };
 
   const handleRemove = () => {
-    Alert.alert('Remove Photo', 'Are you sure you want to remove this photo?', [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => onChange(null),
-      },
-    ]);
+    Alert.alert(
+      t?.('vehicles.removePhoto') || 'Remove Photo',
+      t?.('vehicles.removePhotoConfirm') || 'Are you sure you want to remove this photo?',
+      [
+        { text: t?.('common.cancel') || 'Cancel', style: 'cancel' },
+        {
+          text: t?.('common.remove') || 'Remove',
+          style: 'destructive',
+          onPress: () => onChange(null),
+        },
+      ]
+    );
   };
 
+  const uploadBoxStyle = [
+    styles.uploadBox,
+    {
+      backgroundColor: colors.neutralLight,
+      borderWidth: 2,
+      borderColor: error ? colors.error : colors.neutralBorder,
+    },
+  ];
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>RC Document Photo *</Text>
-      <Text style={styles.helperText}>
-        Upload a clear photo of your vehicle's Registration Certificate
+    <View style={[styles.container, { marginBottom: spacing.base }]}>
+      <Text style={[styles.label, {
+        color: colors.textPrimary,
+        marginBottom: spacing.xs,
+      }]}>
+        {t?.('vehicles.rcDocument') || 'RC Document Photo'} *
+      </Text>
+      <Text style={[styles.helperText, {
+        color: colors.textSecondary,
+        marginBottom: spacing.sm,
+      }]}>
+        {t?.('vehicles.rcHelper') || 'Upload a clear photo of your vehicle\'s Registration Certificate'}
       </Text>
 
       {!value ? (
         <TouchableOpacity
-          style={[styles.uploadBox, error && styles.uploadBoxError]}
+          style={uploadBoxStyle}
           onPress={showImageSourceOptions}
           disabled={uploading}
-          activeOpacity={0.7}>
+          activeOpacity={0.7}
+        >
           {uploading ? (
             <View style={styles.uploadingContainer}>
-              <Spinner size="large" color={COLORS.primary} />
-              <Text style={styles.uploadingText}>Uploading...</Text>
+              <Spinner size="large" color={colors.primary} />
+              <Text style={[styles.uploadingText, {
+                color: colors.textSecondary,
+                marginTop: spacing.md,
+              }]}>
+                {t?.('common.uploading') || 'Uploading...'}
+              </Text>
             </View>
           ) : (
             <>
-              <Text style={styles.uploadIcon}>📷</Text>
-              <Text style={styles.uploadText}>Tap to upload RC photo</Text>
-              <Text style={styles.uploadSubtext}>Camera or Gallery</Text>
+              <Text style={[styles.uploadIcon, { marginBottom: spacing.md }]}>📷</Text>
+              <Text style={[styles.uploadText, {
+                color: colors.textPrimary,
+                marginBottom: spacing.xs,
+              }]}>
+                {t?.('vehicles.tapUpload') || 'Tap to upload RC photo'}
+              </Text>
+              <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>
+                {t?.('vehicles.cameraOrGallery') || 'Camera or Gallery'}
+              </Text>
             </>
           )}
         </TouchableOpacity>
       ) : (
-        <View style={styles.previewContainer}>
-          <Image source={{uri: value.uri}} style={styles.previewImage} />
+        <View style={[styles.previewContainer, shadows.medium]}>
+          <Image source={{ uri: value.uri }} style={styles.previewImage} />
           <TouchableOpacity
-            style={styles.removeButton}
+            style={[styles.removeButton, {
+              backgroundColor: colors.error,
+              top: spacing.sm,
+              right: spacing.sm,
+              ...shadows.small,
+            }]}
             onPress={handleRemove}
-            activeOpacity={0.7}>
-            <Text style={styles.removeIcon}>✕</Text>
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.removeIcon, { color: colors.white }]}>✕</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.changeButton}
+            style={[styles.changeButton, {
+              bottom: spacing.md,
+              left: spacing.md,
+              right: spacing.md,
+              paddingVertical: spacing.sm,
+            }]}
             onPress={showImageSourceOptions}
-            activeOpacity={0.7}>
-            <Text style={styles.changeText}>Change Photo</Text>
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.changeText, { color: colors.white }]}>
+              {t?.('vehicles.changePhoto') || 'Change Photo'}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <Text style={[styles.errorText, {
+          color: colors.error,
+          marginTop: spacing.xs,
+        }]}>
+          {error}
+        </Text>
+      )}
 
-      <View style={styles.infoBox}>
-        <Text style={styles.infoIcon}>💡</Text>
-        <Text style={styles.infoText}>
-          Make sure the RC details are clearly visible and readable
+      <View style={[styles.infoBox, {
+        backgroundColor: colors.primaryLight,
+        padding: spacing.md,
+        marginTop: spacing.md,
+      }]}>
+        <Text style={[styles.infoIcon, { marginRight: spacing.sm }]}>💡</Text>
+        <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+          {t?.('vehicles.rcInfo') || 'Make sure the RC details are clearly visible and readable'}
         </Text>
       </View>
     </View>
@@ -186,55 +249,42 @@ const RCUploader = ({value, onChange, error}) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.base,
+    // Styles applied dynamically
   },
   label: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.xs,
+    fontSize: 16,
+    fontWeight: '600',
   },
   helperText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
+    fontSize: 13,
   },
   uploadBox: {
     height: 200,
-    backgroundColor: COLORS.neutralLight,
-    borderWidth: 2,
-    borderColor: COLORS.neutralBorder,
     borderStyle: 'dashed',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  uploadBoxError: {
-    borderColor: COLORS.error,
-  },
   uploadIcon: {
     fontSize: 48,
-    marginBottom: SPACING.md,
   },
   uploadText: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.xs,
+    fontSize: 16,
+    fontWeight: '600',
   },
   uploadSubtext: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
   },
   uploadingContainer: {
     alignItems: 'center',
   },
   uploadingText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.md,
+    fontSize: 15,
   },
   previewContainer: {
     position: 'relative',
     borderRadius: 12,
     overflow: 'hidden',
-    ...SHADOWS.medium,
   },
   previewImage: {
     width: '100%',
@@ -243,55 +293,39 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     position: 'absolute',
-    top: SPACING.sm,
-    right: SPACING.sm,
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.error,
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.small,
   },
   removeIcon: {
-    color: COLORS.white,
     fontSize: 20,
     fontWeight: '700',
   },
   changeButton: {
     position: 'absolute',
-    bottom: SPACING.md,
-    left: SPACING.md,
-    right: SPACING.md,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingVertical: SPACING.sm,
     borderRadius: 8,
     alignItems: 'center',
   },
   changeText: {
-    ...TYPOGRAPHY.bodyBold,
-    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
   errorText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.error,
-    marginTop: SPACING.xs,
+    fontSize: 13,
   },
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primaryLight,
-    padding: SPACING.md,
     borderRadius: 8,
-    marginTop: SPACING.md,
   },
   infoIcon: {
     fontSize: 20,
-    marginRight: SPACING.sm,
   },
   infoText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
     flex: 1,
   },
 });

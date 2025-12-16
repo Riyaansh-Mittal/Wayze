@@ -1,15 +1,18 @@
 /**
  * Vehicle Card Component
  * Swipeable card for vehicle list with actions
+ * FULLY THEME-AWARE
  */
 
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../config/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { formatDate } from '../../utils/formatters';
 
 const VehicleCard = ({ vehicle, onPress, onEdit, onDelete }) => {
+  const { t, theme } = useTheme();
+  const { colors, spacing, shadows } = theme;
   const swipeableRef = useRef(null);
 
   const renderRightActions = (progress, dragX) => {
@@ -24,30 +27,42 @@ const VehicleCard = ({ vehicle, onPress, onEdit, onDelete }) => {
         style={[
           styles.actionsContainer,
           {
+            marginBottom: spacing.md,
+            marginRight: spacing.base,
             transform: [{ translateX: trans }],
           },
         ]}
       >
         <TouchableOpacity
-          style={[styles.actionButton, styles.editButton]}
+          style={[styles.actionButton, {
+            backgroundColor: colors.primary,
+            marginLeft: spacing.xs,
+          }]}
           onPress={() => {
             swipeableRef.current?.close();
             onEdit(vehicle);
           }}
         >
-          <Text style={styles.actionIcon}>✏️</Text>
-          <Text style={styles.actionText}>Edit</Text>
+          <Text style={[styles.actionIcon, { marginBottom: spacing.xs }]}>✏️</Text>
+          <Text style={[styles.actionText, { color: colors.white }]}>
+            {t?.('common.edit') || 'Edit'}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionButton, styles.deleteButton]}
+          style={[styles.actionButton, {
+            backgroundColor: colors.error,
+            marginLeft: spacing.xs,
+          }]}
           onPress={() => {
             swipeableRef.current?.close();
             onDelete(vehicle);
           }}
         >
-          <Text style={styles.actionIcon}>🗑️</Text>
-          <Text style={styles.actionText}>Delete</Text>
+          <Text style={[styles.actionIcon, { marginBottom: spacing.xs }]}>🗑️</Text>
+          <Text style={[styles.actionText, { color: colors.white }]}>
+            {t?.('common.delete') || 'Delete'}
+          </Text>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -69,13 +84,13 @@ const VehicleCard = ({ vehicle, onPress, onEdit, onDelete }) => {
   const getStatusColor = () => {
     switch (vehicle.verificationStatus) {
       case 'verified':
-        return COLORS.success;
+        return colors.success;
       case 'pending':
-        return COLORS.warning;
+        return colors.warning;
       case 'rejected':
-        return COLORS.error;
+        return colors.error;
       default:
-        return COLORS.textSecondary;
+        return colors.textSecondary;
     }
   };
 
@@ -87,45 +102,78 @@ const VehicleCard = ({ vehicle, onPress, onEdit, onDelete }) => {
       rightThreshold={40}
     >
       <TouchableOpacity
-        style={styles.card}
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.white,
+            padding: spacing.base,
+            marginHorizontal: spacing.base,
+            marginBottom: spacing.md,
+            ...shadows.small,
+          },
+        ]}
         onPress={() => onPress(vehicle)}
         activeOpacity={0.7}
       >
         {/* Vehicle Icon */}
-        <View style={styles.iconContainer}>
+        <View style={[styles.iconContainer, {
+          backgroundColor: colors.primaryLight,
+          marginRight: spacing.base,
+        }]}>
           <Text style={styles.icon}>{getVehicleIcon()}</Text>
         </View>
 
         {/* Vehicle Info */}
         <View style={styles.infoContainer}>
-          <View style={styles.headerRow}>
-            <Text style={styles.plateNumber}>{vehicle.plateNumber}</Text>
+          <View style={[styles.headerRow, { marginBottom: spacing.xs }]}>
+            <Text style={[styles.plateNumber, { color: colors.textPrimary }]}>
+              {vehicle.plateNumber}
+            </Text>
             {vehicle.verificationStatus === 'verified' && (
-              <Text style={styles.verifiedBadge}>✓</Text>
+              <Text style={[styles.verifiedBadge, { color: colors.success }]}>✓</Text>
             )}
           </View>
 
-          <Text style={styles.vehicleType}>
+          <Text style={[styles.vehicleType, {
+            color: colors.textSecondary,
+            marginBottom: spacing.sm,
+          }]}>
             {vehicle.vehicleType.replace('-', ' ')}
           </Text>
 
           {/* Stats */}
           <View style={styles.statsRow}>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{vehicle.stats.totalSearches}</Text>
-              <Text style={styles.statLabel}>Searches</Text>
+            <View style={[styles.stat, { marginRight: spacing.md }]}>
+              <Text style={[styles.statValue, { color: colors.textPrimary }]}>
+                {vehicle.stats.totalSearches}
+              </Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                {t?.('vehicles.searches') || 'Searches'}
+              </Text>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{vehicle.stats.contactRequests}</Text>
-              <Text style={styles.statLabel}>Contacts</Text>
+            <View style={[styles.statDivider, {
+              backgroundColor: colors.neutralBorder,
+              marginRight: spacing.md,
+            }]} />
+            <View style={[styles.stat, { marginRight: spacing.md }]}>
+              <Text style={[styles.statValue, { color: colors.textPrimary }]}>
+                {vehicle.stats.contactRequests}
+              </Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                {t?.('vehicles.contacts') || 'Contacts'}
+              </Text>
             </View>
             {vehicle.stats.lastSearched && (
               <>
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, {
+                  backgroundColor: colors.neutralBorder,
+                  marginRight: spacing.md,
+                }]} />
                 <View style={styles.stat}>
-                  <Text style={styles.statLabel}>Last searched</Text>
-                  <Text style={styles.statValue}>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                    {t?.('vehicles.lastSearched') || 'Last searched'}
+                  </Text>
+                  <Text style={[styles.statValue, { color: colors.textPrimary }]}>
                     {formatDate(vehicle.stats.lastSearched, 'relative')}
                   </Text>
                 </View>
@@ -144,22 +192,15 @@ const VehicleCard = ({ vehicle, onPress, onEdit, onDelete }) => {
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
     borderRadius: 12,
-    padding: SPACING.base,
-    marginHorizontal: SPACING.base,
-    marginBottom: SPACING.md,
-    ...SHADOWS.small,
     overflow: 'hidden',
   },
   iconContainer: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.base,
   },
   icon: {
     fontSize: 32,
@@ -171,43 +212,36 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
   },
   plateNumber: {
-    ...TYPOGRAPHY.h3,
+    fontSize: 18,
+    fontWeight: '600',
     flex: 1,
   },
   verifiedBadge: {
     fontSize: 20,
-    color: COLORS.success,
   },
   vehicleType: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
     textTransform: 'capitalize',
-    marginBottom: SPACING.sm,
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   stat: {
-    marginRight: SPACING.md,
+    // Styles applied dynamically
   },
   statValue: {
-    ...TYPOGRAPHY.captionBold,
-    color: COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: '600',
   },
   statLabel: {
-    ...TYPOGRAPHY.caption,
     fontSize: 10,
-    color: COLORS.textSecondary,
   },
   statDivider: {
     width: 1,
     height: 20,
-    backgroundColor: COLORS.neutralBorder,
-    marginRight: SPACING.md,
   },
   statusIndicator: {
     position: 'absolute',
@@ -218,29 +252,18 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     flexDirection: 'row',
-    marginBottom: SPACING.md,
-    marginRight: SPACING.base,
   },
   actionButton: {
     width: 75,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
-    marginLeft: SPACING.xs,
-  },
-  editButton: {
-    backgroundColor: COLORS.primary,
-  },
-  deleteButton: {
-    backgroundColor: COLORS.error,
   },
   actionIcon: {
     fontSize: 24,
-    marginBottom: SPACING.xs,
   },
   actionText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.white,
+    fontSize: 13,
     fontWeight: '600',
   },
 });

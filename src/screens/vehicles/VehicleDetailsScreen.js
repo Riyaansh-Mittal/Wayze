@@ -1,227 +1,405 @@
 /**
  * Vehicle Details Screen
- * Detailed view of a vehicle with stats
+ * FULLY CORRECTED - Translation Keys + Navigation
  */
 
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useVehicles } from '../../contexts/VehicleContext';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
-import { formatDate } from '../../utils/formatters';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useVehicles} from '../../contexts/VehicleContext';
+import {useTheme} from '../../contexts/ThemeContext';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
+import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
 import Spinner from '../../components/common/Loading/Spinner';
 
-const VehicleDetailsScreen = ({ navigation, route }) => {
-  const { vehicleId } = route.params;
-  const { vehicles, deleteVehicle, isLoading } = useVehicles();
+const VehicleDetailsScreen = ({navigation, route}) => {
+  const {t, theme} = useTheme();
+  const {colors, spacing, layout} = theme;
+  const {vehicleId} = route.params;
+  const {getVehicleById, deleteVehicle} = useVehicles();
 
   const [vehicle, setVehicle] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    const foundVehicle = vehicles.find((v) => v._id === vehicleId);
-    if (foundVehicle) {
-      setVehicle(foundVehicle);
+    const loadVehicle = async () => {
+      setIsLoading(true);
+      const v = await getVehicleById(vehicleId);
+      setVehicle(v);
+      setIsLoading(false);
+    };
+
+    loadVehicle();
+  }, [vehicleId, getVehicleById]);
+
+  const getVehicleIcon = type => {
+    switch (type) {
+      case '2-wheeler':
+        return '🏍️';
+      case '3-wheeler':
+        return '🛺';
+      case '4-wheeler':
+        return '🚗';
+      default:
+        return '🚗';
     }
-  }, [vehicleId, vehicles]);
+  };
+
+  const formatDate = dateString => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatTimeAgo = dateString => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return t('time.justNow');
+    if (diffMins < 60) return t('time.minutesAgo', {count: diffMins});
+    if (diffHours < 24) return t('time.hoursAgo', {count: diffHours});
+    if (diffDays < 7) return t('time.daysAgo', {count: diffDays});
+    return formatDate(dateString);
+  };
 
   const handleEdit = () => {
-    navigation.navigate('EditVehicle', { vehicleId });
+    navigation.navigate('EditVehicle', {vehicleId});
+  };
+
+  const handleShare = () => {
+    // TODO: Implement share functionality
+    Alert.alert(t('common.comingSoon'), t('vehicles.details.shareButton'));
   };
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Vehicle',
-      `Are you sure you want to delete ${vehicle.plateNumber}?`,
+      t('vehicles.details.deleteConfirm.title'),
+      t('vehicles.details.deleteConfirm.message'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        {text: t('common.cancel'), style: 'cancel'},
         {
-          text: 'Delete',
+          text: t('vehicles.details.deleteConfirm.confirmButton'),
           style: 'destructive',
           onPress: confirmDelete,
         },
-      ]
+      ],
     );
   };
 
   const confirmDelete = async () => {
+    setIsDeleting(true);
     const result = await deleteVehicle(vehicleId);
+    setIsDeleting(false);
 
     if (result.success) {
-      navigation.goBack();
+      Alert.alert(
+        t('common.success'),
+        t('vehicles.details.deleteConfirm.success'),
+        [
+          {
+            text: t('common.ok'),
+            onPress: () => navigation.navigate('MyVehicles'),
+          },
+        ],
+      );
     } else {
-      Alert.alert('Error', 'Failed to delete vehicle. Please try again.');
+      Alert.alert(t('common.error'), t('vehicles.form.deleteFailed'));
     }
   };
 
-  const getVehicleIcon = () => {
-    switch (vehicle?.vehicleType) {
-      case '2-wheeler':
-        return '🏍️';
-      case '4-wheeler':
-        return '🚗';
-      case 'heavy-vehicle':
-        return '🚚';
-      default:
-        return '🚗';
-    }
-  };
-
-  const getStatusBadge = () => {
-    switch (vehicle?.verificationStatus) {
-      case 'verified':
-        return { label: 'Verified', color: COLORS.success, icon: '✓' };
-      case 'pending':
-        return { label: 'Pending Verification', color: COLORS.warning, icon: '⏳' };
-      case 'rejected':
-        return { label: 'Rejected', color: COLORS.error, icon: '✕' };
-      default:
-        return { label: 'Unverified', color: COLORS.textSecondary, icon: '○' };
-    }
-  };
-
-  if (!vehicle) {
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <AppBar title="Vehicle Details" showBack onBackPress={() => navigation.goBack()} />
+      <SafeAreaView
+        style={[styles.container, {backgroundColor: colors.background}]}
+        edges={['top']}>
+        <AppBar
+          title={t('vehicles.details.title')}
+          showBack
+          onBackPress={() => navigation.goBack()}
+        />
         <View style={styles.loadingContainer}>
-          <Spinner size="large" color={COLORS.primary} />
+          <Spinner size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
   }
 
-  const statusBadge = getStatusBadge();
+  if (!vehicle) {
+    return (
+      <SafeAreaView
+        style={[styles.container, {backgroundColor: colors.background}]}
+        edges={['top']}>
+        <AppBar
+          title={t('vehicles.details.title')}
+          showBack
+          onBackPress={() => navigation.goBack()}
+        />
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, {color: colors.textSecondary}]}>
+            {t('errors.notFound')}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.background}]}
+      edges={['top']}>
       <AppBar
-        title="Vehicle Details"
+        title={t('vehicles.details.title')}
         showBack
         onBackPress={() => navigation.goBack()}
+        rightIcon={<Text style={{fontSize: 20}}>✏️</Text>}
+        onRightPress={handleEdit}
       />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            padding: layout.screenPadding,
+            paddingBottom: spacing.xxxl,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}>
         {/* Vehicle Header */}
-        <Card style={styles.headerCard}>
-          <Text style={styles.vehicleIcon}>{getVehicleIcon()}</Text>
-          <View style={styles.headerInfo}>
-            <Text style={styles.plateNumber}>{vehicle.plateNumber}</Text>
-            <Text style={styles.vehicleType}>{vehicle.vehicleType.replace('-', ' ')}</Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusBadge.color }]}>
-            <Text style={styles.statusIcon}>{statusBadge.icon}</Text>
-          </View>
-        </Card>
-
-        {/* Status Info */}
-        <Card>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Status:</Text>
-            <Text style={[styles.infoValue, { color: statusBadge.color }]}>
-              {statusBadge.label}
+        <View
+          style={[
+            styles.header,
+            {
+              alignItems: 'center',
+              marginBottom: spacing.xl,
+            },
+          ]}>
+          <Text style={[styles.vehicleIcon, {marginBottom: spacing.md}]}>
+            {getVehicleIcon(vehicle.vehicleType)}
+          </Text>
+          <Text
+            style={[
+              styles.plateNumber,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.sm,
+              },
+            ]}>
+            {vehicle.plateNumber}
+          </Text>
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: colors.successLight,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.xs,
+                borderRadius: 16,
+              },
+            ]}>
+            <Text style={[styles.statusText, {color: colors.success}]}>
+              ✓ {t('profile.verified.email').replace('✓ ', '')}
             </Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>RC Number:</Text>
-            <Text style={styles.infoValue}>{vehicle.rcNumber}</Text>
+        </View>
+
+        {/* Vehicle Information */}
+        <Card style={{marginBottom: spacing.md}}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.base,
+              },
+            ]}>
+            {t('vehicles.details.vehicleInfo')}
+          </Text>
+
+          <View style={[styles.infoRow, {borderBottomColor: colors.border}]}>
+            <Text style={[styles.infoLabel, {color: colors.textSecondary}]}>
+              {t('vehicles.details.registrationNumber')}
+            </Text>
+            <Text style={[styles.infoValue, {color: colors.textPrimary}]}>
+              {vehicle.plateNumber}
+            </Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Contact Phone:</Text>
-            <Text style={styles.infoValue}>{vehicle.contactPhone}</Text>
+
+          <View style={[styles.infoRow, {borderBottomColor: colors.border}]}>
+            <Text style={[styles.infoLabel, {color: colors.textSecondary}]}>
+              {t('vehicles.details.vehicleType')}
+            </Text>
+            <Text style={[styles.infoValue, {color: colors.textPrimary}]}>
+              {t(`vehicles.types.${vehicle.vehicleType}`)}
+            </Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Registered On:</Text>
-            <Text style={styles.infoValue}>
-              {formatDate(vehicle.createdAt, 'full')}
+
+          <View style={[styles.infoRow, {borderBottomWidth: 0}]}>
+            <Text style={[styles.infoLabel, {color: colors.textSecondary}]}>
+              {t('vehicles.details.addedOn')}
+            </Text>
+            <Text style={[styles.infoValue, {color: colors.textPrimary}]}>
+              {formatDate(vehicle.createdAt)}
             </Text>
           </View>
         </Card>
 
-        {/* Contact Methods */}
-        <Card>
-          <Text style={styles.sectionTitle}>Contact Methods</Text>
-          <View style={styles.contactMethodsGrid}>
-            {vehicle.contactMethods.phone && (
-              <View style={styles.contactMethod}>
-                <Text style={styles.contactMethodIcon}>📞</Text>
-                <Text style={styles.contactMethodText}>Phone</Text>
-              </View>
-            )}
-            {vehicle.contactMethods.sms && (
-              <View style={styles.contactMethod}>
-                <Text style={styles.contactMethodIcon}>💬</Text>
-                <Text style={styles.contactMethodText}>SMS</Text>
-              </View>
-            )}
-            {vehicle.contactMethods.whatsapp && (
-              <View style={styles.contactMethod}>
-                <Text style={styles.contactMethodIcon}>📱</Text>
-                <Text style={styles.contactMethodText}>WhatsApp</Text>
-              </View>
-            )}
-            {vehicle.contactMethods.email && (
-              <View style={styles.contactMethod}>
-                <Text style={styles.contactMethodIcon}>📧</Text>
-                <Text style={styles.contactMethodText}>Email</Text>
-              </View>
-            )}
+        {/* Contact Information */}
+        <Card style={{marginBottom: spacing.md}}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.base,
+              },
+            ]}>
+            {t('vehicles.details.contactInfo')}
+          </Text>
+
+          <View style={[styles.infoRow, {borderBottomColor: colors.border}]}>
+            <Text style={[styles.infoLabel, {color: colors.textSecondary}]}>
+              {t('vehicles.details.phoneNumber')}
+            </Text>
+            <Text style={[styles.infoValue, {color: colors.textPrimary}]}>
+              +91 {vehicle.contactPhone}
+            </Text>
+          </View>
+
+          <View style={[styles.infoRow, {borderBottomWidth: 0}]}>
+            <Text style={[styles.infoLabel, {color: colors.textSecondary}]}>
+              {t('vehicles.details.allowedMethods')}
+            </Text>
+            <View style={styles.methodsContainer}>
+              {vehicle.contactMethods?.phone && (
+                <View
+                  style={[
+                    styles.methodChip,
+                    {
+                      backgroundColor: colors.primaryLight,
+                      marginRight: spacing.xs,
+                      marginBottom: spacing.xs,
+                    },
+                  ]}>
+                  <Text style={[styles.methodText, {color: colors.primary}]}>
+                    📞 {t('common.yes')}
+                  </Text>
+                </View>
+              )}
+              {vehicle.contactMethods?.sms && (
+                <View
+                  style={[
+                    styles.methodChip,
+                    {
+                      backgroundColor: colors.primaryLight,
+                      marginRight: spacing.xs,
+                      marginBottom: spacing.xs,
+                    },
+                  ]}>
+                  <Text style={[styles.methodText, {color: colors.primary}]}>
+                    💬 SMS
+                  </Text>
+                </View>
+              )}
+              {vehicle.contactMethods?.whatsapp && (
+                <View
+                  style={[
+                    styles.methodChip,
+                    {
+                      backgroundColor: colors.primaryLight,
+                      marginBottom: spacing.xs,
+                    },
+                  ]}>
+                  <Text style={[styles.methodText, {color: colors.primary}]}>
+                    📱 WhatsApp
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </Card>
 
-        {/* Statistics */}
-        <Card>
-          <Text style={styles.sectionTitle}>Statistics</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{vehicle.stats.totalSearches}</Text>
-              <Text style={styles.statLabel}>Total Searches</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{vehicle.stats.contactRequests}</Text>
-              <Text style={styles.statLabel}>Contact Requests</Text>
-            </View>
+        {/* Activity Statistics */}
+        <Card style={{marginBottom: spacing.md}}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.base,
+              },
+            ]}>
+            {t('vehicles.details.activityStats')}
+          </Text>
+
+          <View style={[styles.infoRow, {borderBottomColor: colors.border}]}>
+            <Text style={[styles.infoLabel, {color: colors.textSecondary}]}>
+              {t('vehicles.details.totalSearches')}
+            </Text>
+            <Text style={[styles.infoValue, {color: colors.textPrimary}]}>
+              {vehicle.searches || 0}
+            </Text>
           </View>
 
-          {vehicle.stats.lastSearched && (
-            <View style={styles.lastSearched}>
-              <Text style={styles.lastSearchedLabel}>Last searched:</Text>
-              <Text style={styles.lastSearchedValue}>
-                {formatDate(vehicle.stats.lastSearched, 'relative')}
-              </Text>
-            </View>
-          )}
+          <View style={[styles.infoRow, {borderBottomColor: colors.border}]}>
+            <Text style={[styles.infoLabel, {color: colors.textSecondary}]}>
+              {t('vehicles.details.contactRequests')}
+            </Text>
+            <Text style={[styles.infoValue, {color: colors.textPrimary}]}>
+              {vehicle.contactRequests || 0}
+            </Text>
+          </View>
+
+          <View style={[styles.infoRow, {borderBottomWidth: 0}]}>
+            <Text style={[styles.infoLabel, {color: colors.textSecondary}]}>
+              {t('vehicles.details.lastSearched')}
+            </Text>
+            <Text style={[styles.infoValue, {color: colors.textPrimary}]}>
+              {vehicle.lastSearched
+                ? formatTimeAgo(vehicle.lastSearched)
+                : t('time.justNow')}
+            </Text>
+          </View>
         </Card>
 
-        {/* Actions */}
-        <View style={styles.actions}>
+        {/* Action Buttons */}
+        <View style={styles.buttonContainer}>
           <SecondaryButton
-            title="Edit Vehicle"
-            onPress={handleEdit}
-            disabled={isLoading}
+            title={t('vehicles.details.shareButton')}
+            onPress={handleShare}
             fullWidth
-            icon={<Text style={{ color: COLORS.primary }}>✏️</Text>}
+            style={{marginBottom: spacing.md}}
+            leftIcon={<Text>📤</Text>}
           />
 
           <SecondaryButton
-            title="Delete Vehicle"
+            title={t('vehicles.details.deleteButton')}
             onPress={handleDelete}
-            disabled={isLoading}
+            loading={isDeleting}
             fullWidth
-            style={[styles.deleteButton, { marginTop: SPACING.md }]}
-            icon={<Text style={{ color: COLORS.error }}>🗑️</Text>}
+            style={{
+              borderColor: colors.error,
+            }}
+            textStyle={{color: colors.error}}
+            leftIcon={<Text>🗑️</Text>}
           />
         </View>
       </ScrollView>
@@ -232,136 +410,77 @@ const VehicleDetailsScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    // Dynamic
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scrollView: {
+  errorContainer: {
     flex: 1,
-  },
-  scrollContent: {
-    padding: LAYOUT.screenPadding,
-    paddingBottom: SPACING.xxxl,
-  },
-  headerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-    position: 'relative',
-  },
-  vehicleIcon: {
-    fontSize: 60,
-    marginRight: SPACING.base,
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  plateNumber: {
-    ...TYPOGRAPHY.h1,
-    marginBottom: SPACING.xs,
-  },
-  vehicleType: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textTransform: 'capitalize',
-  },
-  statusBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  statusIcon: {
-    color: COLORS.white,
-    fontSize: 20,
+  errorText: {
+    fontSize: 15,
+  },
+  header: {
+    // Dynamic
+  },
+  vehicleIcon: {
+    fontSize: 72,
+  },
+  plateNumber: {
+    fontSize: 24,
     fontWeight: '700',
+  },
+  statusBadge: {
+    // Dynamic
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.neutralBorder,
   },
   infoLabel: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    fontSize: 14,
   },
   infoValue: {
-    ...TYPOGRAPHY.bodyBold,
-    textAlign: 'right',
-    flex: 1,
-    marginLeft: SPACING.md,
+    fontSize: 14,
+    fontWeight: '500',
   },
-  sectionTitle: {
-    ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.base,
-  },
-  contactMethodsGrid: {
+  methodsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: SPACING.sm,
-    gap: SPACING.md,
+    justifyContent: 'flex-end',
   },
-  contactMethod: {
-    alignItems: 'center',
-    width: '22%',
-  },
-  contactMethodIcon: {
-    fontSize: 32,
-    marginBottom: SPACING.xs,
-  },
-  contactMethodText: {
-    ...TYPOGRAPHY.caption,
-    textAlign: 'center',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    marginBottom: SPACING.base,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: COLORS.primaryLight,
-    padding: SPACING.base,
+  methodChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
-    alignItems: 'center',
   },
-  statValue: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.primary,
-    marginBottom: SPACING.xs,
+  methodText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
-  statLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  lastSearched: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: SPACING.base,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.neutralBorder,
-  },
-  lastSearchedLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  lastSearchedValue: {
-    ...TYPOGRAPHY.captionBold,
-  },
-  actions: {
-    marginTop: SPACING.base,
-  },
-  deleteButton: {
-    borderColor: COLORS.error,
+  buttonContainer: {
+    // Dynamic
   },
 });
 

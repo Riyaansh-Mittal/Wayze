@@ -1,6 +1,7 @@
 /**
  * Plate Input Component
  * Specialized input for vehicle plate numbers with auto-uppercase and validation
+ * FULLY THEME-AWARE
  */
 
 import React, { useEffect, useState } from 'react';
@@ -9,19 +10,21 @@ import PropTypes from 'prop-types';
 import TextInput from './TextInput';
 import { validatePlateNumber } from '../../../utils/validators';
 import { VALIDATION } from '../../../config/constants';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const PlateInput = ({
-  label = 'Registration Number',
+  label,
   value,
   onChangeText,
   onValidChange,
-  placeholder = 'MH01AB1234',
+  placeholder,
   error,
-  helperText = `Format: ${VALIDATION.PLATE_NUMBER_FORMAT}`,
+  helperText,
   disabled = false,
   style,
   testID,
 }) => {
+  const { t } = useTheme();
   const [internalError, setInternalError] = useState(error);
 
   useEffect(() => {
@@ -31,8 +34,10 @@ const PlateInput = ({
   const handleChange = (text) => {
     // Convert to uppercase
     const upperText = text.toUpperCase();
+
     // Remove spaces and special characters
     const cleanText = upperText.replace(/[^A-Z0-9]/g, '');
+
     // Limit to 10 characters (format: AA00AA0000)
     const limitedText = cleanText.slice(0, 10);
     onChangeText(limitedText);
@@ -56,22 +61,21 @@ const PlateInput = ({
     }
   };
 
-  const leftIcon = <Text style={{ fontSize: 16, color: '#616161' }}>🚗</Text>;
+  const leftIcon = <Text style={{ fontSize: 20 }}>🚗</Text>;
 
   return (
     <TextInput
-      label={label}
+      label={label || t?.('vehicles.plateLabel') || 'Registration Number'}
       value={value}
       onChangeText={handleChange}
-      placeholder={placeholder}
+      placeholder={placeholder || 'MH01AB1234'}
       error={internalError}
-      helperText={!internalError ? helperText : undefined}
+      helperText={helperText || `Format: ${VALIDATION.PLATE_NUMBER_FORMAT}`}
       disabled={disabled}
       keyboardType="default"
       autoCapitalize="characters"
-      autoCorrect={false}
-      maxLength={10}
       leftIcon={leftIcon}
+      maxLength={10}
       style={style}
       testID={testID}
     />
@@ -87,7 +91,7 @@ PlateInput.propTypes = {
   error: PropTypes.string,
   helperText: PropTypes.string,
   disabled: PropTypes.bool,
-  style: PropTypes.object,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   testID: PropTypes.string,
 };
 

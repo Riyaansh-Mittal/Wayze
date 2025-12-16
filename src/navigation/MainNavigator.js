@@ -4,21 +4,38 @@
  */
 
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, Platform } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING } from '../config/theme';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {View, Text, StyleSheet, Platform} from 'react-native';
+import {COLORS, TYPOGRAPHY, SPACING} from '../config/theme';
 import VehicleNavigator from './VehicleNavigator';
 import SearchNavigator from './SearchNavigator'; // ✅ Import SearchNavigator
 import HomeScreen from '../screens/home/HomeScreen';
 import ProfileNavigator from './ProfileNavigator';
+import {
+  HomeIcon as HomeSvg,
+  SearchIcon as SearchSvg,
+  CarIcon as VehiclesSvg,
+  ProfileIcon as ProfileSvg,
+} from '../assets/icons';
 
 const Tab = createBottomTabNavigator();
 
 // Tab bar icons
-const HomeIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🏠</Text>;
-const SearchIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🔍</Text>;
-const VehiclesIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>🚗</Text>;
-const ProfileIcon = ({ size }) => <Text style={{ fontSize: size + 4 }}>👤</Text>;
+const HomeIcon = ({size, color}) => (
+  <HomeSvg width={size} height={size} fill={color} />
+);
+
+const SearchIcon = ({size, color}) => (
+  <SearchSvg width={size} height={size} fill={color} />
+);
+
+const VehiclesIcon = ({size, color}) => (
+  <VehiclesSvg width={size} height={size} fill={color} />
+);
+
+const ProfileIcon = ({size, color}) => (
+  <ProfileSvg width={size} height={size} fill={color} />
+);
 
 const MainNavigator = () => {
   // Use fixed padding for Android
@@ -39,7 +56,7 @@ const MainNavigator = () => {
           backgroundColor: COLORS.white,
           elevation: 8,
           shadowColor: COLORS.black,
-          shadowOffset: { width: 0, height: -2 },
+          shadowOffset: {width: 0, height: -2},
           shadowOpacity: 0.1,
           shadowRadius: 8,
         },
@@ -51,27 +68,26 @@ const MainNavigator = () => {
         tabBarIconStyle: {
           marginTop: 4,
         },
-      }}
-    >
+      }}>
       <Tab.Screen
         name="Home"
         component={HomeScreen}
-        options={{ tabBarIcon: HomeIcon }}
+        options={{tabBarIcon: HomeIcon}}
       />
       <Tab.Screen
         name="Search"
-        component={SearchNavigator}  // ✅ Use SearchNavigator instead of placeholder
-        options={{ tabBarIcon: SearchIcon }}
+        component={SearchNavigator} // ✅ Use SearchNavigator instead of placeholder
+        options={{tabBarIcon: SearchIcon}}
       />
       <Tab.Screen
         name="Vehicles"
         component={VehicleNavigator}
-        options={{ tabBarIcon: VehiclesIcon }}
+        options={{tabBarIcon: VehiclesIcon}}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileNavigator}
-        options={{ tabBarIcon: ProfileIcon }}
+        options={{tabBarIcon: ProfileIcon}}
       />
     </Tab.Navigator>
   );

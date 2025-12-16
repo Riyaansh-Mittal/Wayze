@@ -1,6 +1,7 @@
 /**
  * Destructive Button Component
  * Used for dangerous/irreversible actions (delete, logout, etc.)
+ * FULLY THEME-AWARE
  */
 
 import React from 'react';
@@ -12,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import PropTypes from 'prop-types';
-import { COLORS, COMPONENTS, TYPOGRAPHY } from '../../../config/theme';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const DestructiveButton = ({
   title,
@@ -25,16 +26,36 @@ const DestructiveButton = ({
   textStyle,
   testID,
 }) => {
+  const { theme } = useTheme();
+  const { colors, components, spacing } = theme;
+
   const isDisabled = disabled || loading;
+
+  const buttonStyle = [
+    styles.button,
+    {
+      height: components.destructiveButton.height,
+      backgroundColor: colors.error,
+      borderRadius: components.destructiveButton.borderRadius,
+      paddingHorizontal: components.destructiveButton.paddingHorizontal,
+    },
+    fullWidth && styles.fullWidth,
+    isDisabled && {
+      backgroundColor: colors.neutralBorder,
+      opacity: 0.6,
+    },
+    style,
+  ];
+
+  const textStyles = [
+    styles.text,
+    { color: colors.white },
+    textStyle,
+  ];
 
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        fullWidth && styles.fullWidth,
-        isDisabled && styles.disabled,
-        style,
-      ]}
+      style={buttonStyle}
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
@@ -44,11 +65,15 @@ const DestructiveButton = ({
       testID={testID}
     >
       {loading ? (
-        <ActivityIndicator color={COLORS.white} size="small" />
+        <ActivityIndicator color={colors.white} size="small" />
       ) : (
         <View style={styles.content}>
-          {icon && <View style={styles.iconContainer}>{icon}</View>}
-          <Text style={[styles.text, textStyle]}>{title}</Text>
+          {icon && (
+            <View style={{ marginRight: spacing.sm }}>
+              {icon}
+            </View>
+          )}
+          <Text style={textStyles}>{title}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -57,10 +82,6 @@ const DestructiveButton = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: COMPONENTS.destructiveButton.height,
-    backgroundColor: COMPONENTS.destructiveButton.backgroundColor,
-    borderRadius: COMPONENTS.destructiveButton.borderRadius,
-    paddingHorizontal: COMPONENTS.destructiveButton.paddingHorizontal,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
@@ -69,21 +90,14 @@ const styles = StyleSheet.create({
   fullWidth: {
     width: '100%',
   },
-  disabled: {
-    backgroundColor: COLORS.neutralBorder,
-    opacity: 0.6,
-  },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconContainer: {
-    marginRight: COMPONENTS.destructiveButton.iconSpacing,
-  },
   text: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
@@ -94,8 +108,8 @@ DestructiveButton.propTypes = {
   loading: PropTypes.bool,
   icon: PropTypes.node,
   fullWidth: PropTypes.bool,
-  style: PropTypes.object,
-  textStyle: PropTypes.object,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  textStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   testID: PropTypes.string,
 };
 

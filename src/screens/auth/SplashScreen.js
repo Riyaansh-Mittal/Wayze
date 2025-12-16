@@ -1,38 +1,35 @@
 /**
  * Splash Screen
  * App initialization and auto-login check
+ * FULLY THEME-AWARE - MATCHES DESIGN
  */
 
-import React, { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useAuth } from '../../hooks';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
-import { TIME } from '../../config/constants';
-import Spinner from '../../components/common/Loading/Spinner';
+import React, {useEffect, useCallback} from 'react';
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
+import {useAuth} from '../../hooks';
+import {useTheme} from '../../contexts/ThemeContext';
+import {TIME} from '../../config/constants';
 
-const SplashScreen = ({ navigation }) => {
-  const { isAuthenticated, isLoading, isFirstTimeUser } = useAuth();
+const SplashScreen = ({navigation}) => {
+  const {t, theme} = useTheme();
+  const {colors} = theme;
+  const {isAuthenticated, isLoading, isFirstTimeUser} = useAuth();
 
-  // ✅ FIXED: Wrapped in useCallback
   const navigateToNextScreen = useCallback(() => {
     setTimeout(() => {
       if (isAuthenticated) {
         // User is logged in
         if (isFirstTimeUser()) {
-          // First time user - check if referral was applied during signup
           navigation.replace('ReferralEntry');
         } else {
-          // Returning user - go to main app
           navigation.replace('Main');
         }
       } else {
-        // User not logged in - show welcome
         navigation.replace('Welcome');
       }
     }, 300);
   }, [isAuthenticated, isFirstTimeUser, navigation]);
 
-  // ✅ FIXED: Wrapped in useCallback
   const initializeApp = useCallback(async () => {
     // Minimum splash display time for branding
     await new Promise(resolve => setTimeout(resolve, TIME.SPLASH_MIN_DURATION));
@@ -53,23 +50,28 @@ const SplashScreen = ({ navigation }) => {
   }, [isLoading, navigateToNextScreen]);
 
   return (
-    <View style={styles.container}>
-      {/* Logo/Branding */}
+    <View style={[styles.container, {backgroundColor: colors.primary}]}>
+      {/* Logo Container */}
       <View style={styles.logoContainer}>
-        <Text style={styles.logo}>🚗</Text>
-        <Text style={styles.appName}>QR Parking</Text>
-        <Text style={styles.tagline}>Find vehicle owners instantly</Text>
+        {/* App Icon/Logo - Replace with your actual logo */}
+        <View style={[styles.logoCircle, {backgroundColor: colors.white}]}>
+          <Text style={[styles.logoIcon, {color: colors.primary}]}>
+            {t?.('common.appIcon') || '🚗'}
+          </Text>
+        </View>
+
+        {/* App Name */}
+        <Text style={[styles.appName, {color: colors.white}]}>
+          {t?.('common.appName') || 'QR Parking'}
+        </Text>
       </View>
 
       {/* Loading Indicator */}
       <View style={styles.loaderContainer}>
-        <Spinner color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Made with ❤️ in India 🇮🇳</Text>
+        <ActivityIndicator size="large" color={colors.white} />
+        <Text style={[styles.loadingText, {color: colors.white}]}>
+          {t?.('common.loading') || 'Loading...'}
+        </Text>
       </View>
     </View>
   );
@@ -78,44 +80,46 @@ const SplashScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: SPACING.xxxl,
   },
   logoContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logo: {
-    fontSize: 80,
-    marginBottom: SPACING.base,
+  logoCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    // Add shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    // Add elevation for Android
+    elevation: 8,
+  },
+  logoIcon: {
+    fontSize: 50,
   },
   appName: {
-    ...TYPOGRAPHY.h1,
     fontSize: 32,
-    marginBottom: SPACING.xs,
-  },
-  tagline: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   loaderContainer: {
+    position: 'absolute',
+    bottom: 100,
     alignItems: 'center',
-    marginBottom: SPACING.xxxl,
   },
   loadingText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.md,
-  },
-  footer: {
-    alignItems: 'center',
-  },
-  footerText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 15,
+    marginTop: 16,
+    fontWeight: '500',
   },
 });
 

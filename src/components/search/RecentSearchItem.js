@@ -1,37 +1,61 @@
 /**
  * Recent Search Item Component
  * Tappable recent search with delete option
+ * FULLY THEME-AWARE
  */
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { formatDate } from '../../utils/formatters';
 
 const RecentSearchItem = ({ search, onPress, onDelete }) => {
+  const { theme } = useTheme();
+  const { colors, spacing } = theme;
+
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.white,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.base,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.neutralBorder,
+        }
+      ]}
       onPress={() => onPress(search)}
       activeOpacity={0.7}
     >
-      <View style={styles.iconContainer}>
+      <View style={[
+        styles.iconContainer,
+        {
+          backgroundColor: colors.neutralLight,
+          marginRight: spacing.md,
+        }
+      ]}>
         <Text style={styles.icon}>🕐</Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.plateNumber}>{search.plateNumber}</Text>
-        <Text style={styles.timestamp}>
+        <Text style={[styles.plateNumber, {
+          color: colors.textPrimary,
+          marginBottom: spacing.xs,
+        }]}>
+          {search.plateNumber}
+        </Text>
+        <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
           {search.found ? '✓ Found' : '✕ Not found'} • {formatDate(search.searchedAt, 'relative')}
         </Text>
       </View>
 
       <TouchableOpacity
-        style={styles.deleteButton}
+        style={[styles.deleteButton, { backgroundColor: colors.errorLight }]}
         onPress={() => onDelete(search.plateNumber)}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Text style={styles.deleteIcon}>✕</Text>
+        <Text style={[styles.deleteIcon, { color: colors.error }]}>✕</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -41,20 +65,13 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.base,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.neutralBorder,
   },
   iconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.neutralLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.md,
   },
   icon: {
     fontSize: 20,
@@ -63,24 +80,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   plateNumber: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.xs,
+    fontSize: 16,
+    fontWeight: '600',
   },
   timestamp: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
   },
   deleteButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.errorLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   deleteIcon: {
     fontSize: 16,
-    color: COLORS.error,
     fontWeight: '700',
   },
 });

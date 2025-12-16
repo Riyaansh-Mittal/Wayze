@@ -1,111 +1,197 @@
 /**
  * Delete Account Step 1 Screen
  * Warning about account deletion consequences
+ * MATCHES SCREENSHOT DESIGN
  */
 
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../contexts/ThemeContext';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
+import {View, Text, StyleSheet, ScrollView} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useTheme} from '../../contexts/ThemeContext';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
+import {WarningIcon} from '../../assets/icons';
 
-const DeleteAccountStep1Screen = ({ navigation }) => {
-  const { t } = useTheme();
+const DeleteAccountStep1Screen = ({navigation}) => {
+  const {t, theme} = useTheme();
+  const {colors, spacing, layout} = theme;
 
   const handleContinue = () => {
     navigation.navigate('DeleteAccountStep2');
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.background}]}
+      edges={['top']}>
       <AppBar
-        title={t('deleteAccount.title')}
+        title={t('profile.deleteAccount.step1.title')}
         showBack
         onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            padding: layout.screenPadding,
+            paddingBottom: spacing.xxxl,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}>
         {/* Warning Icon */}
-        <View style={styles.header}>
-          <Text style={styles.warningIcon}>⚠️</Text>
-          <Text style={styles.title}>{t('deleteAccount.warning')}</Text>
+        <View
+          style={[
+            styles.iconContainer,
+            {
+              alignItems: 'center',
+              marginTop: spacing.xl,
+              marginBottom: spacing.xl,
+            },
+          ]}>
+          <WarningIcon width={56} height={56} fill={colors.error} />
         </View>
 
-        {/* Consequences List */}
-        <Card style={styles.warningCard}>
-          <Text style={styles.cardTitle}>{t('deleteAccount.willHappen')}</Text>
+        {/* Title */}
+        <Text
+          style={[
+            styles.title,
+            {
+              color: colors.error,
+              textAlign: 'center',
+              marginBottom: spacing.sm,
+            },
+          ]}>
+          {t('profile.deleteAccount.step1.heading')}
+        </Text>
+        <Text
+          style={[
+            styles.subtitle,
+            {
+              color: colors.textSecondary,
+              textAlign: 'center',
+              marginBottom: spacing.xl,
+            },
+          ]}>
+          {t('profile.deleteAccount.step1.subtitle')}
+        </Text>
 
-          <View style={styles.consequenceItem}>
-            <Text style={styles.consequenceIcon}>🗑️</Text>
-            <Text style={styles.consequenceText}>
-              {t('deleteAccount.allVehiclesDeleted')}
-            </Text>
-          </View>
-
-          <View style={styles.consequenceItem}>
-            <Text style={styles.consequenceIcon}>📊</Text>
-            <Text style={styles.consequenceText}>
-              {t('deleteAccount.activityDeleted')}
-            </Text>
-          </View>
-
-          <View style={styles.consequenceItem}>
-            <Text style={styles.consequenceIcon}>💰</Text>
-            <Text style={styles.consequenceText}>
-              {t('deleteAccount.balanceLost')}
-            </Text>
-          </View>
-
-          <View style={styles.consequenceItem}>
-            <Text style={styles.consequenceIcon}>🔗</Text>
-            <Text style={styles.consequenceText}>
-              {t('deleteAccount.referralsLost')}
-            </Text>
-          </View>
-
-          <View style={styles.consequenceItem}>
-            <Text style={styles.consequenceIcon}>🚫</Text>
-            <Text style={styles.consequenceText}>
-              {t('deleteAccount.cantRecover')}
-            </Text>
-          </View>
-        </Card>
-
-        {/* Alternative Options */}
-        <Card>
-          <Text style={styles.cardTitle}>{t('deleteAccount.alternativeTitle')}</Text>
-          <Text style={styles.cardBody}>
-            {t('deleteAccount.alternativeText')}
+        {/* What Will Be Deleted Card */}
+        <Card
+          style={{marginBottom: spacing.lg, backgroundColor: colors.surface}}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.base,
+              },
+            ]}>
+            {t('profile.deleteAccount.step1.whatWillBeDeleted')}
           </Text>
+
+          <View style={[styles.warningItem, {marginBottom: spacing.sm}]}>
+            <Text style={[styles.warningX, {color: colors.error}]}>✕</Text>
+            <Text
+              style={[
+                styles.warningText,
+                {
+                  color: colors.textSecondary,
+                  flex: 1,
+                },
+              ]}>
+              {t('profile.deleteAccount.step1.warning1')}
+            </Text>
+          </View>
+
+          <View style={[styles.warningItem, {marginBottom: spacing.sm}]}>
+            <Text style={[styles.warningX, {color: colors.error}]}>✕</Text>
+            <Text
+              style={[
+                styles.warningText,
+                {
+                  color: colors.textSecondary,
+                  flex: 1,
+                },
+              ]}>
+              {t('profile.deleteAccount.step1.warning2')}
+            </Text>
+          </View>
+
+          <View style={[styles.warningItem, {marginBottom: spacing.sm}]}>
+            <Text style={[styles.warningX, {color: colors.error}]}>✕</Text>
+            <Text
+              style={[
+                styles.warningText,
+                {
+                  color: colors.textSecondary,
+                  flex: 1,
+                },
+              ]}>
+              {t('profile.deleteAccount.step1.warning3')}
+            </Text>
+          </View>
+
+          <View style={styles.warningItem}>
+            <Text style={[styles.warningX, {color: colors.error}]}>✕</Text>
+            <Text
+              style={[
+                styles.warningText,
+                {
+                  color: colors.textSecondary,
+                  flex: 1,
+                },
+              ]}>
+              {t('profile.deleteAccount.step1.warning4')}
+            </Text>
+          </View>
         </Card>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          <SecondaryButton
-            title={t('deleteAccount.continueDelete')}
+        {/* Final Warning Card */}
+        <Card
+          style={[
+            styles.finalWarningCard,
+            {
+              backgroundColor: colors.warningLight,
+              borderColor: colors.warning,
+              borderWidth: 1,
+              marginBottom: spacing.xl,
+            },
+          ]}>
+          <View style={styles.warningRow}>
+            <WarningIcon width={15} height={15} fill={colors.warning}/>
+            <Text
+              style={[
+                styles.finalWarningText,
+                {
+                  color: colors.textPrimary,
+                  flex: 1,
+                },
+              ]}>
+              {t('profile.deleteAccount.step1.finalWarning')}
+            </Text>
+          </View>
+        </Card>
+
+        {/* Buttons */}
+        <View style={styles.buttonContainer}>
+          <PrimaryButton
+            title={t('profile.deleteAccount.step1.continueButton')}
             onPress={handleContinue}
             fullWidth
-            style={styles.deleteButton}
+            style={{
+              backgroundColor: colors.error,
+              marginBottom: spacing.md,
+            }}
           />
 
-          <PrimaryButton
-            title={t('common.cancel')}
+          <SecondaryButton
+            title={t('profile.deleteAccount.step1.keepButton')}
             onPress={() => navigation.goBack()}
             fullWidth
-            style={{ marginTop: SPACING.md }}
           />
         </View>
       </ScrollView>
@@ -116,61 +202,53 @@ const DeleteAccountStep1Screen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: LAYOUT.screenPadding,
-    paddingBottom: SPACING.xxxl,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
-  },
-  warningIcon: {
-    fontSize: 80,
-    marginBottom: SPACING.md,
-  },
+  scrollContent: {},
+  iconContainer: {},
+  iconCircle: {},
   title: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.error,
-    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 30,
   },
-  warningCard: {
-    backgroundColor: COLORS.errorLight,
-    borderColor: COLORS.error,
-    marginBottom: SPACING.base,
+  subtitle: {
+    fontSize: 15,
+    lineHeight: 22,
   },
-  cardTitle: {
-    ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.base,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
   },
-  cardBody: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-  },
-  consequenceItem: {
+  warningItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: SPACING.sm,
   },
-  consequenceIcon: {
+  warningX: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  warningText: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  finalWarningCard: {},
+  warningRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  warningIconLarge: {
     fontSize: 24,
-    marginRight: SPACING.sm,
   },
-  consequenceText: {
-    ...TYPOGRAPHY.body,
-    flex: 1,
-    color: COLORS.error,
+  finalWarningText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
-  actions: {
-    marginTop: SPACING.xl,
-  },
-  deleteButton: {
-    borderColor: COLORS.error,
-  },
+  buttonContainer: {},
 });
 
 export default DeleteAccountStep1Screen;

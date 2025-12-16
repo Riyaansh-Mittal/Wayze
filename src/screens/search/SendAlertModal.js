@@ -1,9 +1,10 @@
 /**
  * Send Alert Modal
  * Free action to notify vehicle owner
+ * FULLY THEME-AWARE WITH TRANSLATIONS
  */
 
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -12,23 +13,29 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ContactService } from '../../services/api';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../config/theme';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {ContactService} from '../../services/api';
 import AppBar from '../../components/navigation/AppBar';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
 import Card from '../../components/common/Card/Card';
+import {InfoIcon} from '../../assets/icons';
+import {useTheme} from '../../contexts/ThemeContext';
 
-const SendAlertModal = ({ navigation, route }) => {
-  const { vehicle, searchQuery } = route.params;
-  
+const SendAlertModal = ({navigation, route}) => {
+  const {vehicle, searchQuery} = route.params;
+  const {t, theme} = useTheme();
+  const {colors, spacing, layout} = theme;
+
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
   const handleSendAlert = async () => {
     if (!message.trim()) {
-      Alert.alert('Message Required', 'Please enter a message for the owner.');
+      Alert.alert(
+        t('search.alert.messageRequired'),
+        t('search.alert.messageRequiredDesc'),
+      );
       return;
     }
 
@@ -43,67 +50,131 @@ const SendAlertModal = ({ navigation, route }) => {
 
       if (response.success) {
         Alert.alert(
-          'Alert Sent!',
-          'The vehicle owner has been notified.',
+          t('search.alert.successTitle'),
+          t('search.alert.successMessage'),
           [
             {
-              text: 'OK',
+              text: t('common.ok'),
               onPress: () => navigation.navigate('FindVehicle'),
             },
-          ]
+          ],
         );
       } else {
-        Alert.alert('Error', 'Failed to send alert. Please try again.');
+        Alert.alert(
+          t('search.alert.errorTitle'),
+          t('search.alert.errorMessage'),
+        );
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to send alert. Please try again.');
+      Alert.alert(t('search.alert.errorTitle'), t('search.alert.errorMessage'));
     } finally {
       setIsSending(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.background}]}
+      edges={['top']}>
       <AppBar
-        title="Send Alert"
+        title={t('search.alert.title')}
         showBack
         onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            padding: layout.screenPadding,
+            paddingBottom: spacing.xxxl,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.icon}>🔔</Text>
-          <Text style={styles.title}>Notify Owner</Text>
-          <Text style={styles.subtitle}>
-            Send a free alert to the owner of {searchQuery}
+        <View style={[styles.header, {marginBottom: spacing.xl}]}>
+          <Text style={[styles.icon, {marginBottom: spacing.md}]}>🔔</Text>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.sm,
+              },
+            ]}>
+            {t('search.alert.heading')}
+          </Text>
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color: colors.textSecondary,
+                textAlign: 'center',
+              },
+            ]}>
+            {t('search.alert.subtitle', {plate: searchQuery})}
           </Text>
         </View>
 
         {/* Free Badge */}
-        <Card style={styles.freeCard}>
+        <Card
+          style={[
+            styles.freeCard,
+            {
+              backgroundColor: colors.successLight,
+              borderColor: colors.success,
+              borderWidth: 1,
+              marginBottom: spacing.lg,
+            },
+          ]}>
           <View style={styles.freeRow}>
-            <Text style={styles.freeIcon}>✨</Text>
+            <Text style={[styles.freeIcon, {marginRight: spacing.md}]}>✨</Text>
             <View style={styles.freeInfo}>
-              <Text style={styles.freeTitle}>100% Free</Text>
-              <Text style={styles.freeDescription}>
-                No credits deducted for sending alerts
+              <Text
+                style={[
+                  styles.freeTitle,
+                  {
+                    color: colors.success,
+                    marginBottom: spacing.xs,
+                  },
+                ]}>
+                {t('search.alert.freeTitle')}
+              </Text>
+              <Text
+                style={[styles.freeDescription, {color: colors.textSecondary}]}>
+                {t('search.alert.freeDescription')}
               </Text>
             </View>
           </View>
         </Card>
 
         {/* Message Input */}
-        <View style={styles.inputSection}>
-          <Text style={styles.label}>Your Message</Text>
+        <View style={[styles.inputSection, {marginBottom: spacing.lg}]}>
+          <Text
+            style={[
+              styles.label,
+              {
+                color: colors.textPrimary,
+                marginBottom: spacing.sm,
+              },
+            ]}>
+            {t('search.alert.messageLabel')}
+          </Text>
           <TextInput
-            style={styles.textInput}
-            placeholder="e.g., Your vehicle is blocking my car. Please move it."
-            placeholderTextColor={COLORS.textSecondary}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 8,
+                padding: spacing.md,
+                color: colors.textPrimary,
+              },
+            ]}
+            placeholder={t('search.alert.messagePlaceholder')}
+            placeholderTextColor={colors.textSecondary}
             multiline
             numberOfLines={4}
             maxLength={200}
@@ -111,20 +182,54 @@ const SendAlertModal = ({ navigation, route }) => {
             onChangeText={setMessage}
             textAlignVertical="top"
           />
-          <Text style={styles.charCount}>{message.length}/200</Text>
+          <Text
+            style={[
+              styles.charCount,
+              {
+                color: colors.textSecondary,
+                marginTop: spacing.xs,
+              },
+            ]}>
+            {t('search.alert.charCount', {count: message.length})}
+          </Text>
         </View>
 
         {/* Info Box */}
-        <Card style={styles.infoCard}>
+        <Card
+          style={[
+            styles.infoCard,
+            {
+              backgroundColor: colors.primaryLight,
+              marginBottom: spacing.xl,
+            },
+          ]}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>ℹ️</Text>
-            <View style={styles.infoText}>
-              <Text style={styles.infoTitle}>What Happens Next?</Text>
-              <Text style={styles.infoDescription}>
-                • Owner gets a notification{'\n'}
-                • Your message is delivered{'\n'}
-                • Contact details remain private{'\n'}
-                • This action is logged for safety
+            <View style={{marginRight: spacing.md}}>
+              <InfoIcon width={24} height={24} fill={colors.primary} />
+            </View>
+            <View style={styles.infoTextContainer}>
+              <Text
+                style={[
+                  styles.infoTitle,
+                  {
+                    color: colors.textPrimary,
+                    marginBottom: spacing.sm,
+                  },
+                ]}>
+                {t('search.alert.infoTitle')}
+              </Text>
+              <Text
+                style={[
+                  styles.infoDescription,
+                  {
+                    color: colors.textSecondary,
+                    lineHeight: 20,
+                  },
+                ]}>
+                • {t('search.alert.infoPoint1')}
+                {'\n'}• {t('search.alert.infoPoint2')}
+                {'\n'}• {t('search.alert.infoPoint3')}
+                {'\n'}• {t('search.alert.infoPoint4')}
               </Text>
             </View>
           </View>
@@ -133,18 +238,22 @@ const SendAlertModal = ({ navigation, route }) => {
         {/* Actions */}
         <View style={styles.actions}>
           <PrimaryButton
-            title={isSending ? 'Sending...' : 'Send Alert'}
+            title={
+              isSending
+                ? t('search.alert.sending')
+                : t('search.alert.sendButton')
+            }
             onPress={handleSendAlert}
             loading={isSending}
             fullWidth
             disabled={!message.trim()}
+            style={{marginBottom: spacing.md}}
           />
 
           <SecondaryButton
-            title="Cancel"
+            title={t('search.alert.cancelButton')}
             onPress={() => navigation.goBack()}
             fullWidth
-            style={{ marginTop: SPACING.md }}
           />
         </View>
       </ScrollView>
@@ -155,106 +264,72 @@ const SendAlertModal = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: LAYOUT.screenPadding,
-    paddingBottom: SPACING.xxxl,
-  },
+  scrollContent: {},
   header: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
   },
   icon: {
     fontSize: 64,
-    marginBottom: SPACING.md,
   },
   title: {
-    ...TYPOGRAPHY.h2,
-    marginBottom: SPACING.sm,
+    fontSize: 24,
+    fontWeight: '700',
   },
   subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 22,
   },
-  freeCard: {
-    backgroundColor: COLORS.successLight,
-    borderColor: COLORS.success,
-    marginBottom: SPACING.lg,
-  },
+  freeCard: {},
   freeRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   freeIcon: {
     fontSize: 32,
-    marginRight: SPACING.md,
   },
   freeInfo: {
     flex: 1,
   },
   freeTitle: {
-    ...TYPOGRAPHY.bodyBold,
-    color: COLORS.success,
-    marginBottom: SPACING.xs,
+    fontSize: 16,
+    fontWeight: '600',
   },
   freeDescription: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
   },
-  inputSection: {
-    marginBottom: SPACING.lg,
-  },
+  inputSection: {},
   label: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.sm,
+    fontSize: 16,
+    fontWeight: '600',
   },
   textInput: {
-    ...TYPOGRAPHY.body,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.neutralBorder,
-    borderRadius: 8,
-    padding: SPACING.md,
+    fontSize: 15,
     minHeight: 100,
   },
   charCount: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    fontSize: 13,
     textAlign: 'right',
-    marginTop: SPACING.xs,
   },
-  infoCard: {
-    backgroundColor: COLORS.primaryLight,
-    marginBottom: SPACING.xl,
-  },
+  infoCard: {},
   infoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  infoIcon: {
-    fontSize: 24,
-    marginRight: SPACING.md,
-  },
-  infoText: {
+  infoTextContainer: {
     flex: 1,
   },
   infoTitle: {
-    ...TYPOGRAPHY.bodyBold,
-    marginBottom: SPACING.sm,
+    fontSize: 16,
+    fontWeight: '600',
   },
   infoDescription: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
+    fontSize: 13,
   },
-  actions: {
-    marginTop: SPACING.base,
-  },
+  actions: {},
 });
 
 export default SendAlertModal;

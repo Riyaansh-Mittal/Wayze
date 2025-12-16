@@ -1,20 +1,23 @@
 /**
  * Search Input Component
  * Auto-uppercase plate number search input
+ * FULLY THEME-AWARE
  */
 
 import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../config/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const SearchInput = ({
   value,
   onChangeText,
   onSearch,
-  placeholder = 'Enter vehicle number',
+  placeholder,
   autoFocus = false,
   error,
 }) => {
+  const { t, theme } = useTheme();
+  const { colors, spacing, shadows } = theme;
   const [isFocused, setIsFocused] = useState(false);
 
   const handleChangeText = (text) => {
@@ -27,25 +30,37 @@ const SearchInput = ({
     onChangeText('');
   };
 
+  const inputContainerStyle = [
+    styles.inputContainer,
+    {
+      backgroundColor: colors.white,
+      borderWidth: 2,
+      borderColor: colors.neutralBorder,
+      paddingHorizontal: spacing.md,
+      ...shadows.small,
+    },
+    isFocused && {
+      borderColor: colors.primary,
+      ...shadows.medium,
+    },
+    error && {
+      borderColor: colors.error,
+    },
+  ];
+
   return (
-    <View style={styles.container}>
-      <View
-        style={[
-          styles.inputContainer,
-          isFocused && styles.inputContainerFocused,
-          error && styles.inputContainerError,
-        ]}
-      >
+    <View style={[styles.container, { marginBottom: spacing.md }]}>
+      <View style={inputContainerStyle}>
         {/* Search Icon */}
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Text style={[styles.searchIcon, { marginRight: spacing.sm }]}>🔍</Text>
 
         {/* Input */}
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: colors.textPrimary }]}
           value={value}
           onChangeText={handleChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={COLORS.textSecondary}
+          placeholder={placeholder || t?.('search.placeholder') || 'Enter vehicle number'}
+          placeholderTextColor={colors.textSecondary}
           autoCapitalize="characters"
           autoCorrect={false}
           autoFocus={autoFocus}
@@ -58,33 +73,54 @@ const SearchInput = ({
         {/* Clear Button */}
         {value.length > 0 && (
           <TouchableOpacity
-            style={styles.clearButton}
+            style={[styles.clearButton, {
+              backgroundColor: colors.neutralLight,
+              marginRight: spacing.sm,
+            }]}
             onPress={handleClear}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.clearIcon}>✕</Text>
+            <Text style={[styles.clearIcon, { color: colors.textSecondary }]}>✕</Text>
           </TouchableOpacity>
         )}
 
         {/* Search Button */}
         {value.length >= 6 && (
           <TouchableOpacity
-            style={styles.searchButton}
+            style={[styles.searchButton, {
+              backgroundColor: colors.primary,
+              paddingHorizontal: spacing.base,
+              paddingVertical: spacing.sm,
+            }]}
             onPress={onSearch}
             activeOpacity={0.7}
           >
-            <Text style={styles.searchButtonText}>Search</Text>
+            <Text style={[styles.searchButtonText, { color: colors.white }]}>
+              {t?.('search.searchButton') || 'Search'}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Error Message */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <Text style={[styles.errorText, {
+          color: colors.error,
+          marginTop: spacing.xs,
+          marginLeft: spacing.xs,
+        }]}>
+          {error}
+        </Text>
+      )}
 
       {/* Helper Text */}
       {!error && (
-        <Text style={styles.helperText}>
-          Enter complete vehicle registration number
+        <Text style={[styles.helperText, {
+          color: colors.textSecondary,
+          marginTop: spacing.xs,
+          marginLeft: spacing.xs,
+        }]}>
+          {t?.('search.helperText') || 'Enter complete vehicle registration number'}
         </Text>
       )}
     </View>
@@ -93,71 +129,45 @@ const SearchInput = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.md,
+    // Styles applied dynamically
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.neutralBorder,
-    paddingHorizontal: SPACING.md,
     height: 56,
-    ...SHADOWS.small,
-  },
-  inputContainerFocused: {
-    borderColor: COLORS.primary,
-    ...SHADOWS.medium,
-  },
-  inputContainerError: {
-    borderColor: COLORS.error,
   },
   searchIcon: {
     fontSize: 20,
-    marginRight: SPACING.sm,
   },
   input: {
     flex: 1,
-    ...TYPOGRAPHY.body,
-    color: COLORS.textPrimary,
+    fontSize: 16,
     paddingVertical: 0,
   },
   clearButton: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.neutralLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.sm,
   },
   clearIcon: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     fontWeight: '700',
   },
   searchButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.base,
-    paddingVertical: SPACING.sm,
     borderRadius: 8,
   },
   searchButtonText: {
-    ...TYPOGRAPHY.bodyBold,
-    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
   errorText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.error,
-    marginTop: SPACING.xs,
-    marginLeft: SPACING.xs,
+    fontSize: 13,
   },
   helperText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-    marginLeft: SPACING.xs,
+    fontSize: 13,
   },
 });
 
