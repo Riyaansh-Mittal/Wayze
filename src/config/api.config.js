@@ -6,11 +6,11 @@
 // Determine base URL based on environment
 const getBaseURL = () => {
   if (__DEV__) {
-    // Development
-    return 'http://localhost:3000/api/'; // Your local backend
+    // Development - Your actual backend
+    return 'https://parking-backbone.onrender.com/'; // ✅ REMOVE /api/ from base
   } else {
     // Production
-    return 'https://api.qrparking.com/api/';
+    return 'https://api.qrparking.com/';
   }
 };
 
@@ -20,79 +20,79 @@ export const BASE_URL = getBaseURL();
 export const ENDPOINTS = {
   // Authentication
   auth: {
-    socialLogin: 'auth/social-login',
-    refreshToken: 'auth/refresh-token',
-    logout: 'auth/logout',
-    verifyPhone: 'auth/verify-phone',
+    socialLogin: 'api/auth/socialLogin', // ✅ CHANGED: Matches your old system
+    refreshToken: 'auth/token-refresh/', // ✅ CHANGED: Matches your old system
+    logout: 'auth/logout/',
+    verifyPhone: 'auth/verify-otp/', // ✅ CHANGED: Matches your old system
   },
 
   // User
   user: {
-    profile: 'users/profile',
-    update: 'users/update',
-    delete: 'users/delete',
-    exportData: 'users/export-data',
-    preferences: 'users/preferences',
+    profile: 'api/users/profile',
+    update: 'api/users/update',
+    delete: 'api/users/delete',
+    exportData: 'api/users/export-data',
+    preferences: 'api/users/preferences',
   },
 
   // Vehicles
   vehicles: {
-    list: 'vehicles',
-    create: 'vehicles',
-    details: (id) => `vehicles/${id}`,
-    update: (id) => `vehicles/${id}`,
-    delete: (id) => `vehicles/${id}`,
-    checkPlate: (plate) => `vehicles/check-plate/${plate}`,
+    list: 'api/vehicles',
+    create: 'api/vehicles',
+    details: (id) => `api/vehicles/${id}`,
+    update: (id) => `api/vehicles/${id}`,
+    delete: (id) => `api/vehicles/${id}`,
+    checkPlate: (plate) => `api/vehicles/check-plate/${plate}`,
   },
 
   // Search
   search: {
-    vehicle: 'search/vehicle',
-    history: 'search/history',
+    vehicle: 'api/search/vehicle',
+    history: 'api/search/history',
   },
 
   // Contact
   contact: {
-    log: 'contacts/log',
-    history: 'contacts/history',
+    log: 'api/contacts/log',
+    history: 'api/contacts/history',
   },
 
   // Ownership Claims
   ownership: {
-    create: 'ownership-claims',
-    status: (id) => `ownership-claims/${id}`,
-    list: 'ownership-claims',
+    create: 'api/ownership-claims',
+    status: (id) => `api/ownership-claims/${id}`,
+    list: 'api/ownership-claims',
   },
 
   // Referrals
   referral: {
-    validate: 'referrals/validate',
-    apply: 'referrals/apply',
-    stats: 'referrals/stats',
-    generate: 'referrals/generate',
+    validate: 'api/referrals/validate',
+    apply: 'api/referrals/apply',
+    stats: 'api/referrals/stats',
+    generate: 'api/referrals/generate',
   },
 
   // Balance
   balance: {
-    get: 'balance',
-    history: 'balance/history',
+    get: 'api/balance',
+    history: 'api/balance/history',
   },
 
   // Activity
   activity: {
-    list: 'activity',
-    stats: 'activity/stats',
+    list: 'api/activity',
+    stats: 'api/activity/stats',
   },
 
   // Support
   support: {
-    bugReport: 'support/bug-report',
-    contact: 'support/contact',
+    bugReport: 'api/support/bug-report',
+    contact: 'api/support/contact',
   },
 
   // Upload
   upload: {
-    rcDocument: 'upload/rc-document',
+    rcDocument: 'api/upload/rc-document',
   },
 };
 

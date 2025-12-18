@@ -3,116 +3,9 @@
  * Single source of truth for all constant values
  */
 
-// API Configuration
-export const API_CONFIG = {
-  BASE_URL: __DEV__
-    ? 'http://localhost:5000/api'
-    : 'https://api.qrparking.com/api',
-  TIMEOUT: 30000, // 30 seconds
-  RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 1000, // 1 second
-};
-
-// ✅ ADD THIS: API Endpoints
-export const ENDPOINTS = {
-  // Authentication
-  auth: {
-    register: '/auth/register',
-    login: '/auth/login',
-    logout: '/auth/logout',
-    refresh: '/auth/refresh',
-    verify: '/auth/verify',
-    resendOTP: '/auth/resend-otp',
-    forgotPassword: '/auth/forgot-password',
-    resetPassword: '/auth/reset-password',
-  },
-
-  // User
-  user: {
-    profile: '/user/profile',
-    update: '/user/profile',
-    updatePhoto: '/user/profile/photo',
-    delete: '/user/account',
-    stats: '/user/stats',
-  },
-
-  // Vehicles
-  vehicles: {
-    list: '/vehicles',
-    create: '/vehicles',
-    getOne: (id) => `/vehicles/${id}`,
-    update: (id) => `/vehicles/${id}`,
-    delete: (id) => `/vehicles/${id}`,
-    checkPlate: (plateNumber) => `/vehicles/check/${plateNumber}`,
-    stats: (id) => `/vehicles/${id}/stats`,
-  },
-
-  // Search
-  search: {
-    search: '/search',
-    history: '/search/history',
-    recent: '/search/recent',
-    clearHistory: '/search/history/clear',
-  },
-
-  // ✅ Contacts (NEW)
-  contacts: {
-    create: '/contacts',
-    userHistory: (userId) => `/contacts/user/${userId}`,
-    vehicleHistory: (vehicleId) => `/contacts/vehicle/${vehicleId}`,
-  },
-
-  // Ownership Claims
-  ownership: {
-    create: '/ownership/claim',
-    status: (claimId) => `/ownership/claim/${claimId}`,
-    userClaims: (userId) => `/ownership/user/${userId}/claims`,
-    cancel: (claimId) => `/ownership/claim/${claimId}/cancel`,
-  },
-
-  // Referrals
-  referrals: {
-    getCode: '/referrals/code',
-    apply: '/referrals/apply',
-    stats: '/referrals/stats',
-    history: '/referrals/history',
-  },
-
-  // Balance
-  balance: {
-    get: '/balance',
-    deduct: '/balance/deduct',
-    add: '/balance/add',
-    history: '/balance/history',
-  },
-
-  // Activity
-  activity: {
-    list: '/activity',
-    create: '/activity',
-  },
-
-  // Notifications
-  notifications: {
-    list: '/notifications',
-    markRead: (id) => `/notifications/${id}/read`,
-    markAllRead: '/notifications/read-all',
-    delete: (id) => `/notifications/${id}`,
-  },
-};
-
-// HTTP Methods
-export const HTTP_METHODS = {
-  GET: 'GET',
-  POST: 'POST',
-  PUT: 'PUT',
-  PATCH: 'PATCH',
-  DELETE: 'DELETE',
-};
-
 // Feature Flags
 export const FEATURE_FLAGS = {
-  USE_MOCK_DATA: __DEV__ && true, // Toggle mock data in development
+  USE_MOCK_DATA: __DEV__ && false, // Toggle mock data in development
   ENABLE_ANALYTICS: !__DEV__,
   ENABLE_CRASHLYTICS: !__DEV__,
   ENABLE_PUSH_NOTIFICATIONS: true,
@@ -322,9 +215,6 @@ export const NOTIFICATION_TYPES = {
 
 // ✅ Export everything including new additions
 export default {
-  API_CONFIG,
-  ENDPOINTS, // ✅ NEW
-  HTTP_METHODS, // ✅ NEW
   FEATURE_FLAGS,
   STORAGE_KEYS,
   VEHICLE_TYPES,

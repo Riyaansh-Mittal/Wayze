@@ -10,9 +10,10 @@ import {
   HTTP_METHODS,
   DEFAULT_HEADERS,
 } from '../../config/api.config';
-import {FEATURE_FLAGS, API_CONFIG} from '../../config/constants';
+import {FEATURE_FLAGS} from '../../config/constants';
 import {handleAPIError, APIError} from '../../utils/error.handler';
 import SecureStorage from '../storage/SecureStorage';
+import { Platform } from 'react-native';
 
 // Import mock services
 import {
@@ -27,58 +28,121 @@ import {
 } from '../mock';
 
 /**
- * Create axios instance
+ * Create axios instance with React Native specific config
  */
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: API_CONFIG.TIMEOUT,
-  headers: DEFAULT_HEADERS,
+  timeout: 30000,
+  headers: {
+    ...DEFAULT_HEADERS,
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  },
+  // ✅ FIX: Remove custom transformRequest (axios handles this)
+  validateStatus: (status) => {
+    return status >= 200 && status < 500; // Don't throw on 4xx/5xx
+  },
 });
 
 /**
- * Request interceptor - Add auth token
+ * Request interceptor
  */
 apiClient.interceptors.request.use(
   async config => {
+    // ✅ FIX: Ensure full URL is logged
+    const fullURL = `${config.baseURL}${config.url}`;
+    console.log('🚀 API Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: fullURL,
+      platform: Platform.OS,
+      headers: config.headers,
+      data: config.data,
+    });
+
     const token = await SecureStorage.getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // ✅ FIX: Set headers correctly for React Native
+    if (config.data && typeof config.data === 'object') {
+      config.headers['Content-Type'] = 'application/json';
+    }
+    
     return config;
   },
   error => {
+    console.error('❌ Request Interceptor Error:', error);
     return Promise.reject(error);
   },
 );
 
 /**
- * Response interceptor - Handle errors
+ * Response interceptor
  */
 apiClient.interceptors.response.use(
-  response => response.data,
+  response => {
+    console.log('✅ API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.config.url,
+      data: response.data,
+    });
+
+    return response.data; // Return data directly
+  },
   async error => {
-    const errorInfo = handleAPIError(error);
+    console.error('❌ API Error Details:', {
+      message: error.message,
+      code: error.code,
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      responseData: error.response?.data,
+      // ✅ IMPORTANT: Network error diagnostics
+      isNetworkError: error.message === 'Network Error',
+      hasRequest: !!error.request,
+      hasResponse: !!error.response,
+      platform: Platform.OS,
+    });
+
+    // ✅ FIX: Handle network errors specifically
+    if (error.message === 'Network Error' && !error.response) {
+      throw new APIError(
+        'Network connection failed. Please check your internet connection and try again.',
+        0,
+        { originalError: error.message }
+      );
+    }
+
     // Handle token expiration
-    if (errorInfo.statusCode === 401) {
-      // Try to refresh token
+    if (error.response?.status === 401) {
       const refreshToken = await SecureStorage.getRefreshToken();
       if (refreshToken) {
         try {
-          const response = await AuthService.refreshToken(refreshToken);
+          // ✅ FIX: Use proper endpoint
+          const response = await apiClient.post(ENDPOINTS.REFRESH_TOKEN, {
+            refresh: refreshToken
+          });
+          
           await SecureStorage.saveTokens(
-            response.data.token,
-            response.data.refreshToken,
+            response.data.access || response.data.token,
+            response.data.refresh || response.data.refreshToken,
           );
+          
           // Retry original request
-          error.config.headers.Authorization = `Bearer ${response.data.token}`;
+          error.config.headers.Authorization = `Bearer ${response.data.access || response.data.token}`;
           return apiClient.request(error.config);
         } catch (refreshError) {
-          // Refresh failed, clear auth
           await SecureStorage.clearAuth();
           throw new APIError('Session expired. Please login again.', 401);
         }
       }
     }
+
+    const errorInfo = handleAPIError(error);
     throw new APIError(errorInfo.message, errorInfo.statusCode, errorInfo.data);
   },
 );
@@ -116,17 +180,43 @@ const request = async (method, endpoint, data = null, config = {}) => {
 export const AuthService = {
   socialLogin: async loginData => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
+      console.log('🎭 Using MOCK social login');
       return MockAuthService.socialLogin(loginData);
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.auth.socialLogin, loginData);
+
+    // Map to backend expected format
+    const requestBody = {
+      firstName: loginData.firstName || '',
+      lastName: loginData.lastName || '',
+      fullName: loginData.fullName || `${loginData.firstName} ${loginData.lastName}`,
+      phoneNumber: loginData.phoneNumber || '',
+      deviceType: Platform.OS.toUpperCase(), // 'IOS' or 'ANDROID'
+      email: loginData.email,
+      password: loginData.password || '', // Empty for social login
+      fcmToken: loginData.fcmToken || 'Sample-FCM',
+    };
+
+    console.log('🔐 Social Login Request:', {
+      endpoint: ENDPOINTS.auth.socialLogin,
+      fullURL: `${BASE_URL}${ENDPOINTS.auth.socialLogin}`,
+      body: requestBody,
+    });
+
+    return request(HTTP_METHODS.POST, ENDPOINTS.auth.socialLogin, requestBody);
   },
 
   refreshToken: async refreshToken => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
       return MockAuthService.refreshToken(refreshToken);
     }
+
+    console.log('🔄 Refresh Token Request:', {
+      endpoint: ENDPOINTS.auth.refreshToken,
+      fullURL: `${BASE_URL}${ENDPOINTS.auth.refreshToken}`,
+    });
+
     return request(HTTP_METHODS.POST, ENDPOINTS.auth.refreshToken, {
-      refreshToken,
+      refresh: refreshToken, // ✅ CHANGED: Backend expects 'refresh', not 'refreshToken'
     });
   },
 

@@ -1,51 +1,58 @@
 /**
  * Welcome Screen
  * Google Sign-In entry point
- * FULLY THEME-AWARE - MATCHES DESIGN
+ * FULLY INTEGRATED WITH REAL GOOGLE SIGN-IN
  */
 
 import React, {useState} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Linking} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+  Alert,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../hooks';
 import {useTheme} from '../../contexts/ThemeContext';
 import {EXTERNAL_URLS} from '../../config/constants';
 import FullScreenLoader from '../../components/common/Loading/FullScreenLoader';
-import { GoogleIcon } from '../../assets/icons';
+import {GoogleIcon} from '../../assets/icons';
 
 const WelcomeScreen = ({navigation}) => {
   const {t, theme} = useTheme();
   const {colors, spacing} = theme;
-  const {socialLogin} = useAuth();
+  const {googleLogin} = useAuth(); // ✅ Use googleLogin instead of socialLogin
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-
     try {
-      // TODO: Integrate with actual Google Sign-In
-      const mockGoogleUser = {
-        firstName: 'Test',
-        lastName: 'User',
-        fullName: 'Test User',
-        email: 'test.user@gmail.com',
-        phoneNumber: '',
-        deviceType: 'ANDROID',
-        fcmToken: 'mock-fcm-token',
-        photo: 'https://i.pravatar.cc/150?img=1',
-      };
+      setIsLoading(true);
 
-      const result = await socialLogin(mockGoogleUser);
+      // ✅ Call Google Sign-In
+      const result = await googleLogin();
 
       if (result.success) {
+        // Navigate based on user status
         if (result.isFirstTime) {
           navigation.replace('ReferralEntry');
         } else {
           navigation.replace('Main');
         }
+      } else if (result.cancelled) {
+        // User cancelled - do nothing
+        console.log('User cancelled Google Sign-In');
+      } else {
+        // Show error
+        Alert.alert(
+          'Login Failed',
+          result.error || 'Something went wrong. Please try again.',
+        );
       }
     } catch (error) {
       console.error('Sign in failed:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +122,7 @@ const WelcomeScreen = ({navigation}) => {
             <View style={styles.googleContent}>
               {/* Google Icon - Replace with actual SVG */}
               <View style={styles.googleIconContainer}>
-                <GoogleIcon width={20} height={20}/>
+                <GoogleIcon width={20} height={20} />
               </View>
               <Text style={[styles.googleText, {color: colors.textPrimary}]}>
                 {t?.('auth.welcome.googleButton') || 'Continue with Google'}
