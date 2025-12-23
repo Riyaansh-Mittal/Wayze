@@ -1,16 +1,15 @@
-/**
- * Main Navigator
- * Main app navigation with bottom tabs
- */
-
+// MainNavigator.js
 import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {View, Text, StyleSheet, Platform} from 'react-native';
-import {COLORS, TYPOGRAPHY, SPACING} from '../config/theme';
+import {Platform, InteractionManager} from 'react-native';
+import {StackActions} from '@react-navigation/native';
+import {COLORS} from '../config/theme';
+
 import VehicleNavigator from './VehicleNavigator';
-import SearchNavigator from './SearchNavigator'; // ✅ Import SearchNavigator
+import SearchNavigator from './SearchNavigator';
 import HomeScreen from '../screens/home/HomeScreen';
 import ProfileNavigator from './ProfileNavigator';
+
 import {
   HomeIcon as HomeSvg,
   SearchIcon as SearchSvg,
@@ -20,33 +19,71 @@ import {
 
 const Tab = createBottomTabNavigator();
 
-// Tab bar icons
-const HomeIcon = ({size, color}) => (
-  <HomeSvg width={size} height={size} fill={color} />
-);
+/**
+ * Pop nested stack to top for a given tab.
+ * Uses target = nested navigator key (fast) instead of full reset (slow).
+ */
+function popNestedToTop(navigation, tabName) {
+  const tabState = navigation.getState();
+  const tabRoute = tabState.routes.find(r => r.name === tabName);
+  const nestedKey = tabRoute?.state?.key;
 
-const SearchIcon = ({size, color}) => (
-  <SearchSvg width={size} height={size} fill={color} />
-);
+  if (!nestedKey) return;
 
-const VehiclesIcon = ({size, color}) => (
-  <VehiclesSvg width={size} height={size} fill={color} />
-);
+  navigation.dispatch({
+    ...StackActions.popToTop(),
+    target: nestedKey,
+  });
+}
 
-const ProfileIcon = ({size, color}) => (
-  <ProfileSvg width={size} height={size} fill={color} />
-);
+/**
+ * Create listeners that:
+ * 1) On blur: pop stack to top in background (so next open is root)
+ * 2) On tabPress: if already focused and deep -> popToTop immediately
+ */
+function makeTabListeners(tabName) {
+  return ({navigation}) => ({
+    tabPress: (e) => {
+      const state = navigation.getState();
+      const currentTabName = state.routes[state.index]?.name;
+
+      // Only intercept when user taps the already-focused tab
+      if (currentTabName !== tabName) return;
+
+      const tabRoute = state.routes.find(r => r.name === tabName);
+      const isDeep = (tabRoute?.state?.index ?? 0) > 0;
+
+      if (isDeep) {
+        e.preventDefault();
+        popNestedToTop(navigation, tabName);
+      }
+    },
+
+    blur: () => {
+      // Do it after interactions so tab switching stays snappy
+      InteractionManager.runAfterInteractions(() => {
+        popNestedToTop(navigation, tabName);
+      });
+    },
+  });
+}
+
+// ✅ Define listeners once (no recreation, no lag)
+const searchListeners = makeTabListeners('Search');
+const vehiclesListeners = makeTabListeners('Vehicles');
+const profileListeners = makeTabListeners('Profile');
 
 const MainNavigator = () => {
-  // Use fixed padding for Android
   const bottomPadding = Platform.OS === 'android' ? 16 : 8;
 
   return (
     <Tab.Navigator
+      initialRouteName="Home"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
+        lazy: true,
         tabBarStyle: {
           height: 60 + bottomPadding,
           paddingBottom: bottomPadding,
@@ -65,47 +102,57 @@ const MainNavigator = () => {
           fontWeight: '600',
           marginBottom: 2,
         },
-        tabBarIconStyle: {
-          marginTop: 4,
-        },
-      }}>
+        tabBarIconStyle: {marginTop: 4},
+      }}
+    >
       <Tab.Screen
         name="Home"
         component={HomeScreen}
-        options={{tabBarIcon: HomeIcon}}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({color, size}) => (
+            <HomeSvg width={size} height={size} fill={color} />
+          ),
+        }}
       />
+
       <Tab.Screen
         name="Search"
-        component={SearchNavigator} // ✅ Use SearchNavigator instead of placeholder
-        options={{tabBarIcon: SearchIcon}}
+        component={SearchNavigator}
+        options={{
+          tabBarLabel: 'Search',
+          tabBarIcon: ({color, size}) => (
+            <SearchSvg width={size} height={size} fill={color} />
+          ),
+        }}
+        listeners={searchListeners}
       />
+
       <Tab.Screen
         name="Vehicles"
         component={VehicleNavigator}
-        options={{tabBarIcon: VehiclesIcon}}
+        options={{
+          tabBarLabel: 'Vehicles',
+          tabBarIcon: ({color, size}) => (
+            <VehiclesSvg width={size} height={size} fill={color} />
+          ),
+        }}
+        listeners={vehiclesListeners}
       />
+
       <Tab.Screen
         name="Profile"
         component={ProfileNavigator}
-        options={{tabBarIcon: ProfileIcon}}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({color, size}) => (
+            <ProfileSvg width={size} height={size} fill={color} />
+          ),
+        }}
+        listeners={profileListeners}
       />
     </Tab.Navigator>
   );
 };
-
-const styles = StyleSheet.create({
-  placeholderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    paddingHorizontal: SPACING.lg,
-  },
-  placeholderText: {
-    ...TYPOGRAPHY.h2,
-    textAlign: 'center',
-    color: COLORS.textSecondary,
-  },
-});
 
 export default MainNavigator;

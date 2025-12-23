@@ -1,6 +1,7 @@
 /**
  * Search Navigator
  * Stack navigator for search-related screens
+ * WITH RESET TO FIRST SCREEN ON TAB SWITCH
  */
 
 import React from 'react';
@@ -16,6 +17,8 @@ const Stack = createNativeStackNavigator();
 const SearchNavigator = () => {
   return (
     <Stack.Navigator
+      // ✅ This ensures it always starts from FindVehicle
+      initialRouteName="FindVehicle"
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
@@ -40,7 +43,7 @@ const SearchNavigator = () => {
         component={SendAlertModal}
         options={{
           headerShown: false,
-          presentation: 'modal', // Modal presentation on iOS
+          presentation: 'modal',
         }}
       />
       <Stack.Screen
@@ -48,7 +51,7 @@ const SearchNavigator = () => {
         component={CallOwnerModal}
         options={{
           headerShown: false,
-          presentation: 'modal', // Modal presentation on iOS
+          presentation: 'modal',
         }}
       />
     </Stack.Navigator>

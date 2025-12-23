@@ -1,12 +1,11 @@
 /**
  * Profile Stack Navigator
  * All profile-related screens
+ * WITH RESET TO FIRST SCREEN ON TAB SWITCH
  */
 
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-// Profile Screens
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import ProfileHomeScreen from '../screens/profile/ProfileHomeScreen';
 import ActivityHistoryScreen from '../screens/profile/ActivityHistoryScreen';
 import SettingsScreen from '../screens/profile/SettingsScreen';
@@ -20,31 +19,17 @@ const Stack = createNativeStackNavigator();
 const ProfileNavigator = () => {
   return (
     <Stack.Navigator
+      // ✅ This ensures it always starts from ProfileHome
+      initialRouteName="ProfileHome"
       screenOptions={{
-        headerShown: false, // We use custom AppBar
+        headerShown: false,
         animation: 'slide_from_right',
-      }}
-    >
-      <Stack.Screen
-        name="ProfileHome"
-        component={ProfileHomeScreen}
-      />
-      <Stack.Screen
-        name="ActivityHistory"
-        component={ActivityHistoryScreen}
-      />
-      <Stack.Screen
-        name="Settings"
-        component={SettingsScreen}
-      />
-      <Stack.Screen
-        name="HelpSupport"
-        component={HelpSupportScreen}
-      />
-      <Stack.Screen
-        name="About"
-        component={AboutScreen}
-      />
+      }}>
+      <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} />
+      <Stack.Screen name="ActivityHistory" component={ActivityHistoryScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
+      <Stack.Screen name="About" component={AboutScreen} />
       <Stack.Screen
         name="DeleteAccountStep1"
         component={DeleteAccountStep1Screen}
