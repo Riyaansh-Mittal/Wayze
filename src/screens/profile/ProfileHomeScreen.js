@@ -1,6 +1,6 @@
 /**
  * Profile Home Screen
- * Main profile with balance, referral, and settings menu
+ * Simplified profile with referral and settings menu only
  * FULLY THEME-AWARE
  */
 
@@ -18,7 +18,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {useAuth} from '../../contexts/AuthContext';
 import {useBalance} from '../../contexts/BalanceContext';
-import {useVehicles} from '../../contexts/VehicleContext';
 import {useTheme} from '../../contexts/ThemeContext';
 import {useToast} from '../../components/common/Toast/ToastProvider';
 import AppBar from '../../components/navigation/AppBar';
@@ -33,21 +32,16 @@ import {
   SosIcon,
   LogoutIcon,
   TrashIcon,
-  BoltIcon,
-  WarningIcon,
 } from '../../assets/icons';
 
 const ProfileHomeScreen = ({navigation}) => {
   const {user, logout} = useAuth();
-  const {balance, referralStats, getReferralStats, getReferralCode} =
-    useBalance();
-  const {vehicles} = useVehicles();
+  const {referralStats, getReferralStats, getReferralCode} = useBalance();
   const {t, theme} = useTheme();
   const {showSuccess, showError} = useToast();
 
   const {colors, typography, spacing, layout} = theme;
   const referralCode = getReferralCode();
-  const isBalanceLow = balance < 5;
 
   useEffect(() => {
     getReferralStats();
@@ -92,12 +86,6 @@ const ProfileHomeScreen = ({navigation}) => {
   const userName = user?.fullName || user?.displayName || 'User';
   const userEmail = user?.email || '';
   const userPhone = user?.phone ? `+91 *****${user.phone.slice(-4)}` : '';
-  const memberSince = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric',
-      })
-    : 'June 2024';
 
   return (
     <SafeAreaView
@@ -150,49 +138,6 @@ const ProfileHomeScreen = ({navigation}) => {
               </View>
             )}
           </View>
-        </Card>
-
-        {/* Balance Card */}
-        <Card
-          style={[
-            styles.balanceCard,
-            {backgroundColor: colors.primary, marginBottom: spacing.base},
-          ]}>
-          <View style={styles.balanceHeader}>
-            <View style={styles.balanceLeft}>
-              <Text style={[styles.balanceLabel, {color: colors.white}]}>
-                {t('profile.balance.title')}
-              </Text>
-              <Text
-                style={[
-                  styles.balanceValue,
-                  {color: colors.white, marginTop: spacing.xs},
-                ]}>
-                {t('profile.balance.calls', {count: balance})}
-              </Text>
-              <Text
-                style={[
-                  styles.balanceHelper,
-                  {color: colors.white, marginTop: spacing.xs},
-                ]}>
-                {t('profile.balance.helper')}
-              </Text>
-            </View>
-            <BoltIcon width={48} height={48} fill={colors.white} />
-          </View>
-
-          {isBalanceLow && (
-            <View style={[styles.lowBalanceWarning, {marginTop: spacing.base}]}>
-              <WarningIcon width={20} height={20} fill={colors.warning}/>
-              <Text
-                style={[
-                  styles.warningText,
-                  {color: colors.white, marginLeft: spacing.sm},
-                ]}>
-                {t('profile.balance.lowBalance')}
-              </Text>
-            </View>
-          )}
         </Card>
 
         {/* Referral Card */}
@@ -261,64 +206,6 @@ const ProfileHomeScreen = ({navigation}) => {
             })}
           </Text>
         </Card>
-
-        {/* Stats Section */}
-        <View style={{marginBottom: spacing.lg}}>
-          <Text style={[typography.h2, {marginBottom: spacing.sm}]}>
-            {t('profile.stats.title')}
-          </Text>
-          <View style={[styles.statsGrid, {gap: spacing.sm}]}>
-            <Card style={styles.statCard}>
-              <Text style={[styles.statValue, {color: colors.primary}]}>
-                {vehicles.length}
-              </Text>
-              <Text
-                style={[
-                  typography.caption,
-                  {textAlign: 'center', marginTop: spacing.xs},
-                ]}>
-                {t('profile.stats.vehicles')}
-              </Text>
-            </Card>
-
-            <Card style={styles.statCard}>
-              <Text style={[styles.statValue, {color: colors.primary}]}>
-                12
-              </Text>
-              <Text
-                style={[
-                  typography.caption,
-                  {textAlign: 'center', marginTop: spacing.xs},
-                ]}>
-                {t('profile.stats.searches')}
-              </Text>
-            </Card>
-
-            <Card style={styles.statCard}>
-              <Text style={[styles.statValue, {color: colors.primary}]}>3</Text>
-              <Text
-                style={[
-                  typography.caption,
-                  {textAlign: 'center', marginTop: spacing.xs},
-                ]}>
-                {t('profile.stats.contacted')}
-              </Text>
-            </Card>
-
-            <Card style={styles.statCard}>
-              <Text style={[styles.statValue, {color: colors.primary}]}>
-                {memberSince}
-              </Text>
-              <Text
-                style={[
-                  typography.caption,
-                  {textAlign: 'center', marginTop: spacing.xs},
-                ]}>
-                {t('profile.stats.memberSince')}
-              </Text>
-            </Card>
-          </View>
-        </View>
 
         {/* Settings Menu */}
         <View style={{marginBottom: spacing.lg}}>
@@ -451,53 +338,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  balanceCard: {
-    padding: 24,
-  },
-  balanceHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  balanceLeft: {
-    flex: 1,
-  },
-  balanceLabel: {
-    fontSize: 14,
-    opacity: 0.9,
-  },
-  balanceValue: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
-  balanceHelper: {
-    fontSize: 12,
-    opacity: 0.8,
-  },
-  balanceIcon: {
-    fontSize: 48,
-    opacity: 0.2,
-  },
-  lowBalanceWarning: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    padding: 12,
-    borderRadius: 8,
-  },
-  warningText: {
-    flex: 1,
-    fontSize: 14,
-  },
   referralCard: {
     borderWidth: 2,
   },
   referralHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  referralIcon: {
-    fontSize: 28,
   },
   codeBox: {
     borderRadius: 6,
@@ -511,20 +357,6 @@ const styles = StyleSheet.create({
   },
   referralActions: {
     flexDirection: 'row',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  statCard: {
-    flex: 1,
-    minWidth: '45%',
-    alignItems: 'center',
-    padding: 16,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
   },
   menuItem: {
     flexDirection: 'row',

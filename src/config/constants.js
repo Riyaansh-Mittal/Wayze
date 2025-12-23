@@ -5,7 +5,7 @@
 
 // Feature Flags
 export const FEATURE_FLAGS = {
-  USE_MOCK_DATA: __DEV__ && false, // Toggle mock data in development
+  USE_MOCK_DATA: __DEV__ && true, // Toggle mock data in development
   ENABLE_ANALYTICS: !__DEV__,
   ENABLE_CRASHLYTICS: !__DEV__,
   ENABLE_PUSH_NOTIFICATIONS: true,

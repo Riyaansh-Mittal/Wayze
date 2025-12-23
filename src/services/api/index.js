@@ -1,19 +1,20 @@
 /**
  * API Service Layer
- * Handles all API calls with mock/real switching
+ * Using native fetch for better Android compatibility with centralized error handling
  */
 
-import axios from 'axios';
-import {
-  BASE_URL,
-  ENDPOINTS,
-  HTTP_METHODS,
-  DEFAULT_HEADERS,
-} from '../../config/api.config';
+import {Platform} from 'react-native';
+import {BASE_URL, ENDPOINTS, HTTP_METHODS} from '../../config/api.config';
 import {FEATURE_FLAGS} from '../../config/constants';
-import {handleAPIError, APIError} from '../../utils/error.handler';
+import {
+  APIError,
+  ERROR_TYPES,
+  handleAPIError,
+  logError,
+  isRecoverableError,
+  getRetryDelay,
+} from '../../utils/error.handler';
 import SecureStorage from '../storage/SecureStorage';
-import { Platform } from 'react-native';
 
 // Import mock services
 import {
@@ -28,145 +29,313 @@ import {
 } from '../mock';
 
 /**
- * Create axios instance with React Native specific config
+ * Fetch-based API client with error handling
  */
-const apiClient = axios.create({
-  baseURL: BASE_URL,
-  timeout: 30000,
-  headers: {
-    ...DEFAULT_HEADERS,
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-  },
-  // ✅ FIX: Remove custom transformRequest (axios handles this)
-  validateStatus: (status) => {
-    return status >= 200 && status < 500; // Don't throw on 4xx/5xx
-  },
-});
+class FetchAPIClient {
+  constructor() {
+    this.baseURL = BASE_URL;
+    this.timeout = 30000;
+    this.maxRetries = 3;
+  }
 
-/**
- * Request interceptor
- */
-apiClient.interceptors.request.use(
-  async config => {
-    // ✅ FIX: Ensure full URL is logged
-    const fullURL = `${config.baseURL}${config.url}`;
+  /**
+   * Make HTTP request using native fetch with retry logic
+   */
+  async request(method, endpoint, data = null, options = {}, retryCount = 0) {
+    const url = `${this.baseURL}${endpoint}`;
+
     console.log('🚀 API Request:', {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: fullURL,
+      method,
+      url: endpoint,
+      baseURL: this.baseURL,
+      fullURL: url,
       platform: Platform.OS,
-      headers: config.headers,
-      data: config.data,
+      data,
+      attempt: retryCount + 1,
     });
 
-    const token = await SecureStorage.getAuthToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    try {
+      // Get auth token
+      const token = await SecureStorage.getAuthToken();
 
-    // ✅ FIX: Set headers correctly for React Native
-    if (config.data && typeof config.data === 'object') {
-      config.headers['Content-Type'] = 'application/json';
-    }
-    
-    return config;
-  },
-  error => {
-    console.error('❌ Request Interceptor Error:', error);
-    return Promise.reject(error);
-  },
-);
+      // Build headers
+      const headers = {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
 
-/**
- * Response interceptor
- */
-apiClient.interceptors.response.use(
-  response => {
-    console.log('✅ API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.config.url,
-      data: response.data,
-    });
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
-    return response.data; // Return data directly
-  },
-  async error => {
-    console.error('❌ API Error Details:', {
-      message: error.message,
-      code: error.code,
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      responseData: error.response?.data,
-      // ✅ IMPORTANT: Network error diagnostics
-      isNetworkError: error.message === 'Network Error',
-      hasRequest: !!error.request,
-      hasResponse: !!error.response,
-      platform: Platform.OS,
-    });
+      // Build request config
+      const requestConfig = {
+        method,
+        headers,
+      };
 
-    // ✅ FIX: Handle network errors specifically
-    if (error.message === 'Network Error' && !error.response) {
+      // Add body for POST/PUT/PATCH
+      if (data && method !== 'GET' && method !== 'HEAD') {
+        requestConfig.body = JSON.stringify(data);
+      }
+
+      // Add query params for GET
+      if (data && method === 'GET') {
+        const queryString = new URLSearchParams(data).toString();
+        const finalUrl = queryString ? `${url}?${queryString}` : url;
+        return await this._makeRequest(
+          finalUrl,
+          requestConfig,
+          method,
+          endpoint,
+          data,
+          options,
+          retryCount,
+        );
+      }
+
+      return await this._makeRequest(
+        url,
+        requestConfig,
+        method,
+        endpoint,
+        data,
+        options,
+        retryCount,
+      );
+    } catch (error) {
+      // Log error
+      logError(error, {
+        url: endpoint,
+        method,
+        platform: Platform.OS,
+        retryCount,
+      });
+
+      // Check if error is recoverable and we haven't exceeded max retries
+      if (error instanceof APIError) {
+        const errorType = this._getErrorTypeFromStatus(error.statusCode);
+
+        if (isRecoverableError(errorType) && retryCount < this.maxRetries) {
+          const delay = getRetryDelay(retryCount);
+          console.log(
+            `⏳ Retrying in ${delay}ms... (Attempt ${retryCount + 2}/${
+              this.maxRetries + 1
+            })`,
+          );
+
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.request(method, endpoint, data, options, retryCount + 1);
+        }
+
+        throw error;
+      }
+
+      // Convert unknown errors to APIError
       throw new APIError(
-        'Network connection failed. Please check your internet connection and try again.',
+        'Network connection failed. Please check your internet and try again.',
         0,
-        { originalError: error.message }
+        {originalError: error.message},
       );
     }
+  }
 
-    // Handle token expiration
-    if (error.response?.status === 401) {
-      const refreshToken = await SecureStorage.getRefreshToken();
-      if (refreshToken) {
-        try {
-          // ✅ FIX: Use proper endpoint
-          const response = await apiClient.post(ENDPOINTS.REFRESH_TOKEN, {
-            refresh: refreshToken
-          });
-          
-          await SecureStorage.saveTokens(
-            response.data.access || response.data.token,
-            response.data.refresh || response.data.refreshToken,
-          );
-          
-          // Retry original request
-          error.config.headers.Authorization = `Bearer ${response.data.access || response.data.token}`;
-          return apiClient.request(error.config);
-        } catch (refreshError) {
-          await SecureStorage.clearAuth();
-          throw new APIError('Session expired. Please login again.', 401);
-        }
+  /**
+   * Internal method to make request with timeout
+   */
+  async _makeRequest(url, config, method, endpoint, data, options, retryCount) {
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...config,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // Parse response
+      const responseText = await response.text();
+      let responseData;
+
+      try {
+        responseData = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        responseData = {message: responseText};
       }
+
+      console.log('✅ API Response:', {
+        status: response.status,
+        ok: response.ok,
+        url,
+        data: responseData,
+      });
+
+      // Handle non-2xx responses
+      if (!response.ok) {
+        // Handle 401 separately for token refresh
+        if (response.status === 401) {
+          return await this._handleTokenRefresh(url, config, responseData);
+        }
+
+        // Create structured error object similar to axios
+        const error = {
+          response: {
+            status: response.status,
+            data: responseData,
+          },
+          message:
+            responseData?.message ||
+            responseData?.error ||
+            `HTTP ${response.status}`,
+        };
+
+        // Use centralized error handler
+        const errorInfo = handleAPIError(error);
+
+        throw new APIError(
+          errorInfo.message,
+          errorInfo.statusCode,
+          errorInfo.data,
+        );
+      }
+
+      return responseData;
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error.name === 'AbortError') {
+        // Timeout error
+        const timeoutError = {
+          response: {
+            status: 408,
+            data: {message: 'Request timeout'},
+          },
+          message: 'Request timeout',
+        };
+
+        const errorInfo = handleAPIError(timeoutError);
+        throw new APIError(errorInfo.message, 408);
+      }
+
+      // If it's already an APIError, just throw it
+      if (error instanceof APIError) {
+        throw error;
+      }
+
+      // Network error - create error object for handler
+      const networkError = {
+        message: error.message || 'Network Error',
+      };
+
+      const errorInfo = handleAPIError(networkError);
+      throw new APIError(errorInfo.message, 0, {originalError: error.message});
+    }
+  }
+
+  /**
+   * Handle token refresh and retry
+   */
+  async _handleTokenRefresh(originalUrl, originalConfig, responseData) {
+    const refreshToken = await SecureStorage.getRefreshToken();
+
+    if (!refreshToken) {
+      throw new APIError('Session expired. Please login again.', 401);
     }
 
-    const errorInfo = handleAPIError(error);
-    throw new APIError(errorInfo.message, errorInfo.statusCode, errorInfo.data);
-  },
-);
+    try {
+      console.log('🔄 Attempting token refresh...');
+
+      const refreshResponse = await fetch(
+        `${this.baseURL}${ENDPOINTS.auth.refreshToken}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({refresh: refreshToken}),
+        },
+      );
+
+      if (!refreshResponse.ok) {
+        await SecureStorage.clearAuth();
+        throw new APIError('Session expired. Please login again.', 401);
+      }
+
+      const refreshData = await refreshResponse.json();
+
+      // Save new tokens
+      await SecureStorage.saveTokens(
+        refreshData.access || refreshData.token,
+        refreshData.refresh || refreshData.refreshToken,
+      );
+
+      // Retry original request with new token
+      originalConfig.headers['Authorization'] = `Bearer ${
+        refreshData.access || refreshData.token
+      }`;
+
+      const retryResponse = await fetch(originalUrl, originalConfig);
+      const retryText = await retryResponse.text();
+      const retryData = retryText ? JSON.parse(retryText) : {};
+
+      if (!retryResponse.ok) {
+        const error = {
+          response: {
+            status: retryResponse.status,
+            data: retryData,
+          },
+          message: retryData?.message || `HTTP ${retryResponse.status}`,
+        };
+
+        const errorInfo = handleAPIError(error);
+        throw new APIError(
+          errorInfo.message,
+          errorInfo.statusCode,
+          errorInfo.data,
+        );
+      }
+
+      return retryData;
+    } catch (refreshError) {
+      await SecureStorage.clearAuth();
+
+      if (refreshError instanceof APIError) {
+        throw refreshError;
+      }
+
+      throw new APIError('Session expired. Please login again.', 401);
+    }
+  }
+
+  /**
+   * Get error type from status code
+   */
+  _getErrorTypeFromStatus(statusCode) {
+    if (!statusCode) return ERROR_TYPES.NETWORK;
+    if (statusCode === 401) return ERROR_TYPES.UNAUTHORIZED;
+    if (statusCode === 403) return ERROR_TYPES.FORBIDDEN;
+    if (statusCode === 404) return ERROR_TYPES.NOT_FOUND;
+    if (statusCode === 408 || statusCode === 504) return ERROR_TYPES.TIMEOUT;
+    if (statusCode >= 400 && statusCode < 500) return ERROR_TYPES.VALIDATION;
+    if (statusCode >= 500) return ERROR_TYPES.SERVER;
+    return ERROR_TYPES.UNKNOWN;
+  }
+}
+
+// Create singleton instance
+const apiClient = new FetchAPIClient();
 
 /**
  * Generic API request handler
  */
 const request = async (method, endpoint, data = null, config = {}) => {
   try {
-    const requestConfig = {
-      method,
-      url: endpoint,
-      ...config,
-    };
-
-    if (data) {
-      if (method === HTTP_METHODS.GET) {
-        requestConfig.params = data;
-      } else {
-        requestConfig.data = data;
-      }
-    }
-
-    const response = await apiClient.request(requestConfig);
+    const response = await apiClient.request(method, endpoint, data, config);
     return response;
   } catch (error) {
     throw error;
@@ -184,25 +353,38 @@ export const AuthService = {
       return MockAuthService.socialLogin(loginData);
     }
 
-    // Map to backend expected format
     const requestBody = {
       firstName: loginData.firstName || '',
       lastName: loginData.lastName || '',
-      fullName: loginData.fullName || `${loginData.firstName} ${loginData.lastName}`,
+      fullName:
+        loginData.fullName || `${loginData.firstName} ${loginData.lastName}`,
       phoneNumber: loginData.phoneNumber || '',
-      deviceType: Platform.OS.toUpperCase(), // 'IOS' or 'ANDROID'
+      deviceType: Platform.OS.toUpperCase(),
       email: loginData.email,
-      password: loginData.password || '', // Empty for social login
+      password: loginData.password || '',
       fcmToken: loginData.fcmToken || 'Sample-FCM',
     };
 
     console.log('🔐 Social Login Request:', {
       endpoint: ENDPOINTS.auth.socialLogin,
-      fullURL: `${BASE_URL}${ENDPOINTS.auth.socialLogin}`,
       body: requestBody,
     });
 
-    return request(HTTP_METHODS.POST, ENDPOINTS.auth.socialLogin, requestBody);
+    try {
+      return await request(
+        HTTP_METHODS.POST,
+        ENDPOINTS.auth.socialLogin,
+        requestBody,
+      );
+    } catch (error) {
+      // Log to analytics/crashlytics
+      logError(error, {
+        service: 'AuthService',
+        method: 'socialLogin',
+        email: loginData.email,
+      });
+      throw error;
+    }
   },
 
   refreshToken: async refreshToken => {
@@ -212,29 +394,55 @@ export const AuthService = {
 
     console.log('🔄 Refresh Token Request:', {
       endpoint: ENDPOINTS.auth.refreshToken,
-      fullURL: `${BASE_URL}${ENDPOINTS.auth.refreshToken}`,
     });
 
-    return request(HTTP_METHODS.POST, ENDPOINTS.auth.refreshToken, {
-      refresh: refreshToken, // ✅ CHANGED: Backend expects 'refresh', not 'refreshToken'
-    });
+    try {
+      return await request(HTTP_METHODS.POST, ENDPOINTS.auth.refreshToken, {
+        refresh: refreshToken,
+      });
+    } catch (error) {
+      logError(error, {
+        service: 'AuthService',
+        method: 'refreshToken',
+      });
+      throw error;
+    }
   },
 
   logout: async () => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
       return MockAuthService.logout();
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.auth.logout);
+
+    try {
+      return await request(HTTP_METHODS.POST, ENDPOINTS.auth.logout);
+    } catch (error) {
+      logError(error, {
+        service: 'AuthService',
+        method: 'logout',
+      });
+      throw error;
+    }
   },
 
   verifyPhone: async (phoneNumber, otp) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
       return MockAuthService.verifyPhone(phoneNumber, otp);
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.auth.verifyPhone, {
-      phoneNumber,
-      otp,
-    });
+
+    try {
+      return await request(HTTP_METHODS.POST, ENDPOINTS.auth.verifyPhone, {
+        phoneNumber,
+        otp,
+      });
+    } catch (error) {
+      logError(error, {
+        service: 'AuthService',
+        method: 'verifyPhone',
+        phoneNumber,
+      });
+      throw error;
+    }
   },
 };
 
@@ -298,31 +506,20 @@ export const VehiclesService = {
 // ═══════════════════════════════════════════════════════════════
 
 export const SearchService = {
-  /**
-   * Search for vehicle by plate number
-   */
   searchVehicle: async plateNumber => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      // ✅ Use the proper mock service
       return MockSearchService.searchVehicle(plateNumber);
     }
     return request(HTTP_METHODS.POST, ENDPOINTS.search.search, {plateNumber});
   },
 
-  /**
-   * Get search history
-   */
   getHistory: async (limit = 20) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      // Get current user ID from storage or use mock user
       return MockSearchService.getHistory('user_001', limit);
     }
     return request(HTTP_METHODS.GET, ENDPOINTS.search.history, {limit});
   },
 
-  /**
-   * Log contact action
-   */
   logContact: async contactData => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
       return MockSearchService.logContact(contactData);
@@ -331,9 +528,7 @@ export const SearchService = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════
-// USER SERVICE
-// ═══════════════════════════════════════════════════════════════
+// ... (Keep all other services as they were)
 
 export const UserService = {
   getProfile: async userId => {
@@ -365,10 +560,6 @@ export const UserService = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════
-// REFERRAL SERVICE
-// ═══════════════════════════════════════════════════════════════
-
 export const ReferralService = {
   validate: async code => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
@@ -399,10 +590,6 @@ export const ReferralService = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════
-// ACTIVITY SERVICE
-// ═══════════════════════════════════════════════════════════════
-
 export const ActivityService = {
   list: async (userId, limit = 20) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
@@ -418,10 +605,6 @@ export const ActivityService = {
     return request(HTTP_METHODS.GET, ENDPOINTS.activity.stats);
   },
 };
-
-// ═══════════════════════════════════════════════════════════════
-// OWNERSHIP SERVICE
-// ═══════════════════════════════════════════════════════════════
 
 export const OwnershipService = {
   create: async claimData => {
@@ -440,7 +623,6 @@ export const OwnershipService = {
 
   getUserClaims: async userId => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      // Mock user claims
       return {
         success: true,
         data: [
@@ -450,7 +632,9 @@ export const OwnershipService = {
             plateNumber: 'MH01AB1234',
             vehicleType: '2-wheeler',
             status: 'pending',
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            createdAt: new Date(
+              Date.now() - 2 * 24 * 60 * 60 * 1000,
+            ).toISOString(),
             estimatedReviewTime: '24 hours',
           },
         ],
@@ -462,18 +646,11 @@ export const OwnershipService = {
 
   cancel: async claimId => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return {
-        success: true,
-        message: 'Claim cancelled successfully',
-      };
+      return {success: true, message: 'Claim cancelled successfully'};
     }
     return request(HTTP_METHODS.DELETE, ENDPOINTS.ownership.cancel(claimId));
   },
 };
-
-// ═══════════════════════════════════════════════════════════════
-// BALANCE SERVICE
-// ═══════════════════════════════════════════════════════════════
 
 export const BalanceService = {
   get: async userId => {
@@ -492,15 +669,10 @@ export const BalanceService = {
 
   deduct: async (userId, amount, reason) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      // Mock deduct balance
       await new Promise(resolve => setTimeout(resolve, 500));
       return {
         success: true,
-        data: {
-          newBalance: 14, // Mock new balance
-          deducted: amount,
-          reason,
-        },
+        data: {newBalance: 14, deducted: amount, reason},
         message: 'Balance deducted successfully',
       };
     }
@@ -512,33 +684,20 @@ export const BalanceService = {
 
   add: async (userId, amount, reason) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      // Mock add balance
       await new Promise(resolve => setTimeout(resolve, 500));
       return {
         success: true,
-        data: {
-          newBalance: 25, // Mock new balance
-          added: amount,
-          reason,
-        },
+        data: {newBalance: 25, added: amount, reason},
         message: 'Balance added successfully',
       };
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.balance.add, {
-      amount,
-      reason,
-    });
+    return request(HTTP_METHODS.POST, ENDPOINTS.balance.add, {amount, reason});
   },
 };
-
-// ═══════════════════════════════════════════════════════════════
-// CONTACT SERVICE
-// ═══════════════════════════════════════════════════════════════
 
 export const ContactService = {
   create: async contactData => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      // Mock contact log
       await new Promise(resolve => setTimeout(resolve, 600));
       return {
         success: true,
@@ -555,7 +714,6 @@ export const ContactService = {
 
   getUserContacts: async userId => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      // Mock user contacts history
       await new Promise(resolve => setTimeout(resolve, 800));
       return {
         success: true,
@@ -566,15 +724,9 @@ export const ContactService = {
             vehicleId: 'vehicle_001',
             plateNumber: 'MH01AB1234',
             contactType: 'phone',
-            contactedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          },
-          {
-            _id: 'contact_002',
-            userId,
-            vehicleId: 'vehicle_003',
-            plateNumber: 'MH03EF9012',
-            contactType: 'whatsapp',
-            contactedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            contactedAt: new Date(
+              Date.now() - 2 * 60 * 60 * 1000,
+            ).toISOString(),
           },
         ],
         message: 'Contact history retrieved',
@@ -585,7 +737,6 @@ export const ContactService = {
 
   getVehicleContacts: async vehicleId => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      // Mock vehicle contacts (for owner to see who contacted their vehicle)
       await new Promise(resolve => setTimeout(resolve, 800));
       return {
         success: true,
@@ -595,27 +746,31 @@ export const ContactService = {
             vehicleId,
             contactedBy: 'user_002',
             contactType: 'phone',
-            contactedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+            contactedAt: new Date(
+              Date.now() - 3 * 60 * 60 * 1000,
+            ).toISOString(),
           },
         ],
         message: 'Vehicle contact history retrieved',
       };
     }
-    return request(HTTP_METHODS.GET, ENDPOINTS.contacts.vehicleHistory(vehicleId));
+    return request(
+      HTTP_METHODS.GET,
+      ENDPOINTS.contacts.vehicleHistory(vehicleId),
+    );
   },
 
   revealContact: async (vehicleId, plateNumber) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      // Mock reveal contact details (after payment)
       await new Promise(resolve => setTimeout(resolve, 1000));
       return {
         success: true,
         data: {
           vehicleId,
           plateNumber,
-          contactPhone: '+919876543210', // ✅ Full number revealed
+          contactPhone: '+919876543210',
           owner: {
-            name: 'Riyaansh Mittal', // Full name revealed
+            name: 'Riyaansh Mittal',
             photo: 'https://i.pravatar.cc/150?img=1',
           },
         },

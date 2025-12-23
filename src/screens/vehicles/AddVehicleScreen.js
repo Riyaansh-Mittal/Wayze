@@ -1,7 +1,6 @@
 /**
  * Add Vehicle Screen
- * Form to add a new vehicle
- * FULLY CORRECTED TRANSLATION KEYS FROM i18n
+ * Premium UX – Fully Theme Aware & Translation Ready
  */
 
 import React, {useState} from 'react';
@@ -12,107 +11,103 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
+  LayoutAnimation,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import {useVehicles} from '../../contexts/VehicleContext';
 import {useTheme} from '../../contexts/ThemeContext';
 import {validatePlateNumber, validatePhoneNumber} from '../../utils/validators';
+
 import AppBar from '../../components/navigation/AppBar';
-import TextInput from '../../components/common/Input/TextInput';
 import Card from '../../components/common/Card/Card';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
+import TextInput from '../../components/common/Input/TextInput';
 import VehicleIcon from '../../components/common/Icon/VehicleIcon';
 
 const VEHICLE_TYPES = [
-  {value: '2-wheeler', label: '2-wheeler (Bike/Scooter)', icon: <VehicleIcon type="2-wheeler" size={64} />},
-  {value: '3-wheeler', label: '3-wheeler (Auto)', icon: <VehicleIcon type="3-wheeler" size={64} />},
-  {value: '4-wheeler', label: '4-wheeler (Car/SUV)', icon: <VehicleIcon type="4-wheeler" size={64} />},
+  {value: '2-wheeler', label: '2 Wheeler (Bike / Scooter)'},
+  {value: '3-wheeler', label: '3 Wheeler (Auto)'},
+  {value: '4-wheeler', label: '4 Wheeler (Car / SUV)'},
 ];
 
 const AddVehicleScreen = ({navigation}) => {
   const {t, theme} = useTheme();
-  const {colors, spacing, layout} = theme;
+  const {colors, spacing, typography, layout} = theme;
   const {addVehicle, checkPlateExists, isLoading} = useVehicles();
 
   const [formData, setFormData] = useState({
     plateNumber: '',
     vehicleType: '',
     contactPhone: '',
-    contactMethods: {
-      phone: true,
-      sms: true,
-      whatsapp: false,
-    },
   });
 
   const [errors, setErrors] = useState({});
-  const [isCheckingPlate, setIsCheckingPlate] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [checkingPlate, setCheckingPlate] = useState(false);
 
-  const updateField = (field, value) => {
-    setFormData(prev => ({...prev, [field]: value}));
-    setErrors(prev => ({...prev, [field]: ''}));
+  /**
+   * Update form field and clear error
+   */
+  const updateField = (key, value) => {
+    setFormData(prev => ({...prev, [key]: value}));
+    setErrors(prev => ({...prev, [key]: null}));
   };
 
-  const updateContactMethod = method => {
-    setFormData(prev => ({
-      ...prev,
-      contactMethods: {
-        ...prev.contactMethods,
-        [method]: !prev.contactMethods[method],
-      },
-    }));
-    setErrors(prev => ({...prev, contactMethods: ''}));
-  };
-
+  /**
+   * Validate form data
+   */
   const validateForm = () => {
-    const newErrors = {};
+    const err = {};
 
-    // Plate number
-    const plateValidation = validatePlateNumber(formData.plateNumber);
-    if (!plateValidation.valid) {
-      newErrors.plateNumber = t('validation.invalidPlate');
-    }
-
-    // Vehicle type
+    // Vehicle type is required
     if (!formData.vehicleType) {
-      newErrors.vehicleType = t('validation.required');
+      err.vehicleType = t('validation.required') || 'This field is required';
     }
 
-    // Contact phone
-    const phoneValidation = validatePhoneNumber(formData.contactPhone);
-    if (!phoneValidation.valid) {
-      newErrors.contactPhone = t('validation.invalidPhone');
+    // Plate number validation
+    if (!validatePlateNumber(formData.plateNumber).valid) {
+      err.plateNumber =
+        t('validation.invalidPlate') || 'Invalid plate number format';
     }
 
-    // Contact methods (at least one)
-    const hasContactMethod = Object.values(formData.contactMethods).some(
-      v => v,
-    );
-    if (!hasContactMethod) {
-      newErrors.contactMethods = t('validation.required');
+    // Contact phone validation (optional, but if provided must be valid)
+    if (
+      formData.contactPhone &&
+      !validatePhoneNumber(formData.contactPhone).valid
+    ) {
+      err.contactPhone = t('validation.invalidPhone') || 'Invalid phone number';
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(err);
+    return Object.keys(err).length === 0;
   };
 
+  /**
+   * Handle form submission
+   */
   const handleSubmit = async () => {
+    // Validate form
     if (!validateForm()) {
-      Alert.alert(t('common.error'), t('errors.validation'));
+      Alert.alert(
+        t('common.error') || 'Error',
+        t('errors.validation') || 'Please fix the errors and try again',
+      );
       return;
     }
 
     // Check if plate exists
-    setIsCheckingPlate(true);
+    setCheckingPlate(true);
     const plateCheck = await checkPlateExists(formData.plateNumber);
-    setIsCheckingPlate(false);
+    setCheckingPlate(false);
 
-    if (plateCheck.exists) {
-      // Plate already registered - show conflict screen
+    if (plateCheck?.exists) {
+      // Navigate to ownership conflict screen
       navigation.navigate('OwnershipConflict', {
         plateNumber: formData.plateNumber,
         existingVehicle: plateCheck.vehicle,
@@ -121,324 +116,271 @@ const AddVehicleScreen = ({navigation}) => {
       return;
     }
 
-    // No conflict - add vehicle directly
+    // Add vehicle
     const result = await addVehicle(formData);
 
-    if (result.success) {
-      Alert.alert(t('common.success'), t('vehicles.form.success'), [
-        {
-          text: t('common.ok'),
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+    if (result?.success) {
+      Alert.alert(
+        t('common.success') || 'Success',
+        t('vehicles.form.success') || 'Vehicle added successfully',
+        [
+          {
+            text: t('common.ok') || 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ],
+      );
     } else {
-      Alert.alert(t('common.error'), result.error || t('errors.unknown'));
+      Alert.alert(
+        t('common.error') || 'Error',
+        result?.error || t('errors.unknown') || 'Something went wrong',
+      );
     }
   };
 
   return (
     <SafeAreaView
-      style={[styles.container, {backgroundColor: colors.background}]}
-      edges={['top']}>
+      style={[styles.container, {backgroundColor: colors.neutralLight}]}>
       <AppBar
-        title={t('vehicles.addButton')}
+        title={t('vehicles.addButton') || 'Add Vehicle'}
         showBack
         onBackPress={() => navigation.goBack()}
       />
 
       <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{flex: 1}}>
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[
-            styles.scrollContent,
-            {
-              padding: layout.screenPadding,
-              paddingBottom: spacing.xxxl,
-            },
-          ]}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
-          {/* Vehicle Type */}
-          <View style={[styles.section, {marginBottom: spacing.lg}]}>
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            padding: layout.screenPadding,
+            paddingBottom: spacing.xxxl,
+          }}>
+          {/* INTRO CARD */}
+          <Card style={{marginBottom: spacing.lg}}>
+            <Text style={[typography.h1, {fontWeight: '700'}]}>
+              {t('vehicles.form.introTitle') || 'Add Your Vehicle'}
+            </Text>
             <Text
               style={[
-                styles.label,
-                {
-                  color: colors.textSecondary,
-                  marginBottom: spacing.sm,
-                },
+                typography.caption,
+                {marginTop: spacing.sm, color: colors.textSecondary},
               ]}>
-              {t('vehicles.form.vehicleType')}
+              {t('vehicles.form.introSubtitle') ||
+                'Create a QR for your vehicle and receive alerts when someone scans it.'}
+            </Text>
+          </Card>
+
+          {/* VEHICLE TYPE SELECTION */}
+          <Card style={{marginBottom: spacing.lg}}>
+            <Text style={[typography.captionBold, {marginBottom: spacing.sm}]}>
+              {t('vehicles.form.vehicleType') || 'Vehicle Type'}
             </Text>
 
-            {VEHICLE_TYPES.map(type => (
-              <TouchableOpacity
-                key={type.value}
-                style={[
-                  styles.vehicleTypeCard,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor:
-                      formData.vehicleType === type.value
-                        ? colors.primary
-                        : colors.border,
-                    borderWidth: 2,
-                    marginBottom: spacing.sm,
-                  },
-                ]}
-                onPress={() => updateField('vehicleType', type.value)}
-                activeOpacity={0.7}>
-                <Text
-                  style={[styles.vehicleTypeIcon, {marginRight: spacing.md}]}>
-                  {type.icon}
-                </Text>
-                <Text
-                  style={[
-                    styles.vehicleTypeLabel,
-                    {
-                      color: colors.textPrimary,
-                      flex: 1,
-                    },
-                  ]}>
-                  {t(`vehicles.types.${type.value}Full`)}
-                </Text>
-                {formData.vehicleType === type.value && (
-                  <Text style={[styles.checkmark, {color: colors.primary}]}>
-                    ✓
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[
+                styles.dropdown,
+                {
+                  backgroundColor: colors.white,
+                  borderColor: errors.vehicleType
+                    ? colors.error
+                    : colors.neutralBorder,
+                },
+              ]}
+              onPress={() => {
+                LayoutAnimation.easeInEaseOut();
+                setDropdownOpen(!dropdownOpen);
+              }}>
+              <VehicleIcon
+                type={formData.vehicleType || '4-wheeler'}
+                size={28}
+              />
 
-            {errors.vehicleType && (
-              <Text style={[styles.errorText, {color: colors.error}]}>
+              <Text
+                style={{
+                  marginLeft: spacing.sm,
+                  flex: 1,
+                  fontWeight: '600',
+                  fontSize: 15,
+                  color: formData.vehicleType
+                    ? colors.textPrimary
+                    : colors.textSecondary,
+                }}>
+                {formData.vehicleType
+                  ? t(`vehicles.types.${formData.vehicleType}`) ||
+                    VEHICLE_TYPES.find(v => v.value === formData.vehicleType)
+                      ?.label
+                  : t('vehicles.form.vehicleTypePlaceholder') ||
+                    'Select vehicle type'}
+              </Text>
+
+              <Icon
+                name={dropdownOpen ? 'expand-less' : 'expand-more'}
+                size={26}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+
+            {/* Dropdown Options */}
+            {dropdownOpen && (
+              <View
+                style={[
+                  styles.dropdownList,
+                  {
+                    borderColor: colors.neutralBorder,
+                    backgroundColor: colors.white,
+                  },
+                ]}>
+                {VEHICLE_TYPES.map(item => (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.dropdownItem,
+                      {
+                        backgroundColor:
+                          formData.vehicleType === item.value
+                            ? colors.primaryLight
+                            : 'transparent',
+                      },
+                    ]}
+                    onPress={() => {
+                      updateField('vehicleType', item.value);
+                      LayoutAnimation.easeInEaseOut();
+                      setDropdownOpen(false);
+                    }}
+                    activeOpacity={0.7}>
+                    <VehicleIcon type={item.value} size={22} />
+                    <Text
+                      style={{
+                        flex: 1,
+                        marginLeft: spacing.sm,
+                        color: colors.textPrimary,
+                        fontSize: 15,
+                        fontWeight:
+                          formData.vehicleType === item.value ? '600' : '400',
+                      }}>
+                      {t(`vehicles.types.${item.value}`) || item.label}
+                    </Text>
+                    {formData.vehicleType === item.value && (
+                      <Icon
+                        name="check-circle"
+                        size={20}
+                        color={colors.primary}
+                      />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Error Message */}
+            {!!errors.vehicleType && (
+              <Text
+                style={{
+                  color: colors.error,
+                  marginTop: spacing.xs,
+                  fontSize: 13,
+                }}>
                 {errors.vehicleType}
               </Text>
             )}
-          </View>
+          </Card>
 
-          {/* Registration Number */}
-          <View style={[styles.section, {marginBottom: spacing.lg}]}>
+          {/* VEHICLE DETAILS */}
+          <Card style={{marginBottom: spacing.lg}}>
+            <Text style={[typography.h2, {marginBottom: spacing.sm}]}>
+              {t('vehicles.form.vehicleDetailsTitle') || 'Vehicle Details'}
+            </Text>
+
+            {/* Vehicle Number */}
             <TextInput
-              label={t('vehicles.form.plateNumber')}
+              label={t('vehicles.form.plateNumber') || 'Vehicle Number'}
+              placeholder={t('vehicles.form.platePlaceholder') || 'PB10AB1234'}
               value={formData.plateNumber}
-              onChangeText={text =>
-                updateField('plateNumber', text.toUpperCase())
-              }
-              placeholder={t('vehicles.form.platePlaceholder')}
-              autoCapitalize="characters"
               maxLength={13}
+              autoCapitalize="characters"
+              onChangeText={v => updateField('plateNumber', v.toUpperCase())}
               error={errors.plateNumber}
               helperText={t('vehicles.form.plateHelper')}
-              leftIcon={<VehicleIcon type="4-wheeler" size={32} />}
+              leftIcon={<VehicleIcon type="4-wheeler" size={30} />}
             />
-          </View>
 
-          {/* Contact Phone Number */}
-          <View style={[styles.section, {marginBottom: spacing.lg}]}>
+            <View style={{height: spacing.lg}} />
+
+            {/* Contact Number (Optional) */}
             <TextInput
-              label={t('vehicles.form.contactPhone')}
-              value={formData.contactPhone}
-              onChangeText={text =>
-                updateField('contactPhone', text.replace(/\D/g, ''))
+              label={`${t('vehicles.form.contactPhone') || 'Contact Number'} (${
+                t('common.optional') || 'Optional'
+              })`}
+              placeholder={
+                t('vehicles.form.contactPhonePlaceholder') ||
+                '10 digit mobile number'
               }
-              placeholder={t('vehicles.form.contactPhonePlaceholder')}
               keyboardType="phone-pad"
               maxLength={10}
+              value={formData.contactPhone}
+              onChangeText={v =>
+                updateField('contactPhone', v.replace(/\D/g, ''))
+              }
               error={errors.contactPhone}
               helperText={t('vehicles.form.contactPhoneHelper')}
-              leftIcon={<Text>📱</Text>}
+              leftIcon={<Text style={{fontSize: 18}}>📱</Text>}
             />
-          </View>
+          </Card>
 
-          {/* Contact Methods */}
-          <View style={[styles.section, {marginBottom: spacing.lg}]}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: colors.textSecondary,
-                  marginBottom: spacing.sm,
-                },
-              ]}>
-              {t('vehicles.form.contactMethods')}
-            </Text>
-
-            <Card style={{padding: 0}}>
-              <TouchableOpacity
+          {/* CONFIRMATION CHECKBOX */}
+          <Card style={styles.confirmCard}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={{flexDirection: 'row', alignItems: 'flex-start', flex: 1}}
+              onPress={() => setConfirmed(!confirmed)}>
+              <View
                 style={[
-                  styles.methodRow,
+                  styles.checkbox,
                   {
-                    paddingVertical: spacing.md,
-                    paddingHorizontal: spacing.base,
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
-                  },
-                ]}
-                onPress={() => updateContactMethod('phone')}
-                activeOpacity={0.7}>
-                <View
-                  style={[
-                    styles.checkbox,
-                    {
-                      borderColor: formData.contactMethods.phone
-                        ? colors.primary
-                        : colors.border,
-                      backgroundColor: formData.contactMethods.phone
-                        ? colors.primary
-                        : 'transparent',
-                    },
-                  ]}>
-                  {formData.contactMethods.phone && (
-                    <Text style={[styles.checkboxCheck, {color: colors.white}]}>
-                      ✓
-                    </Text>
-                  )}
-                </View>
-                <Text style={[styles.methodLabel, {color: colors.textPrimary}]}>
-                  {t('vehicles.form.allowCalls')}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.methodRow,
-                  {
-                    paddingVertical: spacing.md,
-                    paddingHorizontal: spacing.base,
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
-                  },
-                ]}
-                onPress={() => updateContactMethod('sms')}
-                activeOpacity={0.7}>
-                <View
-                  style={[
-                    styles.checkbox,
-                    {
-                      borderColor: formData.contactMethods.sms
-                        ? colors.primary
-                        : colors.border,
-                      backgroundColor: formData.contactMethods.sms
-                        ? colors.primary
-                        : 'transparent',
-                    },
-                  ]}>
-                  {formData.contactMethods.sms && (
-                    <Text style={[styles.checkboxCheck, {color: colors.white}]}>
-                      ✓
-                    </Text>
-                  )}
-                </View>
-                <Text style={[styles.methodLabel, {color: colors.textPrimary}]}>
-                  {t('vehicles.form.allowSMS')}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.methodRow,
-                  {
-                    paddingVertical: spacing.md,
-                    paddingHorizontal: spacing.base,
-                  },
-                ]}
-                onPress={() => updateContactMethod('whatsapp')}
-                activeOpacity={0.7}>
-                <View
-                  style={[
-                    styles.checkbox,
-                    {
-                      borderColor: formData.contactMethods.whatsapp
-                        ? colors.primary
-                        : colors.border,
-                      backgroundColor: formData.contactMethods.whatsapp
-                        ? colors.primary
-                        : 'transparent',
-                    },
-                  ]}>
-                  {formData.contactMethods.whatsapp && (
-                    <Text style={[styles.checkboxCheck, {color: colors.white}]}>
-                      ✓
-                    </Text>
-                  )}
-                </View>
-                <Text style={[styles.methodLabel, {color: colors.textPrimary}]}>
-                  {t('vehicles.form.allowWhatsApp')}
-                </Text>
-              </TouchableOpacity>
-            </Card>
-
-            {errors.contactMethods && (
-              <Text
-                style={[
-                  styles.errorText,
-                  {
-                    color: colors.error,
-                    marginTop: spacing.sm,
+                    backgroundColor: confirmed ? colors.primary : colors.white,
+                    borderColor: confirmed
+                      ? colors.primary
+                      : colors.neutralBorder,
                   },
                 ]}>
-                {errors.contactMethods}
-              </Text>
-            )}
-          </View>
+                {confirmed && (
+                  <Icon name="check" size={18} color={colors.white} />
+                )}
+              </View>
 
-          {/* Confirmation Checkbox */}
-          <TouchableOpacity
-            style={[styles.confirmRow, {marginBottom: spacing.xl}]}
-            onPress={() => setIsConfirmed(!isConfirmed)}
-            activeOpacity={0.7}>
-            <View
-              style={[
-                styles.checkbox,
-                {
-                  borderColor: isConfirmed ? colors.primary : colors.border,
-                  backgroundColor: isConfirmed ? colors.primary : 'transparent',
-                  marginRight: spacing.sm,
-                },
-              ]}>
-              {isConfirmed && (
-                <Text style={[styles.checkboxCheck, {color: colors.white}]}>
-                  ✓
-                </Text>
-              )}
-            </View>
-            <Text
-              style={[
-                styles.confirmText,
-                {
-                  color: colors.textSecondary,
+              <Text
+                style={{
+                  marginLeft: spacing.sm,
                   flex: 1,
-                },
-              ]}>
-              {t('vehicles.form.confirmation')}
-            </Text>
-          </TouchableOpacity>
+                  fontSize: 14,
+                  lineHeight: 20,
+                  color: colors.textPrimary,
+                }}>
+                {t('vehicles.form.confirmation') ||
+                  'I confirm that the above details are correct and belong to me.'}
+              </Text>
+            </TouchableOpacity>
+          </Card>
 
-          {/* Buttons */}
-          <View style={styles.buttonContainer}>
-            <PrimaryButton
-              title={
-                isCheckingPlate
-                  ? t('common.loading')
-                  : t('vehicles.form.saveButton')
-              }
-              onPress={handleSubmit}
-              loading={isLoading || isCheckingPlate}
-              disabled={!isConfirmed}
-              fullWidth
-            />
+          {/* ACTION BUTTONS */}
+          <PrimaryButton
+            title={t('vehicles.form.saveButton') || 'Save Vehicle'}
+            fullWidth
+            disabled={!confirmed}
+            loading={isLoading || checkingPlate}
+            onPress={handleSubmit}
+          />
 
-            <SecondaryButton
-              title={t('vehicles.form.cancelButton')}
-              onPress={() => navigation.goBack()}
-              disabled={isLoading || isCheckingPlate}
-              fullWidth
-              style={{marginTop: spacing.md}}
-            />
-          </View>
+          <SecondaryButton
+            title={t('vehicles.form.cancelButton') || 'Cancel'}
+            fullWidth
+            style={{marginTop: spacing.md}}
+            onPress={() => navigation.goBack()}
+            disabled={isLoading || checkingPlate}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -449,77 +391,46 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    // Styles applied dynamically
-  },
-  section: {
-    // Styles applied dynamically
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  vehicleTypeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-  },
-  vehicleTypeIcon: {
-    fontSize: 32,
-  },
-  vehicleTypeLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  checkmark: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  errorText: {
-    fontSize: 13,
-    marginTop: 4,
-  },
-  helperNote: {
-    fontSize: 12,
-  },
-  methodRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
+
+  dropdown: {
+    marginTop: 12,
     borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  checkboxCheck: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  methodLabel: {
-    fontSize: 15,
-    flex: 1,
-  },
-  confirmRow: {
+    borderRadius: 10,
+    padding: 14,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
-  confirmText: {
-    fontSize: 13,
-    lineHeight: 18,
+
+  dropdownList: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  buttonContainer: {
-    // Styles applied dynamically
+
+  dropdownItem: {
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  confirmCard: {
+    marginBottom: 24,
+    padding: 16,
+  },
+
+  checkbox: {
+    width: 26,
+    height: 26,
+    borderWidth: 2,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

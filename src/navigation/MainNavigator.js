@@ -43,7 +43,7 @@ function popNestedToTop(navigation, tabName) {
  */
 function makeTabListeners(tabName) {
   return ({navigation}) => ({
-    tabPress: (e) => {
+    tabPress: e => {
       const state = navigation.getState();
       const currentTabName = state.routes[state.index]?.name;
 
@@ -103,8 +103,7 @@ const MainNavigator = () => {
           marginBottom: 2,
         },
         tabBarIconStyle: {marginTop: 4},
-      }}
-    >
+      }}>
       <Tab.Screen
         name="Home"
         component={HomeScreen}

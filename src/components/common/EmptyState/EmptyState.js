@@ -2,13 +2,14 @@
  * Empty State Component
  * Displays when no data is available
  * FULLY THEME-AWARE
+ * SUPPORTS: String emoji OR React component (SVG icon)
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
 import PropTypes from 'prop-types';
 import PrimaryButton from '../Button/PrimaryButton';
-import { useTheme } from '../../../contexts/ThemeContext';
+import {useTheme} from '../../../contexts/ThemeContext';
 
 const EmptyState = ({
   icon = '📭',
@@ -19,31 +20,58 @@ const EmptyState = ({
   style,
   testID,
 }) => {
-  const { theme } = useTheme();
-  const { colors, spacing } = theme;
+  const {theme} = useTheme();
+  const {colors, spacing} = theme;
+
+  // ✅ FIX: Check if icon is a React component or string
+  const isReactComponent = React.isValidElement(icon) || typeof icon === 'function';
 
   return (
-    <View style={[styles.container, { padding: spacing.lg }, style]} testID={testID}>
+    <View
+      style={[styles.container, {padding: spacing.lg}, style]}
+      testID={testID}>
       {icon && (
-        <Text style={[styles.icon, { marginBottom: spacing.base }]}>
-          {icon}
-        </Text>
+        <View style={[styles.iconContainer, {marginBottom: spacing.base}]}>
+          {isReactComponent ? (
+            // ✅ Render React component (SVG icon)
+            typeof icon === 'function' ? (
+              React.createElement(icon, {
+                width: 64,
+                height: 64,
+                fill: colors.textSecondary,
+              })
+            ) : (
+              icon
+            )
+          ) : (
+            // ✅ Render emoji string
+            <Text style={styles.iconEmoji}>{icon}</Text>
+          )}
+        </View>
       )}
 
       {title && (
-        <Text style={[styles.title, {
-          color: colors.textPrimary,
-          marginBottom: spacing.sm,
-        }]}>
+        <Text
+          style={[
+            styles.title,
+            {
+              color: colors.textPrimary,
+              marginBottom: spacing.sm,
+            },
+          ]}>
           {title}
         </Text>
       )}
 
       {description && (
-        <Text style={[styles.description, {
-          color: colors.textSecondary,
-          marginBottom: spacing.xl,
-        }]}>
+        <Text
+          style={[
+            styles.description,
+            {
+              color: colors.textSecondary,
+              marginBottom: spacing.xl,
+            },
+          ]}>
           {description}
         </Text>
       )}
@@ -52,7 +80,7 @@ const EmptyState = ({
         <PrimaryButton
           title={actionLabel}
           onPress={onAction}
-          style={{ marginTop: spacing.base }}
+          style={{marginTop: spacing.base}}
         />
       )}
     </View>
@@ -65,7 +93,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  icon: {
+  iconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconEmoji: {
     fontSize: 64,
   },
   title: {
@@ -82,7 +114,11 @@ const styles = StyleSheet.create({
 });
 
 EmptyState.propTypes = {
-  icon: PropTypes.string,
+  icon: PropTypes.oneOfType([
+    PropTypes.string, // Emoji
+    PropTypes.element, // React element
+    PropTypes.func, // SVG component function
+  ]),
   title: PropTypes.string,
   description: PropTypes.string,
   actionLabel: PropTypes.string,

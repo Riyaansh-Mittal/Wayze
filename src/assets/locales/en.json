@@ -28,7 +28,8 @@
     "apply": "Apply",
     "comingSoon": "Coming soon",
     "tagline": "Find vehicle owners instantly",
-    "free": "Free"
+    "free": "Free",
+    "optional": "Optional"
   },
 
   "auth": {
@@ -69,34 +70,24 @@
   },
 
   "home": {
-    "greeting": "Good morning, {{name}}",
-    "greetingAfternoon": "Good afternoon, {{name}}",
-    "greetingEvening": "Good evening, {{name}}",
-    "subtitle": "What do you want to do today?",
-    "tabs": {
-      "findOwner": "Find owner",
-      "myVehicles": "My vehicles",
-      "activity": "Activity"
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
     },
-    "findOwner": {
-      "title": "Find vehicle owner",
-      "body": "Search by plate and contact the owner if needed",
-      "button": "Start search",
-      "helper": "Works even if vehicle owner is not in your contacts"
-    },
-    "myVehicles": {
-      "title": "My vehicles",
-      "body": "View and manage the vehicles linked to your profile",
-      "bodyEmpty": "You haven't added any vehicles yet",
-      "button": "Open my vehicles",
-      "buttonEmpty": "Add your first vehicle",
-      "addButton": "Add new vehicle"
+    "subtitle": "Here's your parking profile overview",
+    "balance": {
+      "title": "Available Balance",
+      "calls": "{{count}} calls",
+      "helper": "Use for vehicle searches",
+      "lowBalance": "Low balance! Invite friends to earn more calls"
     },
     "activity": {
-      "title": "Recent activity",
-      "body": "See recent searches and contact requests related to your vehicles",
-      "button": "View activity",
-      "helper": "Only you can see this activity"
+      "title": "Your Activity",
+      "vehiclesRegistered": "Vehicles Registered",
+      "vehicleSearches": "Vehicle Searches",
+      "peopleContacted": "People Contacted",
+      "memberSince": "Member Since"
     }
   },
 
@@ -110,13 +101,10 @@
       "button": "Add Your First Vehicle"
     },
     "types": {
-      "2wheeler": "2-wheeler",
-      "3wheeler": "3-wheeler",
-      "4wheeler": "4-wheeler",
-      "other": "Other",
-      "2wheelerFull": "2-wheeler (Bike/Scooter)",
-      "3wheelerFull": "3-wheeler (Auto)",
-      "4wheelerFull": "4-wheeler (Car)"
+      "2-wheeler": "2 Wheeler (Bike / Scooter)",
+      "3-wheeler": "3 Wheeler (Auto)",
+      "4-wheeler": "4 Wheeler (Car / SUV)",
+      "other": "Other"
     },
     "meta": {
       "added": "Added {{date}}",
@@ -124,20 +112,24 @@
       "searches": "{{count}} searches"
     },
     "form": {
+      "introTitle": "Add Your Vehicle",
+      "introSubtitle": "Create a QR for your vehicle and receive alerts when someone scans it.",
       "vehicleType": "Vehicle Type",
-      "plateNumber": "Registration Number",
-      "platePlaceholder": "MH01AB1234",
+      "vehicleTypePlaceholder": "Select vehicle type",
+      "vehicleDetailsTitle": "Vehicle Details",
+      "plateNumber": "Vehicle Number",
+      "platePlaceholder": "PB10AB1234",
       "plateHelper": "Format: 2 letters + 2 digits + 2 letters + 4 digits",
       "plateError": "Invalid format. Use MH01AB1234",
       "plateChangeHelper": "Contact support to change plate number",
-      "contactPhone": "Contact Phone Number",
-      "contactPhonePlaceholder": "+91 98765 43210",
+      "contactPhone": "Contact Number",
+      "contactPhonePlaceholder": "10 digit mobile number",
       "contactPhoneHelper": "People will use this to reach you",
       "contactMethods": "Contact Methods",
       "allowCalls": "Allow phone calls",
       "allowSMS": "Allow SMS",
       "allowWhatsApp": "Allow WhatsApp",
-      "confirmation": "I confirm I own or am responsible for this vehicle",
+      "confirmation": "I confirm that the above details are correct and belong to me.",
       "saveButton": "Save Vehicle",
       "saveChangesButton": "Save Changes",
       "cancelButton": "Cancel",

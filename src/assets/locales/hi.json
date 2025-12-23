@@ -27,8 +27,9 @@
     "remove": "हटाएं",
     "apply": "लागू करें",
     "comingSoon": "जल्द आ रहा है",
-    "tagline": "Find vehicle owners instantly",
-    "free": "मुफ्त"
+    "tagline": "वाहन स्वामी तुरंत खोजें",
+    "free": "मुफ्त",
+    "optional": "वैकल्पिक"
   },
 
   "auth": {
@@ -69,34 +70,24 @@
   },
 
   "home": {
-    "greeting": "सुप्रभात, {{name}}",
-    "greetingAfternoon": "नमस्ते, {{name}}",
-    "greetingEvening": "शुभ संध्या, {{name}}",
-    "subtitle": "आज आप क्या करना चाहते हैं?",
-    "tabs": {
-      "findOwner": "स्वामी खोजें",
-      "myVehicles": "मेरे वाहन",
-      "activity": "गतिविधि"
+    "greeting": {
+      "morning": "सुप्रभात",
+      "afternoon": "नमस्ते",
+      "evening": "शुभ संध्या"
     },
-    "findOwner": {
-      "title": "वाहन स्वामी खोजें",
-      "body": "नंबर प्लेट से खोजें और ज़रूरत पड़ने पर स्वामी से संपर्क करें",
-      "button": "खोज शुरू करें",
-      "helper": "यह तब भी काम करता है जब वाहन स्वामी आपके कॉन्टैक्ट्स में न हो"
-    },
-    "myVehicles": {
-      "title": "मेरे वाहन",
-      "body": "अपने प्रोफ़ाइल से जुड़े वाहनों को देखें और प्रबंधित करें",
-      "bodyEmpty": "आपने अभी तक कोई वाहन नहीं जोड़ा है",
-      "button": "मेरे वाहन खोलें",
-      "buttonEmpty": "अपना पहला वाहन जोड़ें",
-      "addButton": "नया वाहन जोड़ें"
+    "subtitle": "यहाँ आपकी पार्किंग प्रोफ़ाइल का अवलोकन है",
+    "balance": {
+      "title": "उपलब्ध शेष",
+      "calls": "{{count}} कॉल",
+      "helper": "वाहन खोज के लिए उपयोग करें",
+      "lowBalance": "कम शेष! अधिक कॉल पाने के लिए दोस्तों को आमंत्रित करें"
     },
     "activity": {
-      "title": "हाल की गतिविधि",
-      "body": "आपके वाहनों से जुड़ी हाल की खोजें और संपर्क अनुरोध देखें",
-      "button": "गतिविधि देखें",
-      "helper": "यह गतिविधि केवल आप देख सकते हैं"
+      "title": "आपकी गतिविधि",
+      "vehiclesRegistered": "पंजीकृत वाहन",
+      "vehicleSearches": "वाहन खोजें",
+      "peopleContacted": "लोगों से संपर्क किया",
+      "memberSince": "सदस्य बने"
     }
   },
 
@@ -110,13 +101,10 @@
       "button": "अपना पहला वाहन जोड़ें"
     },
     "types": {
-      "2wheeler": "2-पहिया",
-      "3wheeler": "3-पहिया",
-      "4wheeler": "4-पहिया",
-      "other": "अन्य",
-      "2wheelerFull": "2-पहिया (बाइक/स्कूटर)",
-      "3wheelerFull": "3-पहिया (ऑटो)",
-      "4wheelerFull": "4-पहिया (कार)"
+      "2-wheeler": "2 पहिया (बाइक / स्कूटर)",
+      "3-wheeler": "3 पहिया (ऑटो)",
+      "4-wheeler": "4 पहिया (कार / SUV)",
+      "other": "अन्य"
     },
     "meta": {
       "added": "जोड़ा गया {{date}}",
@@ -124,20 +112,24 @@
       "searches": "{{count}} खोजें"
     },
     "form": {
+      "introTitle": "अपना वाहन जोड़ें",
+      "introSubtitle": "अपने वाहन के लिए QR बनाएं और जब कोई इसे स्कैन करे तो अलर्ट प्राप्त करें।",
       "vehicleType": "वाहन का प्रकार",
-      "plateNumber": "पंजीकरण संख्या",
-      "platePlaceholder": "MH01AB1234",
+      "vehicleTypePlaceholder": "वाहन का प्रकार चुनें",
+      "vehicleDetailsTitle": "वाहन विवरण",
+      "plateNumber": "वाहन नंबर",
+      "platePlaceholder": "PB10AB1234",
       "plateHelper": "प्रारूप: 2 अक्षर + 2 अंक + 2 अक्षर + 4 अंक",
       "plateError": "अमान्य प्रारूप। MH01AB1234 का उपयोग करें",
       "plateChangeHelper": "प्लेट नंबर बदलने के लिए सहायता से संपर्क करें",
-      "contactPhone": "संपर्क फोन नंबर",
-      "contactPhonePlaceholder": "+91 98765 43210",
+      "contactPhone": "संपर्क नंबर",
+      "contactPhonePlaceholder": "10 अंकों का मोबाइल नंबर",
       "contactPhoneHelper": "लोग आपसे संपर्क के लिए इसका उपयोग करेंगे",
       "contactMethods": "संपर्क के तरीके",
       "allowCalls": "फोन कॉल की अनुमति दें",
       "allowSMS": "SMS की अनुमति दें",
       "allowWhatsApp": "WhatsApp की अनुमति दें",
-      "confirmation": "मैं पुष्टि करता/करती हूं कि मैं इस वाहन का मालिक हूं या जिम्मेदार हूं",
+      "confirmation": "मैं पुष्टि करता/करती हूं कि उपरोक्त विवरण सही हैं और मेरे हैं।",
       "saveButton": "वाहन सहेजें",
       "saveChangesButton": "परिवर्तन सहेजें",
       "cancelButton": "रद्द करें",

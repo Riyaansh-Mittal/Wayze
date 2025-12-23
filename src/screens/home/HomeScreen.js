@@ -1,306 +1,190 @@
 /**
- * Home Dashboard Screen
- * Main screen with segmented control for Find Owner / My Vehicles / Activity
+ * Home Screen
+ * Main dashboard with balance, activity stats, and quick actions
  * FULLY THEME-AWARE
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../../contexts/AuthContext';
-import { useVehicles } from '../../contexts/VehicleContext';
-import { useTheme } from '../../contexts/ThemeContext';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useAuth} from '../../contexts/AuthContext';
+import {useBalance} from '../../contexts/BalanceContext';
+import {useVehicles} from '../../contexts/VehicleContext';
+import {useTheme} from '../../contexts/ThemeContext';
 import AppBar from '../../components/navigation/AppBar';
-import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import Card from '../../components/common/Card/Card';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import {
+  BoltIcon,
+  WarningIcon,
+} from '../../assets/icons';
 
-const SEGMENTS = {
-  FIND_OWNER: 'find_owner',
-  MY_VEHICLES: 'my_vehicles',
-  ACTIVITY: 'activity',
-};
+const HomeScreen = ({navigation}) => {
+  const {user} = useAuth();
+  const {balance} = useBalance();
+  const {vehicles} = useVehicles();
+  const {t, theme} = useTheme();
 
-const HomeScreen = ({ navigation }) => {
-  const { t, theme } = useTheme();
-  const { colors, spacing, layout } = theme;
-  const { user } = useAuth();
-  const { vehicles } = useVehicles();
+  const {colors, typography, spacing, layout} = theme;
+  const isBalanceLow = balance < 5;
 
-  const [activeSegment, setActiveSegment] = useState(SEGMENTS.FIND_OWNER);
+  const userName = user?.fullName || user?.displayName || 'User';
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'June 2024';
 
-  // Get greeting based on time of day
+  // Greeting based on time
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) {return t?.('home.greeting') || 'Good morning';}
-    if (hour < 18) {return t?.('home.greetingAfternoon') || 'Good afternoon';}
-    return t?.('home.greetingEvening') || 'Good evening';
-  };
-
-  const userName = user?.fullName?.split(' ')[0] || 'User';
-  const hasVehicles = vehicles.length > 0;
-
-  // Navigation handlers
-  const handleFindOwner = () => {
-    navigation.navigate('Search', { screen: 'FindVehicle' });
-  };
-
-  const handleMyVehicles = () => {
-    navigation.navigate('Vehicles', { screen: 'VehiclesList' });
-  };
-
-  const handleAddVehicle = () => {
-    navigation.navigate('Vehicles', { screen: 'AddVehicle' });
-  };
-
-  const handleActivity = () => {
-    navigation.navigate('Profile', { screen: 'ActivityHistory' });
-  };
-
-  // Render segmented control
-  const renderSegmentedControl = () => (
-    <View style={[styles.segmentedControl, {
-      backgroundColor: colors.neutralLight,
-      padding: 4,
-      marginBottom: spacing.base,
-    }]}>
-      <TouchableOpacity
-        style={[
-          styles.segment,
-          { paddingVertical: spacing.sm },
-          activeSegment === SEGMENTS.FIND_OWNER && { backgroundColor: colors.primary },
-        ]}
-        onPress={() => setActiveSegment(SEGMENTS.FIND_OWNER)}
-        activeOpacity={0.7}
-      >
-        <Text
-          style={[
-            styles.segmentText,
-            { 
-              color: activeSegment === SEGMENTS.FIND_OWNER ? colors.white : colors.textSecondary,
-            }
-          ]}
-        >
-          {t?.('home.tabs.findOwner') || 'Find owner'}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.segment,
-          { paddingVertical: spacing.sm },
-          activeSegment === SEGMENTS.MY_VEHICLES && { backgroundColor: colors.primary },
-        ]}
-        onPress={() => setActiveSegment(SEGMENTS.MY_VEHICLES)}
-        activeOpacity={0.7}
-      >
-        <Text
-          style={[
-            styles.segmentText,
-            { 
-              color: activeSegment === SEGMENTS.MY_VEHICLES ? colors.white : colors.textSecondary,
-            }
-          ]}
-        >
-          {t?.('home.tabs.myVehicles') || 'My vehicles'}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.segment,
-          { paddingVertical: spacing.sm },
-          activeSegment === SEGMENTS.ACTIVITY && { backgroundColor: colors.primary },
-        ]}
-        onPress={() => setActiveSegment(SEGMENTS.ACTIVITY)}
-        activeOpacity={0.7}
-      >
-        <Text
-          style={[
-            styles.segmentText,
-            { 
-              color: activeSegment === SEGMENTS.ACTIVITY ? colors.white : colors.textSecondary,
-            }
-          ]}
-        >
-          {t?.('home.tabs.activity') || 'Activity'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  // Render Find Owner card
-  const renderFindOwnerCard = () => (
-    <Card>
-      <Text style={[styles.cardTitle, {
-        color: colors.textPrimary,
-        marginBottom: spacing.sm,
-      }]}>
-        {t?.('home.findOwner.title') || 'Find vehicle owner'}
-      </Text>
-      <Text style={[styles.cardBody, {
-        color: colors.textSecondary,
-        marginBottom: spacing.base,
-      }]}>
-        {t?.('home.findOwner.body') || 'Search by plate and contact the owner if needed'}
-      </Text>
-
-      <PrimaryButton
-        title={t?.('home.findOwner.body') || 'Start search'}
-        onPress={handleFindOwner}
-        fullWidth
-        icon={<Text style={{ color: colors.white, fontSize: 20 }}>🔍</Text>}
-        style={{ marginTop: spacing.sm }}
-      />
-
-      <Text style={[styles.cardFooter, {
-        color: colors.textSecondary,
-        marginTop: spacing.sm,
-      }]}>
-        {t?.('home.findOwner.helper') || 'Works even if vehicle owner is not in your contacts'}
-      </Text>
-    </Card>
-  );
-
-  // Render My Vehicles card
-  const renderMyVehiclesCard = () => (
-    <Card>
-      <Text style={[styles.cardTitle, {
-        color: colors.textPrimary,
-        marginBottom: spacing.sm,
-      }]}>
-        {t?.('home.myVehicles.title') || 'My vehicles'}
-      </Text>
-      <Text style={[styles.cardBody, {
-        color: colors.textSecondary,
-        marginBottom: spacing.base,
-      }]}>
-        {hasVehicles
-          ? (t?.('home.myVehicles.body') || 'View and manage the vehicles linked to your profile')
-          : (t?.('home.noVehicles.bodyEmpty') || "You haven't added any vehicles yet")}
-      </Text>
-
-      {hasVehicles ? (
-        <>
-          <PrimaryButton
-            title={t?.('home.myVehicles.button') || 'Open my vehicles'}
-            onPress={handleMyVehicles}
-            fullWidth
-            icon={<Text style={{ color: colors.white, fontSize: 20 }}>🚗</Text>}
-            style={{ marginTop: spacing.sm }}
-          />
-
-          <TouchableOpacity
-            style={[styles.secondaryAction, { 
-              paddingVertical: spacing.sm,
-              marginTop: spacing.sm,
-            }]}
-            onPress={handleAddVehicle}
-          >
-            <Text style={[styles.secondaryActionText, { color: colors.primary }]}>
-              {t?.('home.myVehicles.addButton') || 'Add new vehicle'}
-            </Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <PrimaryButton
-          title={t?.('home.myVehicles.buttonEmpty') || 'Add your first vehicle'}
-          onPress={handleAddVehicle}
-          fullWidth
-          icon={<Text style={{ color: colors.white, fontSize: 20 }}>✚</Text>}
-          style={{ marginTop: spacing.sm }}
-        />
-      )}
-    </Card>
-  );
-
-  // Render Activity card
-  const renderActivityCard = () => (
-    <Card>
-      <Text style={[styles.cardTitle, {
-        color: colors.textPrimary,
-        marginBottom: spacing.sm,
-      }]}>
-        {t?.('home.activity.title') || 'Recent activity'}
-      </Text>
-      <Text style={[styles.cardBody, {
-        color: colors.textSecondary,
-        marginBottom: spacing.base,
-      }]}>
-        {t?.('home.activity.body') || 'See recent searches and contact requests related to your vehicles'}
-      </Text>
-
-      <PrimaryButton
-        title={t?.('home.activity.button') || 'View activity'}
-        onPress={handleActivity}
-        fullWidth
-        icon={<Text style={{ color: colors.white, fontSize: 20 }}>📊</Text>}
-        style={{ marginTop: spacing.sm }}
-      />
-
-      <Text style={[styles.cardFooter, {
-        color: colors.textSecondary,
-        marginTop: spacing.sm,
-      }]}>
-        {t?.('home.activity.helper') || 'Only you can see this activity'}
-      </Text>
-    </Card>
-  );
-
-  // Render active segment content
-  const renderActiveContent = () => {
-    switch (activeSegment) {
-      case SEGMENTS.FIND_OWNER:
-        return renderFindOwnerCard();
-      case SEGMENTS.MY_VEHICLES:
-        return renderMyVehiclesCard();
-      case SEGMENTS.ACTIVITY:
-        return renderActivityCard();
-      default:
-        return null;
-    }
+    if (hour < 12) return t('home.greeting.morning');
+    if (hour < 17) return t('home.greeting.afternoon');
+    return t('home.greeting.evening');
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.neutralLight}]}
+      edges={['top']}>
       <AppBar
-        title={t?.('common.appName') || 'QR Parking'}
-        rightIcon={<Text style={{ fontSize: 24 }}>🔔</Text>}
-        onRightPress={() => navigation.navigate('Profile', { screen: 'Notifications' })}
+        title={t('common.appName') || 'QR Parking'}
+        rightIcon={
+          <Icon
+            name="notifications-none"
+            size={26}
+            color={colors.textPrimary}
+          />
+        }
+        onRightPress={() =>
+          navigation.navigate('Profile', {screen: 'Notifications'})
+        }
       />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, {
-          padding: layout.screenPadding,
-          paddingBottom: spacing.xxxl,
-        }]}
-        showsVerticalScrollIndicator={false}
-      >
+        contentContainerStyle={[
+          styles.scrollContent,
+          {paddingHorizontal: layout.screenPadding},
+        ]}
+        showsVerticalScrollIndicator={false}>
         {/* Greeting Section */}
-        <View style={[styles.greetingSection, { marginBottom: spacing.xl }]}>
-          <Text style={[styles.greeting, {
-            color: colors.textPrimary,
-            marginBottom: spacing.xs,
-          }]}>
+        <View style={{marginBottom: spacing.lg}}>
+          <Text style={[typography.h1, {marginBottom: spacing.xs}]}>
             {getGreeting()}, {userName}
           </Text>
-          <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>
-            {t?.('home.subtitle') || 'What do you want to do today?'}
+          <Text style={typography.caption}>
+            {t('home.subtitle')}
           </Text>
         </View>
 
-        {/* Segmented Control */}
-        {renderSegmentedControl()}
+        {/* Balance Card */}
+        <Card
+          style={[
+            styles.balanceCard,
+            {backgroundColor: colors.primary, marginBottom: spacing.base},
+          ]}>
+          <View style={styles.balanceHeader}>
+            <View style={styles.balanceLeft}>
+              <Text style={[styles.balanceLabel, {color: colors.white}]}>
+                {t('home.balance.title')}
+              </Text>
+              <Text
+                style={[
+                  styles.balanceValue,
+                  {color: colors.white, marginTop: spacing.xs},
+                ]}>
+                {t('home.balance.calls', {count: balance})}
+              </Text>
+              <Text
+                style={[
+                  styles.balanceHelper,
+                  {color: colors.white, marginTop: spacing.xs},
+                ]}>
+                {t('home.balance.helper')}
+              </Text>
+            </View>
+            <BoltIcon width={48} height={48} fill={colors.white} />
+          </View>
 
-        {/* Active Content */}
-        <View style={[styles.contentSection, { marginTop: spacing.base }]}>
-          {renderActiveContent()}
+          {isBalanceLow && (
+            <View style={[styles.lowBalanceWarning, {marginTop: spacing.base}]}>
+              <WarningIcon width={20} height={20} fill={colors.warning} />
+              <Text
+                style={[
+                  styles.warningText,
+                  {color: colors.white, marginLeft: spacing.sm},
+                ]}>
+                {t('home.balance.lowBalance')}
+              </Text>
+            </View>
+          )}
+        </Card>
+
+        {/* Your Activity Stats */}
+        <View style={{marginBottom: spacing.lg}}>
+          <Text style={[typography.h2, {marginBottom: spacing.sm}]}>
+            {t('home.activity.title')}
+          </Text>
+          <View style={[styles.statsGrid, {gap: spacing.sm}]}>
+            <Card style={styles.statCard}>
+              <Text style={[styles.statValue, {color: colors.primary}]}>
+                {vehicles.length}
+              </Text>
+              <Text
+                style={[
+                  typography.caption,
+                  {textAlign: 'center', marginTop: spacing.xs},
+                ]}>
+                {t('home.activity.vehiclesRegistered')}
+              </Text>
+            </Card>
+
+            <Card style={styles.statCard}>
+              <Text style={[styles.statValue, {color: colors.primary}]}>
+                12
+              </Text>
+              <Text
+                style={[
+                  typography.caption,
+                  {textAlign: 'center', marginTop: spacing.xs},
+                ]}>
+                {t('home.activity.vehicleSearches')}
+              </Text>
+            </Card>
+
+            <Card style={styles.statCard}>
+              <Text style={[styles.statValue, {color: colors.primary}]}>
+                3
+              </Text>
+              <Text
+                style={[
+                  typography.caption,
+                  {textAlign: 'center', marginTop: spacing.xs},
+                ]}>
+                {t('home.activity.peopleContacted')}
+              </Text>
+            </Card>
+
+            <Card style={styles.statCard}>
+              <Text style={[styles.statValue, {color: colors.primary}]}>
+                {memberSince}
+              </Text>
+              <Text
+                style={[
+                  typography.caption,
+                  {textAlign: 'center', marginTop: spacing.xs},
+                ]}>
+                {t('home.activity.memberSince')}
+              </Text>
+            </Card>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -315,51 +199,73 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    // Styles applied dynamically
+    paddingTop: 24,
+    paddingBottom: 48,
   },
-  greetingSection: {
-    // Styles applied dynamically
+  balanceCard: {
+    padding: 24,
   },
-  greeting: {
-    fontSize: 28,
+  balanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  balanceLeft: {
+    flex: 1,
+  },
+  balanceLabel: {
+    fontSize: 14,
+    opacity: 0.9,
+  },
+  balanceValue: {
+    fontSize: 32,
     fontWeight: '700',
   },
-  subGreeting: {
-    fontSize: 15,
+  balanceHelper: {
+    fontSize: 12,
+    opacity: 0.8,
   },
-  segmentedControl: {
+  lowBalanceWarning: {
     flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    padding: 12,
     borderRadius: 8,
   },
-  segment: {
+  warningText: {
     flex: 1,
+    fontSize: 14,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  statCard: {
+    flex: 1,
+    minWidth: '45%',
     alignItems: 'center',
-    borderRadius: 6,
+    padding: 16,
   },
-  segmentText: {
-    fontSize: 15,
-    fontWeight: '500',
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
   },
-  contentSection: {
-    // Styles applied dynamically
+  quickActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  cardTitle: {
+  quickActionIcon: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chevron: {
     fontSize: 20,
-    fontWeight: '600',
   },
-  cardBody: {
-    fontSize: 15,
-  },
-  cardFooter: {
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  secondaryAction: {
-    alignItems: 'center',
-  },
-  secondaryActionText: {
-    fontSize: 15,
-    fontWeight: '500',
+  divider: {
+    height: 1,
+    marginHorizontal: 16,
   },
 });
 
