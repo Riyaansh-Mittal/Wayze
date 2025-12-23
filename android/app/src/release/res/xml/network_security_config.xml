@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 
+        RELEASE BUILD ONLY
+        - HTTPS only
+        - System certificates only
+        - Maximum security
+        - Google Play compliant
+    -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Production domains (all HTTPS) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">parking-backbone.onrender.com</domain>
+        <domain includeSubdomains="true">api.qrparking.com</domain>
+    </domain-config>
+</network-security-config>
