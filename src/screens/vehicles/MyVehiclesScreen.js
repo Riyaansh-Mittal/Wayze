@@ -1,6 +1,6 @@
 /**
  * My Vehicles Screen
- * CORRECTED TRANSLATION KEYS
+ * WITH FLOATING ACTION BUTTON (FAB)
  */
 
 import React, {useEffect, useCallback, useState} from 'react';
@@ -181,8 +181,6 @@ const MyVehiclesScreen = ({navigation}) => {
       icon={<VehicleIcon type="4-wheeler" size={128} />}
       title={t('vehicles.empty.title')}
       message={t('vehicles.empty.message')}
-      actionLabel={t('vehicles.empty.button')}
-      onActionPress={handleAddVehicle}
     />
   );
 
@@ -209,6 +207,9 @@ const MyVehiclesScreen = ({navigation}) => {
     );
   }
 
+  // ✅ Determine FAB style based on whether vehicles exist
+  const hasVehicles = vehicles.length > 0;
+
   return (
     <SafeAreaView
       style={[styles.container, {backgroundColor: colors.background}]}
@@ -216,23 +217,7 @@ const MyVehiclesScreen = ({navigation}) => {
       <AppBar
         title={t('vehicles.title')}
         showBack={false}
-        rightIcon={
-          <View
-            style={[
-              styles.addButton,
-              {
-                backgroundColor: colors.primary,
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                justifyContent: 'center',
-                alignItems: 'center',
-              },
-            ]}>
-            <Text style={[styles.addIcon, {color: colors.white}]}>+</Text>
-          </View>
-        }
-        onRightPress={handleAddVehicle}
+        // ✅ Remove rightIcon - we're using FAB now
       />
 
       <FlatList
@@ -243,7 +228,7 @@ const MyVehiclesScreen = ({navigation}) => {
           styles.listContent,
           {
             padding: layout.screenPadding,
-            paddingBottom: spacing.xxxl,
+            paddingBottom: spacing.xxxl + 80, // Extra space for FAB
           },
           vehicles.length === 0 && styles.listContentEmpty,
         ]}
@@ -258,6 +243,30 @@ const MyVehiclesScreen = ({navigation}) => {
         }
         showsVerticalScrollIndicator={false}
       />
+
+      {/* ✅ FLOATING ACTION BUTTON (FAB) */}
+      <TouchableOpacity
+        style={[
+          hasVehicles ? styles.fabCompact : styles.fabExtended,
+          {backgroundColor: colors.primary},
+        ]}
+        onPress={handleAddVehicle}
+        activeOpacity={0.85}>
+        {hasVehicles ? (
+          // ✅ Compact FAB (just + icon) when vehicles exist
+          <Text style={[styles.fabIcon, {color: colors.white}]}>+</Text>
+        ) : (
+          // ✅ Extended FAB (+ icon + text) when no vehicles
+          <>
+            <Text style={[styles.fabIcon, {color: colors.white, marginRight: 8}]}>
+              +
+            </Text>
+            <Text style={[styles.fabText, {color: colors.white}]}>
+              {t('vehicles.empty.button')}
+            </Text>
+          </>
+        )}
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -279,13 +288,6 @@ const styles = StyleSheet.create({
   },
   listContentEmpty: {
     flexGrow: 1,
-  },
-  addButton: {
-    // Styles applied dynamically
-  },
-  addIcon: {
-    fontSize: 24,
-    fontWeight: '300',
   },
   vehicleCard: {
     borderRadius: 12,
@@ -329,6 +331,46 @@ const styles = StyleSheet.create({
   deletingText: {
     fontSize: 15,
     marginLeft: 12,
+  },
+
+  // ✅ FAB STYLES
+  fabCompact: {
+    position: 'absolute',
+    right: 24,
+    bottom: 88, // Above bottom nav (64dp height + 24dp margin)
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  fabExtended: {
+    position: 'absolute',
+    right: 24,
+    bottom: 88,
+    height: 56,
+    borderRadius: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  fabIcon: {
+    fontSize: 28,
+    fontWeight: '400',
+  },
+  fabText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
