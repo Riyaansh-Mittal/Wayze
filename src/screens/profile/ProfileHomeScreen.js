@@ -4,7 +4,7 @@
  * FULLY THEME-AWARE
  */
 
-import React, {useEffect} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -43,45 +43,72 @@ const ProfileHomeScreen = ({navigation}) => {
   const {colors, typography, spacing, layout} = theme;
   const referralCode = getReferralCode();
 
-  useEffect(() => {
-    getReferralStats();
-  }, [getReferralStats]);
+  // ✅ Track if we've already loaded stats
+  const hasLoadedStatsRef = useRef(false);
 
-  const handleCopyCode = () => {
+  /**
+   * ✅ FIXED: Only load stats once on mount
+   */
+  useEffect(() => {
+    const loadStats = async () => {
+      if (hasLoadedStatsRef.current) {
+        console.log('⏭️ Referral stats already loaded, skipping');
+        return;
+      }
+
+      console.log('📊 Loading referral stats...');
+      const result = await getReferralStats();
+
+      if (result.success) {
+        hasLoadedStatsRef.current = true;
+      } else if (result.error && result.error !== 'Not authenticated') {
+        // Only show error if it's not an auth issue
+        console.error('Failed to load referral stats:', result.error);
+      }
+    };
+
+    loadStats();
+  }, [getReferralStats]); // ✅ Empty dependency array - only run once
+
+  const handleCopyCode = useCallback(() => {
     if (referralCode) {
       Clipboard.setString(referralCode);
-      showSuccess(t('profile.referral.copiedToast'));
+      showSuccess(t('profile.referral.copiedToast') || 'Referral code copied!');
     }
-  };
+  }, [referralCode, showSuccess, t]);
 
-  const handleShareCode = async () => {
+  const handleShareCode = useCallback(async () => {
     try {
       const message = `Join QR Parking using my referral code ${referralCode} and get 10 free calls! Download now: https://qrparking.com/refer/${referralCode}`;
-      await Share.share({message, title: t('common.share')});
+      await Share.share({message, title: t('common.share') || 'Share'});
     } catch (error) {
       console.error('Share failed:', error);
     }
-  };
+  }, [referralCode, t]);
 
-  const handleLogout = () => {
-    Alert.alert(t('auth.logout.title'), t('auth.logout.message'), [
-      {text: t('common.cancel'), style: 'cancel'},
-      {
-        text: t('auth.logout.button'),
-        style: 'destructive',
-        onPress: async () => {
-          const result = await logout();
-          if (!result.success) {
-            showError('Logout failed. Please try again.');
-          }
+  const handleLogout = useCallback(() => {
+    Alert.alert(
+      t('auth.logout.title') || 'Logout',
+      t('auth.logout.message') || 'Are you sure you want to logout?',
+      [
+        {text: t('common.cancel') || 'Cancel', style: 'cancel'},
+        {
+          text: t('auth.logout.button') || 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await logout();
+            if (!result.success) {
+              showError('Logout failed. Please try again.');
+            }
+          },
         },
-      },
-    ]);
-  };
+      ],
+    );
+  }, [t, logout, showError]);
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = useCallback(() => {
     navigation.navigate('DeleteAccountStep1');
-  };
+  }, [navigation]);
 
   const userName = user?.fullName || user?.displayName || 'User';
   const userEmail = user?.email || '';
@@ -203,7 +230,10 @@ const ProfileHomeScreen = ({navigation}) => {
             {t('profile.referral.stats', {
               count: referralStats?.totalReferrals || 0,
               earned: referralStats?.totalEarned || 0,
-            })}
+            }) ||
+              `${referralStats?.totalReferrals || 0} referrals • ${
+                referralStats?.totalEarned || 0
+              } calls earned`}
           </Text>
         </Card>
 

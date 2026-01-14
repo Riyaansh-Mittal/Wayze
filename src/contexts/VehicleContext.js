@@ -1,66 +1,105 @@
-/**
- * Vehicle Context
- * Manages vehicle list and CRUD operations
- */
-
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { VehiclesService } from '../services/api';
-import { useToast } from '../components/common/Toast/ToastProvider';
-import { useAuth } from './AuthContext';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from 'react';
+import {VehiclesService} from '../services/api';
+import {useToast} from '../components/common/Toast/ToastProvider';
+import {useAuth} from './AuthContext';
 
 const VehicleContext = createContext();
 
-export const VehicleProvider = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
-  const { showSuccess, showError } = useToast();
+export const VehicleProvider = ({children}) => {
+  const {user, isAuthenticated} = useAuth();
+  const {showSuccess, showError} = useToast();
 
   const [vehicles, setVehicles] = useState([]);
+  const [userInfo, setUserInfo] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const hasLoadedRef = useRef(false);
+
   /**
-   * Load all vehicles
-   * ✅ Moved before useEffect to avoid dependency issues
+   * Load all vehicles from userInfo
    */
-  const loadVehicles = useCallback(async (showLoader = true) => {
-    if (!user) {return { success: false, error: 'Not authenticated' };}
-
-    try {
-      if (showLoader) {setIsLoading(true);}
-
-      const response = await VehiclesService.list(user._id);
-
-      if (response.success) {
-        setVehicles(response.data);
-        return { success: true, data: response.data };
+  const loadVehicles = useCallback(
+    async (showLoader = true) => {
+      if (!user) {
+        console.log('⏭️ No user, skipping vehicle load');
+        return {success: false, error: 'Not authenticated'};
       }
 
-      return { success: false };
-    } catch (error) {
-      showError('Failed to load vehicles');
-      return { success: false, error: error.message };
-    } finally {
-      if (showLoader) {setIsLoading(false);}
-    }
-  }, [user, showError]); // ✅ Only depends on user and showError
+      try {
+        if (showLoader) setIsLoading(true);
+
+        console.log('🚗 Loading vehicles for user:', user._id);
+        const response = await VehiclesService.list();
+
+        if (response.success) {
+          if (!response.data) {
+            console.log('📭 No vehicles found');
+            setVehicles([]);
+            setUserInfo(null);
+            return {success: true, data: []};
+          }
+
+          setUserInfo(response.data);
+
+          const mappedVehicles = (response.data.vehicle || []).map(v => ({
+            _id: v._id,
+            plateNumber: v.vehicleRegistration,
+            vehicleType: `${v.wheelType}-wheeler`,
+            wheelType: v.wheelType,
+            isVerified: v.isVerified,
+            createdAt: v.createdAt,
+            emergencyContact: response.data.emergencyContact,
+          }));
+
+          console.log('✅ Vehicles loaded:', mappedVehicles.length);
+          setVehicles(mappedVehicles);
+          return {success: true, data: mappedVehicles};
+        }
+
+        return {success: false};
+      } catch (error) {
+        console.error('❌ Failed to load vehicles:', error);
+        showError('Failed to load vehicles');
+        return {success: false, error: error.message};
+      } finally {
+        if (showLoader) setIsLoading(false);
+      }
+    },
+    [user, showError],
+  );
 
   /**
    * Load vehicles when authenticated
-   * ✅ Fixed - Now loadVehicles is stable
    */
   useEffect(() => {
     if (isAuthenticated && user) {
-      loadVehicles();
+      if (!hasLoadedRef.current || hasLoadedRef.current !== user._id) {
+        console.log('🔄 Initial vehicle load for:', user._id);
+        hasLoadedRef.current = user._id;
+        loadVehicles();
+      }
     } else {
+      console.log('🧹 Clearing vehicles (logged out)');
       setVehicles([]);
+      setUserInfo(null);
+      hasLoadedRef.current = false;
     }
-  }, [isAuthenticated, user, loadVehicles]); // ✅ Safe now
+  }, [isAuthenticated, user?._id, loadVehicles, user]);
 
   /**
-   * Refresh vehicles (pull-to-refresh)
+   * Refresh vehicles
    */
   const refreshVehicles = useCallback(async () => {
+    console.log('🔄 Refreshing vehicles...');
     setIsRefreshing(true);
     await loadVehicles(false);
     setIsRefreshing(false);
@@ -69,125 +108,94 @@ export const VehicleProvider = ({ children }) => {
   /**
    * Add new vehicle
    */
-  const addVehicle = useCallback(async (vehicleData) => {
-    if (!user) {return { success: false, error: 'Not authenticated' };}
-
-    try {
-      setIsLoading(true);
-      const response = await VehiclesService.create(user._id, vehicleData);
-
-      if (response.success) {
-        setVehicles((prev) => [...prev, response.data]);
-        showSuccess('Vehicle added successfully!');
-        return { success: true, data: response.data };
+  const addVehicle = useCallback(
+    async vehicleData => {
+      if (!user) {
+        return {success: false, error: 'User not authenticated'};
       }
 
-      return { success: false };
-    } catch (error) {
-      showError(error.message || 'Failed to add vehicle');
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, showSuccess, showError]);
+      try {
+        setIsLoading(true);
+        console.log('➕ Adding vehicle:', vehicleData);
 
-  /**
-   * Get vehicle details
-   */
-  const getVehicleDetails = useCallback(async (vehicleId) => {
-    try {
-      setIsLoading(true);
-      const response = await VehiclesService.details(vehicleId);
+        // ✅ Map to API format
+        const apiData = {
+          wheelType: vehicleData.wheelType || vehicleData.vehicleType,
+          vehicleRegistration:
+            vehicleData.plateNumber || vehicleData.vehicleRegistration,
+          emergencyContact: vehicleData.emergencyContact,
+        };
 
-      if (response.success) {
-        setSelectedVehicle(response.data);
-        return { success: true, data: response.data };
-      }
-
-      return { success: false };
-    } catch (error) {
-      showError('Failed to load vehicle details');
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [showError]);
-
-  /**
-   * Update vehicle
-   */
-  const updateVehicle = useCallback(async (vehicleId, updates) => {
-    try {
-      setIsLoading(true);
-      const response = await VehiclesService.update(vehicleId, updates);
-
-      if (response.success) {
-        // Update in list
-        setVehicles((prev) =>
-          prev.map((v) => (v._id === vehicleId ? response.data : v))
-        );
-
-        // Update selected if it's the same vehicle
-        if (selectedVehicle?._id === vehicleId) {
-          setSelectedVehicle(response.data);
+        // Only add referral code if provided
+        if (vehicleData.referralCode) {
+          apiData.referralCode = vehicleData.referralCode;
         }
 
-        showSuccess('Vehicle updated successfully');
-        return { success: true, data: response.data };
-      }
+        const result = await VehiclesService.create(apiData);
 
-      return { success: false };
-    } catch (error) {
-      showError('Failed to update vehicle');
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedVehicle, showSuccess, showError]);
+        if (result.success) {
+          console.log('✅ Vehicle added successfully');
+          await loadVehicles(false);
+          showSuccess('Vehicle added successfully');
+        } else {
+          console.error('❌ Failed to add vehicle:', result.error);
+          showError(result.error || 'Failed to add vehicle');
+        }
+
+        return result;
+      } catch (error) {
+        console.error('❌ Error adding vehicle:', error);
+        showError('Failed to add vehicle');
+        return {success: false, error: error.message};
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [user, loadVehicles, showSuccess, showError],
+  );
 
   /**
    * Delete vehicle
    */
-  const deleteVehicle = useCallback(async (vehicleId) => {
-    try {
-      setIsLoading(true);
-      const response = await VehiclesService.delete(vehicleId);
-
-      if (response.success) {
-        setVehicles((prev) => prev.filter((v) => v._id !== vehicleId));
-
-        if (selectedVehicle?._id === vehicleId) {
-          setSelectedVehicle(null);
-        }
-
-        showSuccess('Vehicle deleted successfully');
-        return { success: true };
+  const deleteVehicle = useCallback(
+    async vehicleId => {
+      if (!user) {
+        return {success: false, error: 'User not authenticated'};
       }
 
-      return { success: false };
-    } catch (error) {
-      showError('Failed to delete vehicle');
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedVehicle, showSuccess, showError]);
+      try {
+        console.log('🗑️ Deleting vehicle:', vehicleId);
+
+        const result = await VehiclesService.delete(vehicleId);
+
+        if (result.success) {
+          console.log('✅ Vehicle deleted successfully');
+          await loadVehicles(false);
+          showSuccess('Vehicle deleted successfully');
+        } else {
+          console.error('❌ Failed to delete vehicle:', result.error);
+          showError('Failed to delete vehicle');
+        }
+
+        return result;
+      } catch (error) {
+        console.error('❌ Error deleting vehicle:', error);
+        showError('Failed to delete vehicle');
+        return {success: false, error: error.message};
+      }
+    },
+    [user, loadVehicles, showSuccess, showError],
+  );
 
   /**
-   * Check if plate number exists
+   * Get vehicle by ID
    */
-  const checkPlateExists = useCallback(async (plateNumber) => {
-    try {
-      const response = await VehiclesService.checkPlate(plateNumber);
-      return {
-        success: true,
-        exists: response.data.exists,
-        vehicle: response.data.vehicle,
-      };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  }, []);
+  const getVehicleById = useCallback(
+    vehicleId => {
+      return vehicles.find(v => v._id === vehicleId);
+    },
+    [vehicles],
+  );
 
   /**
    * Get vehicle count
@@ -197,40 +205,61 @@ export const VehicleProvider = ({ children }) => {
   }, [vehicles]);
 
   /**
-   * Select vehicle
+   * ✅ Get model use count (same as vehicle count)
+   * Used to determine if this is the first vehicle
    */
-  const selectVehicle = useCallback((vehicle) => {
-    setSelectedVehicle(vehicle);
-  }, []);
+  const getModelUseCount = useCallback(() => {
+    return vehicles.length;
+  }, [vehicles]);
 
   /**
-   * Clear selection
+   * Get emergency contact
    */
-  const clearSelection = useCallback(() => {
-    setSelectedVehicle(null);
-  }, []);
+  const getEmergencyContact = useCallback(() => {
+    return userInfo?.emergencyContact || '';
+  }, [userInfo]);
+
+  /**
+   * ✅ Check if user has vehicles
+   */
+  const hasVehicles = useCallback(() => {
+    return vehicles.length > 0;
+  }, [vehicles]);
+
+  /**
+   * ✅ Get first vehicle (if exists)
+   */
+  const getFirstVehicle = useCallback(() => {
+    return vehicles.length > 0 ? vehicles[0] : null;
+  }, [vehicles]);
 
   const value = {
     // State
     vehicles,
+    userInfo,
     selectedVehicle,
     isLoading,
     isRefreshing,
 
-    // Methods
+    // Actions
     loadVehicles,
     refreshVehicles,
     addVehicle,
-    getVehicleDetails,
-    updateVehicle,
     deleteVehicle,
-    checkPlateExists,
+    setSelectedVehicle,
+
+    // Getters
+    getVehicleById,
     getVehicleCount,
-    selectVehicle,
-    clearSelection,
+    getModelUseCount, // ✅ Added this
+    getEmergencyContact,
+    hasVehicles, // ✅ Added this
+    getFirstVehicle, // ✅ Added this
   };
 
-  return <VehicleContext.Provider value={value}>{children}</VehicleContext.Provider>;
+  return (
+    <VehicleContext.Provider value={value}>{children}</VehicleContext.Provider>
+  );
 };
 
 export const useVehicles = () => {

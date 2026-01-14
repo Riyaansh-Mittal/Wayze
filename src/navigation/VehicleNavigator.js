@@ -8,7 +8,6 @@ import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import MyVehiclesScreen from '../screens/vehicles/MyVehiclesScreen';
 import AddVehicleScreen from '../screens/vehicles/AddVehicleScreen';
-import EditVehicleScreen from '../screens/vehicles/EditVehicleScreen';
 import VehicleDetailsScreen from '../screens/vehicles/VehicleDetailsScreen';
 import OwnershipConflictScreen from '../screens/vehicles/OwnershipConflictScreen';
 import UploadRCScreen from '../screens/vehicles/UploadRCScreen';
@@ -33,7 +32,6 @@ const VehicleNavigator = () => {
         }}
       />
       <Stack.Screen name="AddVehicle" component={AddVehicleScreen} />
-      <Stack.Screen name="EditVehicle" component={EditVehicleScreen} />
       <Stack.Screen name="VehicleDetails" component={VehicleDetailsScreen} />
       <Stack.Screen
         name="OwnershipConflict"

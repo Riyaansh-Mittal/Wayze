@@ -1,10 +1,9 @@
 /**
  * Settings Screen
- * Notifications, privacy, preferences, account settings
- * FULLY THEME-AWARE WITH PROPER DARK MODE SUPPORT
+ * FIXED: Proper API integration with UserContext
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -16,102 +15,181 @@ import {
   Modal,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useAuth} from '../../contexts/AuthContext';
+import {useUser} from '../../contexts/UserContext';
 import {useTheme} from '../../contexts/ThemeContext';
 import {useToast} from '../../components/common/Toast/ToastProvider';
 import {LANGUAGES} from '../../config/constants';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
-import { InfoIcon } from '../../assets/icons';
+import Spinner from '../../components/common/Loading/Spinner';
 
 const SettingsScreen = ({navigation}) => {
-  const {user, updateUserPreferences} = useAuth();
+  const {
+    getSettings,
+    updateSettings: updateUserSettings,
+    settings,
+    isLoading,
+  } = useUser();
   const {t, theme, currentLanguage, changeLanguage, toggleTheme, isDarkMode} =
     useTheme();
   const {showSuccess, showError} = useToast();
   const {colors, typography, spacing, layout} = theme;
 
-  const [pushNotifications, setPushNotifications] = useState(
-    user?.preferences?.pushNotifications ?? true,
-  );
-  const [emailAlerts, setEmailAlerts] = useState(
-    user?.preferences?.emailAlerts ?? true,
-  );
-  const [smsAlerts, setSmsAlerts] = useState(
-    user?.preferences?.smsAlerts ?? false,
-  );
+  // Local state synced with API settings
+  const [notifications, setNotifications] = useState(true);
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [smsAlerts, setSmsAlerts] = useState(true);
+  const [profileVisibility, setProfileVisibility] = useState(true);
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
 
-  const handleToggle = async (key, value, setter) => {
-    setter(value);
-
-    try {
-      await updateUserPreferences({[key]: value});
-      showSuccess('Preference updated');
-    } catch (error) {
-      showError('Failed to update preference');
-      setter(!value);
+  // ✅ Load settings on mount
+  const loadSettings = useCallback(async () => {
+    console.log('⚙️ Loading user settings...');
+    const result = await getSettings();
+    if (result.success) {
+      console.log('✅ Settings loaded:', result.data);
+    } else {
+      console.log('⚠️ No settings found, using defaults');
     }
-  };
+  }, [getSettings]);
 
-  const handleDarkModeToggle = async () => {
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  // ✅ Sync local state when settings change
+  useEffect(() => {
+    if (settings) {
+      console.log('🔄 Syncing settings state:', settings);
+      setNotifications(settings.notifications ?? true);
+      setEmailAlerts(settings.emailAlerts ?? true);
+      setSmsAlerts(settings.smsAlerts ?? true);
+      setProfileVisibility(settings.profileVisibility ?? true);
+    }
+  }, [settings]);
+
+  // ✅ Handle toggle with API call and optimistic update
+  const handleToggle = useCallback(
+    async (key, value, setter) => {
+      // Optimistic update
+      setter(value);
+      console.log(`⚙️ Updating ${key} to ${value}...`);
+
+      const result = await updateUserSettings({[key]: value});
+
+      if (!result.success) {
+        console.error(`❌ Failed to update ${key}`);
+        // Revert on failure
+        setter(!value);
+        showError(`Failed to update ${key}`);
+      } else {
+        console.log(`✅ ${key} updated successfully`);
+      }
+    },
+    [updateUserSettings, showError],
+  );
+
+  // ✅ Handle dark mode toggle (local preference, not API)
+  const handleDarkModeToggle = useCallback(async () => {
     const result = await toggleTheme();
     if (result.success) {
       showSuccess(`${result.theme === 'dark' ? 'Dark' : 'Light'} mode enabled`);
     } else {
       showError('Failed to change theme');
     }
-  };
+  }, [toggleTheme, showSuccess, showError]);
 
-  const handleLanguageChange = async languageCode => {
-    const result = await changeLanguage(languageCode);
-    setShowLanguagePicker(false);
+  // ✅ Handle language change (local preference, not API)
+  const handleLanguageChange = useCallback(
+    async languageCode => {
+      console.log('🌐 Changing language to:', languageCode);
+      const result = await changeLanguage(languageCode);
+      setShowLanguagePicker(false);
 
-    if (result.success) {
-      showSuccess(
-        t('profile.settings.languageChanged') ||
-          'Language changed successfully',
-      );
-    } else {
-      showError('Failed to change language');
-    }
-  };
+      if (result.success) {
+        showSuccess(
+          t('profile.settings.languageChanged') ||
+            'Language changed successfully',
+        );
+      } else {
+        showError('Failed to change language');
+      }
+    },
+    [changeLanguage, showSuccess, showError, t],
+  );
 
-  const handleDownloadData = () => {
+  // ✅ Handle data download request
+  const handleDownloadData = useCallback(() => {
     Alert.alert(
-      'Download Your Data',
-      "We'll prepare your data and send you an email with a download link within 24 hours.",
+      t('profile.settings.dataExport.title') || 'Download Your Data',
+      t('profile.settings.dataExport.message') ||
+        "We'll prepare your data and send you an email with a download link within 24 hours.",
       [
-        {text: t('common.cancel'), style: 'cancel'},
+        {text: t('common.cancel') || 'Cancel', style: 'cancel'},
         {
-          text: 'Request Data',
+          text: t('profile.settings.dataExport.confirm') || 'Request Data',
           onPress: async () => {
-            showSuccess(t('profile.settings.dataExport.preparing'));
+            console.log('📦 Requesting data export...');
+            showSuccess(
+              t('profile.settings.dataExport.preparing') ||
+                'Preparing your data...',
+            );
             setTimeout(() => {
-              showSuccess(t('profile.settings.dataExport.checkEmail'));
+              showSuccess(
+                t('profile.settings.dataExport.checkEmail') ||
+                  'Check your email for download link',
+              );
             }, 2000);
           },
         },
       ],
     );
-  };
+  }, [t, showSuccess]);
 
-  const getLanguageDisplayName = () => {
+  // ✅ Get display name for current language
+  const getLanguageDisplayName = useCallback(() => {
     switch (currentLanguage) {
       case LANGUAGES.HI:
         return 'हिन्दी';
+      case LANGUAGES.MR:
+        return 'मराठी';
       case LANGUAGES.EN:
       default:
         return 'English';
     }
-  };
+  }, [currentLanguage]);
+
+  // Show loading state while fetching
+  if (isLoading && !settings) {
+    return (
+      <SafeAreaView
+        style={[styles.container, {backgroundColor: colors.neutralLight}]}
+        edges={['top']}>
+        <AppBar
+          title={t('profile.settings.title') || 'Settings'}
+          showBack
+          onBackPress={() => navigation.goBack()}
+        />
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <Spinner size="large" color={colors.primary} />
+          <Text
+            style={[
+              typography.caption,
+              {marginTop: spacing.md, color: colors.textSecondary},
+            ]}>
+            {t('common.loading') || 'Loading...'}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
       style={[styles.container, {backgroundColor: colors.neutralLight}]}
       edges={['top']}>
       <AppBar
-        title={t('profile.settings.title')}
+        title={t('profile.settings.title') || 'Settings'}
         showBack
         onBackPress={() => navigation.goBack()}
       />
@@ -130,22 +208,26 @@ const SettingsScreen = ({navigation}) => {
               styles.sectionTitle,
               {color: colors.textPrimary, marginBottom: spacing.sm},
             ]}>
-            {t('profile.settings.notifications.title')}
+            {t('profile.settings.notifications.title') || 'Notifications'}
           </Text>
           <Card>
             <ToggleItem
               icon="🔔"
-              label={t('profile.settings.notifications.push')}
-              value={pushNotifications}
+              label={
+                t('profile.settings.notifications.push') || 'Push Notifications'
+              }
+              value={notifications}
               onValueChange={value =>
-                handleToggle('pushNotifications', value, setPushNotifications)
+                handleToggle('notifications', value, setNotifications)
               }
               theme={theme}
             />
             <Divider color={colors.neutralBorder} />
             <ToggleItem
               icon="📧"
-              label={t('profile.settings.notifications.email')}
+              label={
+                t('profile.settings.notifications.email') || 'Email Alerts'
+              }
               value={emailAlerts}
               onValueChange={value =>
                 handleToggle('emailAlerts', value, setEmailAlerts)
@@ -155,7 +237,7 @@ const SettingsScreen = ({navigation}) => {
             <Divider color={colors.neutralBorder} />
             <ToggleItem
               icon="📱"
-              label={t('profile.settings.notifications.sms')}
+              label={t('profile.settings.notifications.sms') || 'SMS Alerts'}
               value={smsAlerts}
               onValueChange={value =>
                 handleToggle('smsAlerts', value, setSmsAlerts)
@@ -172,28 +254,36 @@ const SettingsScreen = ({navigation}) => {
               styles.sectionTitle,
               {color: colors.textPrimary, marginBottom: spacing.sm},
             ]}>
-            {t('profile.settings.privacy.title')}
+            {t('profile.settings.privacy.title') || 'Privacy'}
           </Text>
           <Card>
-            <SelectItem
+            <ToggleItem
               icon="👁️"
-              label={t('profile.settings.privacy.visibility')}
-              value={t('profile.settings.privacy.public')}
-              onPress={() => showSuccess(t('common.comingSoon'))}
+              label={
+                t('profile.settings.privacy.visibility') || 'Profile Visibility'
+              }
+              value={profileVisibility}
+              onValueChange={value =>
+                handleToggle('profileVisibility', value, setProfileVisibility)
+              }
               theme={theme}
             />
             <Divider color={colors.neutralBorder} />
             <MenuItem
-              icon="🔗"
-              label={t('profile.settings.privacy.downloadData')}
+              icon="📥"
+              label={
+                t('profile.settings.privacy.downloadData') || 'Download My Data'
+              }
               onPress={handleDownloadData}
               theme={theme}
             />
             <Divider color={colors.neutralBorder} />
             <MenuItem
-              icon={<InfoIcon width={15} height={15} fill={colors.primary}/>}
-              label={t('profile.settings.privacy.dataPolicy')}
-              onPress={() => showSuccess(t('common.comingSoon'))}
+              icon="📜"
+              label={t('profile.settings.privacy.dataPolicy') || 'Data Policy'}
+              onPress={() =>
+                showSuccess(t('common.comingSoon') || 'Coming Soon')
+              }
               theme={theme}
             />
           </Card>
@@ -206,12 +296,12 @@ const SettingsScreen = ({navigation}) => {
               styles.sectionTitle,
               {color: colors.textPrimary, marginBottom: spacing.sm},
             ]}>
-            {t('profile.settings.preferences.title')}
+            {t('profile.settings.preferences.title') || 'Preferences'}
           </Text>
           <Card>
             <ToggleItem
               icon="🌙"
-              label={t('profile.settings.preferences.darkMode')}
+              label={t('profile.settings.preferences.darkMode') || 'Dark Mode'}
               value={isDarkMode()}
               onValueChange={handleDarkModeToggle}
               theme={theme}
@@ -219,7 +309,7 @@ const SettingsScreen = ({navigation}) => {
             <Divider color={colors.neutralBorder} />
             <SelectItem
               icon="🌐"
-              label={t('profile.settings.preferences.language')}
+              label={t('profile.settings.preferences.language') || 'Language'}
               value={getLanguageDisplayName()}
               onPress={() => setShowLanguagePicker(true)}
               theme={theme}
@@ -234,20 +324,30 @@ const SettingsScreen = ({navigation}) => {
               styles.sectionTitle,
               {color: colors.textPrimary, marginBottom: spacing.sm},
             ]}>
-            {t('profile.settings.account.title')}
+            {t('profile.settings.account.title') || 'Account'}
           </Text>
           <Card>
             <MenuItem
               icon="🔐"
-              label={t('profile.settings.account.changePassword')}
-              onPress={() => showSuccess(t('common.comingSoon'))}
+              label={
+                t('profile.settings.account.changePassword') ||
+                'Change Password'
+              }
+              onPress={() =>
+                showSuccess(t('common.comingSoon') || 'Coming Soon')
+              }
               theme={theme}
             />
             <Divider color={colors.neutralBorder} />
             <MenuItem
               icon="🔗"
-              label={t('profile.settings.account.linkedAccounts')}
-              onPress={() => showSuccess(t('common.comingSoon'))}
+              label={
+                t('profile.settings.account.linkedAccounts') ||
+                'Linked Accounts'
+              }
+              onPress={() =>
+                showSuccess(t('common.comingSoon') || 'Coming Soon')
+              }
               theme={theme}
             />
           </Card>
@@ -280,9 +380,10 @@ const SettingsScreen = ({navigation}) => {
                   marginBottom: spacing.base,
                 },
               ]}>
-              {t('profile.settings.selectLanguage')}
+              {t('profile.settings.selectLanguage') || 'Select Language'}
             </Text>
 
+            {/* English */}
             <TouchableOpacity
               style={[
                 styles.languageOption,
@@ -303,13 +404,14 @@ const SettingsScreen = ({navigation}) => {
                     fontWeight: '600',
                   },
                 ]}>
-                English
+                🇬🇧 English
               </Text>
               {currentLanguage === LANGUAGES.EN && (
                 <Text style={{color: colors.primary, fontSize: 20}}>✓</Text>
               )}
             </TouchableOpacity>
 
+            {/* Hindi */}
             <TouchableOpacity
               style={[
                 styles.languageOption,
@@ -330,9 +432,37 @@ const SettingsScreen = ({navigation}) => {
                     fontWeight: '600',
                   },
                 ]}>
-                हिन्दी (Hindi)
+                🇮🇳 हिन्दी (Hindi)
               </Text>
               {currentLanguage === LANGUAGES.HI && (
+                <Text style={{color: colors.primary, fontSize: 20}}>✓</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Marathi */}
+            <TouchableOpacity
+              style={[
+                styles.languageOption,
+                {padding: spacing.base, marginBottom: spacing.sm},
+                currentLanguage === LANGUAGES.MR && {
+                  backgroundColor: colors.primaryLight,
+                  borderWidth: 2,
+                  borderColor: colors.primary,
+                },
+              ]}
+              onPress={() => handleLanguageChange(LANGUAGES.MR)}>
+              <Text
+                style={[
+                  styles.languageText,
+                  {color: colors.textPrimary},
+                  currentLanguage === LANGUAGES.MR && {
+                    color: colors.primary,
+                    fontWeight: '600',
+                  },
+                ]}>
+                🇮🇳 मराठी (Marathi)
+              </Text>
+              {currentLanguage === LANGUAGES.MR && (
                 <Text style={{color: colors.primary, fontSize: 20}}>✓</Text>
               )}
             </TouchableOpacity>
@@ -355,7 +485,7 @@ const SettingsScreen = ({navigation}) => {
                     fontWeight: '600',
                   },
                 ]}>
-                {t('common.cancel')}
+                {t('common.cancel') || 'Cancel'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -365,7 +495,7 @@ const SettingsScreen = ({navigation}) => {
   );
 };
 
-// Toggle Item Component
+// ✅ Component definitions remain the same
 const ToggleItem = ({icon, label, value, onValueChange, theme}) => {
   const {colors, spacing} = theme;
   return (
@@ -393,7 +523,6 @@ const ToggleItem = ({icon, label, value, onValueChange, theme}) => {
   );
 };
 
-// Select Item Component
 const SelectItem = ({icon, label, value, onPress, theme}) => {
   const {colors, spacing} = theme;
   return (
@@ -422,7 +551,6 @@ const SelectItem = ({icon, label, value, onPress, theme}) => {
   );
 };
 
-// Menu Item Component
 const MenuItem = ({icon, label, onPress, theme}) => {
   const {colors, spacing} = theme;
   return (
@@ -447,7 +575,6 @@ const MenuItem = ({icon, label, onPress, theme}) => {
   );
 };
 
-// Divider Component
 const Divider = ({color}) => (
   <View style={[styles.divider, {backgroundColor: color}]} />
 );

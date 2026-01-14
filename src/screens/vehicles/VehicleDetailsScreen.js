@@ -21,7 +21,7 @@ const VehicleDetailsScreen = ({navigation, route}) => {
   const {
     vehicles,
     selectedVehicle,
-    getVehicleDetails, // ✅ Use this instead
+    getVehicleDetails,
     deleteVehicle,
     isLoading: contextLoading,
   } = useVehicles();
@@ -62,8 +62,8 @@ const VehicleDetailsScreen = ({navigation, route}) => {
     loadVehicle();
   }, [vehicleId, vehicles, getVehicleDetails]);
 
-  const getVehicleIconComponent = type => {
-    return <VehicleIcon type={type} size={72} />;
+  const getVehicleIconComponent = wheelType => {
+    return <VehicleIcon type={`${wheelType}-wheeler`} size={72} />;
   };
 
   const formatDate = dateString => {
@@ -93,10 +93,6 @@ const VehicleDetailsScreen = ({navigation, route}) => {
     if (diffDays < 7)
       return t('time.daysAgo', {count: diffDays}) || `${diffDays}d ago`;
     return formatDate(dateString);
-  };
-
-  const handleEdit = () => {
-    navigation.navigate('EditVehicle', {vehicleId});
   };
 
   const handleShare = () => {
@@ -202,8 +198,6 @@ const VehicleDetailsScreen = ({navigation, route}) => {
         title={t('vehicles.details.title') || 'Vehicle Details'}
         showBack
         onBackPress={() => navigation.goBack()}
-        rightIcon={<Text style={{fontSize: 20}}>✏️</Text>}
-        onRightPress={handleEdit}
       />
 
       <ScrollView
@@ -226,7 +220,7 @@ const VehicleDetailsScreen = ({navigation, route}) => {
             },
           ]}>
           <View style={{marginBottom: spacing.md}}>
-            {getVehicleIconComponent(vehicle.vehicleType)}
+            {getVehicleIconComponent(vehicle.wheelType)}
           </View>
           <Text
             style={[
@@ -248,9 +242,6 @@ const VehicleDetailsScreen = ({navigation, route}) => {
                 borderRadius: 16,
               },
             ]}>
-            <Text style={[styles.statusText, {color: colors.success}]}>
-              ✓ {t('common.active') || 'Active'}
-            </Text>
           </View>
         </View>
 
@@ -282,8 +273,7 @@ const VehicleDetailsScreen = ({navigation, route}) => {
               {t('vehicles.details.vehicleType') || 'Vehicle Type'}
             </Text>
             <Text style={[styles.infoValue, {color: colors.textPrimary}]}>
-              {t(`vehicles.types.${vehicle.vehicleType}`) ||
-                vehicle.vehicleType}
+              {vehicle.wheelType} Wheeler
             </Text>
           </View>
 
@@ -298,7 +288,7 @@ const VehicleDetailsScreen = ({navigation, route}) => {
         </Card>
 
         {/* Contact Information */}
-        {vehicle.contactPhone && (
+        {vehicle.emergencyContact && (
           <Card style={{marginBottom: spacing.md}}>
             <Text
               style={[
@@ -316,7 +306,7 @@ const VehicleDetailsScreen = ({navigation, route}) => {
                 {t('vehicles.details.phoneNumber') || 'Phone Number'}
               </Text>
               <Text style={[styles.infoValue, {color: colors.textPrimary}]}>
-                +91 {vehicle.contactPhone}
+                +91 {vehicle.emergencyContact}
               </Text>
             </View>
           </Card>

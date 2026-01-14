@@ -1,175 +1,334 @@
 /**
  * User Context
- * Manages user profile and preferences
+ * Manages user profile, settings, and activity
  */
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { UserService } from '../services/api';
-import { useToast } from '../components/common/Toast/ToastProvider';
-import { useAuth } from './AuthContext';
-import AsyncStorage from '../services/storage/AsyncStorage';
-import { STORAGE_KEYS } from '../config/constants';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+} from 'react';
+import {UserService} from '../services/api';
+import {useToast} from '../components/common/Toast/ToastProvider';
+import {useAuth} from './AuthContext';
 
 const UserContext = createContext();
 
-export const UserProvider = ({ children }) => {
-  const { user, updateUser: updateAuthUser } = useAuth();
-  const { showSuccess, showError } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+export const UserProvider = ({children}) => {
+  const {user, syncUserData} = useAuth();
+  const {showSuccess, showError} = useToast();
+
+  const [isLoading, setIsLoading] = useState(false); // ✅ Only true on first load
+  const [isRefreshing, setIsRefreshing] = useState(false); // ✅ True on background refresh
+  const [userStats, setUserStats] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [activityPagination, setActivityPagination] = useState({
+    page: 1,
+    limit: 20,
+    totalData: 0,
+    hasNext: false,
+    hasPrevious: false,
+  });
+  const [settings, setSettings] = useState(null);
+
+  // ✅ Track if home data has been loaded
+  const hasLoadedHomeRef = useRef(false);
+  const currentUserIdRef = useRef(null);
 
   /**
-   * Get user profile
+   * Reset loaded flags when user changes
    */
-  const getProfile = useCallback(async () => {
-    if (!user) {return { success: false, error: 'Not authenticated' };}
+  React.useEffect(() => {
+    if (user?._id && currentUserIdRef.current !== user._id) {
+      console.log('🔄 User changed in UserContext, resetting flags');
+      hasLoadedHomeRef.current = false;
+      currentUserIdRef.current = user._id;
 
-    try {
-      setIsLoading(true);
-      const response = await UserService.getProfile(user._id);
+      // ✅ Initialize stats from user object immediately
+      if (user.vehicleRegistered !== undefined) {
+        setUserStats({
+          vehicleSearched: user.vehicleSearched || 0,
+          timesContacted: user.timesContacted || 0,
+          vehicleRegistered: user.vehicleRegistered || 0,
+          memberSince: user.memberSince || user.createdAt,
+        });
+      }
+    } else if (!user) {
+      hasLoadedHomeRef.current = false;
+      currentUserIdRef.current = null;
+      setUserStats(null);
+    }
+  }, [user?._id, user]);
 
-      if (response.success) {
-        await updateAuthUser(response.data);
-        return { success: true, data: response.data };
+  /**
+   * Get User Home Dashboard (profile + stats)
+   * ✅ OPTIMIZED: Stale-while-revalidate pattern
+   */
+  const getUserHome = useCallback(
+    async (force = false) => {
+      if (!user) {
+        console.log('⏭️ No user, skipping home data load');
+        return {success: false, error: 'Not authenticated'};
       }
 
-      return { success: false };
-    } catch (error) {
-      showError('Failed to load profile');
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, updateAuthUser, showError]);
+      const hasExistingData = hasLoadedHomeRef.current;
+      const isBackgroundRefresh = hasExistingData && !force;
 
-  /**
-   * Update user profile
-   */
-  const updateProfile = useCallback(async (updates) => {
-    if (!user) {return { success: false, error: 'Not authenticated' };}
-
-    try {
-      setIsLoading(true);
-      const response = await UserService.updateProfile(user._id, updates);
-
-      if (response.success) {
-        await updateAuthUser(response.data);
-        showSuccess('Profile updated successfully');
-        return { success: true, data: response.data };
+      if (isBackgroundRefresh) {
+        console.log('🔄 Background refresh (silent)...');
+        setIsRefreshing(true);
+      } else if (!hasExistingData) {
+        console.log('🏠 First load (show skeleton)...');
+        setIsLoading(true);
+      } else {
+        console.log('🔄 Force refresh (show pull indicator)...');
+        setIsRefreshing(true);
       }
 
-      return { success: false };
-    } catch (error) {
-      showError('Failed to update profile');
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, updateAuthUser, showSuccess, showError]);
+      try {
+        const response = await UserService.getHome();
+
+        if (response.success) {
+          const homeData = response.data;
+          console.log('✅ Home data updated:', {
+            callBalance: homeData.callBalance,
+            vehicleSearched: homeData.vehicleSearched,
+            vehicleRegistered: homeData.vehicleRegistered,
+          });
+
+          // ✅ DON'T call syncUserData - causes infinite loop
+          // Just store stats locally
+          setUserStats({
+            vehicleSearched: homeData.vehicleSearched,
+            timesContacted: homeData.timesContacted,
+            vehicleRegistered: homeData.vehicleRegistered,
+            memberSince: homeData.memberSince,
+            callBalance: homeData.callBalance,
+            alertBalance: homeData.alertBalance,
+          });
+
+          hasLoadedHomeRef.current = true;
+
+          return {success: true, data: homeData};
+        }
+
+        return {success: false};
+      } catch (error) {
+        console.error('❌ Failed to load user home:', error);
+        return {success: false, error: error.message};
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [user],
+  ); // ✅ Only depend on user (which is stable from AuthContext)
 
   /**
-   * Update user preferences
+   * Get User Activity History
+   * GET /api/user/activity?type=<type>&page=<page>&limit=<limit>
    */
-  const updatePreferences = useCallback(async (preferences) => {
-    if (!user) {return { success: false, error: 'Not authenticated' };}
+  const getActivities = useCallback(
+    async (filters = {}) => {
+      if (!user) {
+        return {success: false, error: 'Not authenticated'};
+      }
 
-    try {
-      setIsLoading(true);
-      const response = await UserService.updatePreferences(user._id, preferences);
+      try {
+        setIsLoading(true);
 
-      if (response.success) {
-        const updatedUser = {
-          ...user,
-          preferences: { ...user.preferences, ...preferences },
+        const queryParams = {
+          type: filters.type || 'ALL',
+          page: filters.page || 1,
+          limit: filters.limit || 20,
         };
-        await updateAuthUser(updatedUser);
-        showSuccess('Preferences updated');
-        return { success: true, data: response.data };
+
+        console.log('📋 Loading activities with filters:', queryParams);
+
+        const response = await UserService.getActivities(queryParams);
+
+        if (response.success) {
+          const {activity, totalData, page, limit, hasNext, hasPrevious} =
+            response.data;
+
+          console.log('✅ Activities loaded:', activity?.length || 0);
+
+          // If first page, replace. Otherwise append (infinite scroll)
+          if (queryParams.page === 1) {
+            setActivities(activity);
+          } else {
+            setActivities(prev => [...prev, ...activity]);
+          }
+
+          setActivityPagination({
+            page,
+            limit,
+            totalData,
+            hasNext,
+            hasPrevious,
+          });
+
+          return {success: true, data: response.data};
+        }
+
+        return {success: false};
+      } catch (error) {
+        console.error('❌ Failed to load activities:', error);
+        // Don't show error toast - let caller handle
+        return {success: false, error: error.message};
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [user],
+  );
+
+  /**
+   * Load more activities (pagination)
+   */
+  const loadMoreActivities = useCallback(
+    async (type = 'ALL') => {
+      if (!activityPagination.hasNext) {
+        return {success: false, message: 'No more data'};
       }
 
-      return { success: false };
-    } catch (error) {
-      showError('Failed to update preferences');
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, updateAuthUser, showSuccess, showError]);
+      return getActivities({
+        type,
+        page: activityPagination.page + 1,
+        limit: activityPagination.limit,
+      });
+    },
+    [activityPagination, getActivities],
+  );
 
   /**
-   * Change language
+   * Get User Settings
+   * GET /api/user/settings
    */
-  const changeLanguage = useCallback(async (languageCode) => {
-    try {
-      await AsyncStorage.save(STORAGE_KEYS.LANGUAGE, languageCode);
-      await updatePreferences({ language: languageCode });
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to change language:', error);
-      return { success: false, error: error.message };
+  const getSettings = useCallback(async () => {
+    if (!user) {
+      return {success: false, error: 'Not authenticated'};
     }
-  }, [updatePreferences]);
-
-  /**
-   * Toggle notification settings
-   */
-  const toggleNotifications = useCallback(async (enabled) => {
-    try {
-      await updatePreferences({ notifications: enabled });
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  }, [updatePreferences]);
-
-  /**
-   * Update profile visibility
-   */
-  const updateProfileVisibility = useCallback(async (visibility) => {
-    try {
-      await updatePreferences({ profileVisibility: visibility });
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  }, [updatePreferences]);
-
-  /**
-   * Delete account
-   */
-  const deleteAccount = useCallback(async () => {
-    if (!user) {return { success: false, error: 'Not authenticated' };}
 
     try {
       setIsLoading(true);
-      const response = await UserService.deleteAccount(user._id);
+      console.log('⚙️ Loading settings...');
+
+      const response = await UserService.getSettings();
 
       if (response.success) {
-        showSuccess('Account deleted successfully');
-        return { success: true };
+        console.log('✅ Settings loaded');
+        setSettings(response.data);
+        return {success: true, data: response.data};
       }
 
-      return { success: false };
+      return {success: false};
     } catch (error) {
-      showError('Failed to delete account');
-      return { success: false, error: error.message };
+      console.error('❌ Failed to load settings:', error);
+      showError('Failed to load settings');
+      return {success: false, error: error.message};
     } finally {
       setIsLoading(false);
     }
-  }, [user, showSuccess, showError]);
+  }, [user, showError]);
+
+  /**
+   * Update User Settings
+   * POST /api/user/settings
+   */
+  const updateSettings = useCallback(
+    async updates => {
+      if (!user) {
+        return {success: false, error: 'Not authenticated'};
+      }
+
+      try {
+        setIsLoading(true);
+        console.log('⚙️ Updating settings:', updates);
+
+        const response = await UserService.updateSettings(updates);
+
+        if (response.success) {
+          console.log('✅ Settings updated');
+          setSettings(response.data);
+          showSuccess('Settings updated successfully');
+          return {success: true, data: response.data};
+        }
+
+        return {success: false};
+      } catch (error) {
+        console.error('❌ Failed to update settings:', error);
+        showError('Failed to update settings');
+        return {success: false, error: error.message};
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [user, showSuccess, showError],
+  );
+
+  /**
+   * Toggle Notifications
+   */
+  const toggleNotifications = useCallback(
+    async enabled => {
+      return updateSettings({notifications: enabled});
+    },
+    [updateSettings],
+  );
+
+  /**
+   * Toggle Email Alerts
+   */
+  const toggleEmailAlerts = useCallback(
+    async enabled => {
+      return updateSettings({emailAlerts: enabled});
+    },
+    [updateSettings],
+  );
+
+  /**
+   * Toggle SMS Alerts
+   */
+  const toggleSmsAlerts = useCallback(
+    async enabled => {
+      return updateSettings({smsAlerts: enabled});
+    },
+    [updateSettings],
+  );
+
+  /**
+   * Update Profile Visibility
+   */
+  const updateProfileVisibility = useCallback(
+    async visible => {
+      return updateSettings({profileVisibility: visible});
+    },
+    [updateSettings],
+  );
 
   const value = {
     // State
     user,
-    isLoading,
+    isLoading, // ✅ Only true on first load with no cached data
+    isRefreshing, // ✅ True on background refresh
+    userStats,
+    activities,
+    activityPagination,
+    settings,
 
     // Methods
-    getProfile,
-    updateProfile,
-    updatePreferences,
-    changeLanguage,
+    getUserHome,
+    getActivities,
+    loadMoreActivities,
+    getSettings,
+    updateSettings,
     toggleNotifications,
+    toggleEmailAlerts,
+    toggleSmsAlerts,
     updateProfileVisibility,
-    deleteAccount,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

@@ -1,6 +1,7 @@
 /**
  * Search Context
  * Manages search history and results cache
+ * UPDATED: Uses API v1.1.0 search endpoint
  */
 
 import React, {
@@ -33,8 +34,25 @@ export const SearchProvider = ({children}) => {
    * Load recent searches from storage on mount
    */
   useEffect(() => {
-    loadRecentSearches();
-  }, []);
+    if (user) {
+      // ✅ Only load if user is logged in
+      loadRecentSearches();
+    }
+  }, [user]); // ✅ Re-run when user changes
+
+  /**
+   * ✅ NEW: Clear search history when user logs out
+   */
+  useEffect(() => {
+    if (!user) {
+      // User logged out - clear everything
+      console.log('🚪 User logged out - clearing search history');
+      setRecentSearches([]);
+      setSearchHistory([]);
+      setSearchResult(null);
+      // Storage will be cleared by AuthContext.logout()
+    }
+  }, [user]);
 
   /**
    * Load recent searches from AsyncStorage
@@ -43,10 +61,30 @@ export const SearchProvider = ({children}) => {
     try {
       const stored = await AsyncStorage.get(STORAGE_KEYS.RECENT_SEARCHES);
       if (stored && Array.isArray(stored)) {
-        setRecentSearches(stored);
+        // ✅ Validate and clean each item
+        const cleaned = stored
+          .filter(
+            item =>
+              item &&
+              typeof item === 'object' &&
+              typeof item.plateNumber === 'string',
+          )
+          .map(item => ({
+            plateNumber: String(item.plateNumber),
+            found: Boolean(item.found),
+            timestamp:
+              typeof item.timestamp === 'string'
+                ? item.timestamp
+                : new Date().toISOString(),
+          }));
+
+        setRecentSearches(cleaned);
+        console.log('✅ Loaded', cleaned.length, 'recent searches');
       }
     } catch (error) {
       console.error('Failed to load recent searches:', error);
+      // Clear corrupt data
+      await AsyncStorage.remove(STORAGE_KEYS.RECENT_SEARCHES);
     }
   };
 
@@ -63,65 +101,101 @@ export const SearchProvider = ({children}) => {
 
   /**
    * Add plate to recent searches
-   * ✅ Fixed - Moved before searchVehicle to avoid circular dependency
    */
   const addToRecentSearches = useCallback((plateNumber, found) => {
     setRecentSearches(prev => {
       // Remove if already exists
       const filtered = prev.filter(item => item.plateNumber !== plateNumber);
 
+      // ✅ Create clean object with primitives only
+      const newSearch = {
+        plateNumber: String(plateNumber).toUpperCase(), // ✅ Ensure string
+        found: Boolean(found), // ✅ Ensure boolean
+        timestamp: new Date().toISOString(), // ✅ Ensure string (not Date object)
+      };
+
       // Add to beginning
-      const updated = [
-        {
-          plateNumber,
-          found,
-          timestamp: new Date().toISOString(),
-        },
-        ...filtered,
-      ].slice(0, MAX_RECENT_SEARCHES);
+      const updated = [newSearch, ...filtered].slice(0, MAX_RECENT_SEARCHES);
 
       // Save to storage
       saveRecentSearches(updated);
 
       return updated;
     });
-  }, []); // ✅ No dependencies needed
+  }, []);
 
   /**
    * Search for vehicle by plate number
+   * POST /api/user/search-vehicle
    */
   const searchVehicle = useCallback(
     async plateNumber => {
+      if (!plateNumber || plateNumber.length < 8) {
+        return {success: false, error: 'Invalid plate number'};
+      }
+
       try {
         setIsSearching(true);
-        setSearchResult(null);
+        console.log('🔍 Searching vehicle:', plateNumber);
 
         const response = await SearchService.searchVehicle(plateNumber);
 
+        console.log('📦 Search response:', response); // ✅ Debug log
+
+        // ✅ FIXED: Check if vehicle data exists
         if (response.success) {
-          setSearchResult(response.data);
+          // ✅ Check if response has vehicle owner data
+          const hasVehicleData =
+            response.data &&
+            (response.data.fullName ||
+              response.data.firstName ||
+              response.data.ownerName);
+
+          const found = Boolean(hasVehicleData);
 
           // Add to recent searches
-          addToRecentSearches(plateNumber, response.data.found);
+          addToRecentSearches(plateNumber.toUpperCase(), found);
 
-          if (response.data.found) {
-            showSuccess('Vehicle found!');
-          } else {
-            showError('Vehicle not found in our network');
-          }
+          console.log(
+            found
+              ? '✅ Vehicle found - Owner: ' + response.data.fullName
+              : 'ℹ️ Vehicle not found (no owner data)',
+          );
 
-          return {success: true, data: response.data};
+          return {
+            success: true,
+            data: {
+              found: found,
+              vehicle: found ? response.data : null,
+            },
+          };
         }
 
-        return {success: false};
+        // ✅ Handle "Vehicle not found" as expected response (not error)
+        if (response.message?.includes('Vehicle not found')) {
+          addToRecentSearches(plateNumber.toUpperCase(), false);
+
+          return {
+            success: true,
+            data: {
+              found: false,
+              vehicle: null,
+            },
+          };
+        }
+
+        return {success: false, error: response.message};
       } catch (error) {
-        showError('Search failed. Please try again.');
-        return {success: false, error: error.message};
+        console.error('❌ Search failed:', error);
+        return {
+          success: false,
+          error: error.message || 'Failed to search vehicle',
+        };
       } finally {
         setIsSearching(false);
       }
     },
-    [showSuccess, showError, addToRecentSearches], // ✅ Fixed - addToRecentSearches now stable
+    [addToRecentSearches],
   );
 
   /**
@@ -156,6 +230,8 @@ export const SearchProvider = ({children}) => {
 
   /**
    * Get search history from API
+   * NOTE: This endpoint doesn't exist yet in the API
+   * Keeping for future implementation
    */
   const getSearchHistory = useCallback(
     async (limit = 20) => {
@@ -173,11 +249,11 @@ export const SearchProvider = ({children}) => {
 
         return {success: false};
       } catch (error) {
-        showError('Failed to load search history');
+        console.log('Search history endpoint not available yet');
         return {success: false, error: error.message};
       }
     },
-    [user, showError],
+    [user],
   );
 
   /**
@@ -200,7 +276,6 @@ export const SearchProvider = ({children}) => {
     removeRecentSearch,
     getSearchHistory,
     clearSearchResult,
-    // ✅ Removed logContact - now handled by ContactService directly in modals
   };
 
   return (

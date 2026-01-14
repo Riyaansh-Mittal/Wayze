@@ -6,8 +6,11 @@
 import { VALIDATION } from '../config/constants';
 
 /**
- * Validate vehicle plate number
- * Format: 2 letters + 2 digits + 2 letters + 4 digits (e.g., MH01AB1234)
+ * Validate Indian vehicle plate number
+ * Supports all 2026 formats:
+ * 1. Standard: MH12AB1234, MH 12 AB 1234
+ * 2. Bharat Series: 26BH1234AA, 26 BH 1234 AA
+ * 3. Delhi Special: DL01CAA1234, DL 01 C AA 1234
  */
 export const validatePlateNumber = (plateNumber) => {
   if (!plateNumber) {
@@ -16,15 +19,92 @@ export const validatePlateNumber = (plateNumber) => {
 
   const trimmed = plateNumber.trim().toUpperCase();
 
-  if (!VALIDATION.PLATE_NUMBER_REGEX.test(trimmed)) {
+  // Remove spaces and hyphens for validation
+  const normalized = trimmed.replace(/[\s-]/g, '');
+
+  // Check length
+  if (
+    normalized.length < VALIDATION.PLATE_NUMBER_MIN_LENGTH ||
+    normalized.length > VALIDATION.PLATE_NUMBER_MAX_LENGTH
+  ) {
     return {
       valid: false,
-      message: `Invalid format. Use ${VALIDATION.PLATE_NUMBER_FORMAT}`,
+      message: `Plate number must be ${VALIDATION.PLATE_NUMBER_MIN_LENGTH}-${VALIDATION.PLATE_NUMBER_MAX_LENGTH} characters`,
     };
   }
 
-  return { valid: true, value: trimmed };
+  // Test against supported formats
+  let isValid = false;
+  let detectedFormat = '';
+
+  // Test Standard format: MH12AB1234
+  if (VALIDATION.PLATE_NUMBER_STANDARD_REGEX.test(normalized)) {
+    isValid = true;
+    detectedFormat = 'Standard';
+  }
+  // Test Bharat Series format: 26BH1234AA
+  else if (VALIDATION.PLATE_NUMBER_BH_REGEX.test(normalized)) {
+    isValid = true;
+    detectedFormat = 'Bharat Series';
+  }
+  // Test Delhi Special format: DL01CAA1234
+  else if (VALIDATION.PLATE_NUMBER_DELHI_REGEX.test(normalized)) {
+    isValid = true;
+    detectedFormat = 'Delhi Special';
+  }
+
+  if (!isValid) {
+    return {
+      valid: false,
+      message: `Invalid format. Examples: ${VALIDATION.PLATE_NUMBER_EXAMPLES.join(', ')}`,
+    };
+  }
+
+  return {
+    valid: true,
+    value: normalized,
+    format: detectedFormat,
+  };
 };
+
+/**
+ * Format plate number for display (adds spaces)
+ * MH12AB1234 → MH 12 AB 1234
+ * 26BH1234AA → 26 BH 1234 AA
+ */
+export const formatPlateNumber = (plateNumber) => {
+  if (!plateNumber) return '';
+
+  const normalized = plateNumber.trim().toUpperCase().replace(/[\s-]/g, '');
+
+  // Standard format: MH 12 AB 1234
+  if (/^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/.test(normalized)) {
+    return normalized.replace(
+      /^([A-Z]{2})([0-9]{2})([A-Z]{1,2})([0-9]{4})$/,
+      '$1 $2 $3 $4'
+    );
+  }
+
+  // BH series: 26 BH 1234 AA
+  if (/^[0-9]{2}BH[0-9]{4}[A-Z]{1,2}$/.test(normalized)) {
+    return normalized.replace(
+      /^([0-9]{2})(BH)([0-9]{4})([A-Z]{1,2})$/,
+      '$1 $2 $3 $4'
+    );
+  }
+
+  // Delhi special: DL 01 C AA 1234
+  if (/^DL[0-9]{1,2}[A-Z][A-Z]{1,2}[0-9]{4}$/.test(normalized)) {
+    return normalized.replace(
+      /^(DL)([0-9]{1,2})([A-Z])([A-Z]{1,2})([0-9]{4})$/,
+      '$1 $2 $3 $4 $5'
+    );
+  }
+
+  // Return as-is if no format matches
+  return normalized;
+};
+
 
 /**
  * Validate email address
@@ -238,6 +318,7 @@ export const validateMultiple = (validations) => {
 
 export default {
   validatePlateNumber,
+  formatPlateNumber,
   validateEmail,
   validatePhoneNumber,
   validateReferralCode,

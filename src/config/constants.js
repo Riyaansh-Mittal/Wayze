@@ -4,10 +4,18 @@
  */
 
 // Feature Flags
+// export const FEATURE_FLAGS = {
+//   USE_MOCK_DATA: __DEV__ && true, // Toggle mock data in development
+//   ENABLE_ANALYTICS: !__DEV__,
+//   ENABLE_CRASHLYTICS: !__DEV__,
+//   ENABLE_PUSH_NOTIFICATIONS: true,
+//   ENABLE_DEEP_LINKING: true,
+// };
+
 export const FEATURE_FLAGS = {
-  USE_MOCK_DATA: __DEV__ && true, // Toggle mock data in development
-  ENABLE_ANALYTICS: !__DEV__,
-  ENABLE_CRASHLYTICS: !__DEV__,
+  USE_MOCK_DATA: true, // Toggle mock data in development
+  ENABLE_ANALYTICS: false,
+  ENABLE_CRASHLYTICS: false,
   ENABLE_PUSH_NOTIFICATIONS: true,
   ENABLE_DEEP_LINKING: true,
 };
@@ -34,11 +42,19 @@ export const VEHICLE_TYPES = {
 };
 
 export const VEHICLE_TYPE_OPTIONS = [
-  { label: '2-Wheeler (Bike/Scooter)', value: VEHICLE_TYPES.TWO_WHEELER, icon: '🏍️' },
-  { label: '3-Wheeler (Auto)', value: VEHICLE_TYPES.THREE_WHEELER, icon: '🛺' },
-  { label: '4-Wheeler (Car)', value: VEHICLE_TYPES.FOUR_WHEELER, icon: '🚗' },
-  { label: 'Heavy Vehicle (Truck/Bus)', value: VEHICLE_TYPES.HEAVY_VEHICLE, icon: '🚚' }, // ✅ ADD THIS
-  { label: 'Other', value: VEHICLE_TYPES.OTHER, icon: '🚙' },
+  {
+    label: '2-Wheeler (Bike/Scooter)',
+    value: VEHICLE_TYPES.TWO_WHEELER,
+    icon: '🏍️',
+  },
+  {label: '3-Wheeler (Auto)', value: VEHICLE_TYPES.THREE_WHEELER, icon: '🛺'},
+  {label: '4-Wheeler (Car)', value: VEHICLE_TYPES.FOUR_WHEELER, icon: '🚗'},
+  {
+    label: 'Heavy Vehicle (Truck/Bus)',
+    value: VEHICLE_TYPES.HEAVY_VEHICLE,
+    icon: '🚚',
+  }, // ✅ ADD THIS
+  {label: 'Other', value: VEHICLE_TYPES.OTHER, icon: '🚙'},
 ];
 
 // Contact Methods
@@ -105,26 +121,75 @@ export const THEME_MODES = {
 };
 
 export const LANGUAGE_OPTIONS = [
-  { label: 'English', value: LANGUAGES.EN, flag: '🇬🇧' },
-  { label: 'हिन्दी', value: LANGUAGES.HI, flag: '🇮🇳' },
-  { label: 'मराठी', value: LANGUAGES.MR, flag: '🇮🇳' },
+  {label: 'English', value: LANGUAGES.EN, flag: '🇬🇧'},
+  {label: 'हिन्दी', value: LANGUAGES.HI, flag: '🇮🇳'},
+  {label: 'मराठी', value: LANGUAGES.MR, flag: '🇮🇳'},
 ];
 
 // Validation Rules
 export const VALIDATION = {
-  PLATE_NUMBER_REGEX: /^[A-Z]{2}\d{2}[A-Z]{2}\d{4}$/,
-  PLATE_NUMBER_MIN_LENGTH: 6, // ✅ ADD THIS
-  PLATE_NUMBER_MAX_LENGTH: 13, // ✅ ADD THIS
-  PLATE_NUMBER_FORMAT: 'MH01AB1234',
+  // ========================================
+  // PLATE NUMBER VALIDATION (2026 Standards)
+  // ========================================
+
+  /**
+   * Standard State Registration Format
+   * Examples: MH12AB1234, KA08J9192, DL01AA1234
+   * Format: 2 letters (state) + 2 digits (RTO) + 1-2 letters (series) + 4 digits (number)
+   */
+  PLATE_NUMBER_STANDARD_REGEX: /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/,
+
+  /**
+   * Bharat (BH) Series Format (Pan-India)
+   * Examples: 26BH1234AA, 25BH5678AB
+   * Format: 2 digits (year) + BH + 4 digits + 1-2 letters
+   */
+  PLATE_NUMBER_BH_REGEX: /^[0-9]{2}BH[0-9]{4}[A-Z]{1,2}$/,
+
+  /**
+   * Delhi Special Classification Format
+   * Examples: DL01CAA1234, DL8SBB9999
+   * Format: DL + 1-2 digits (RTO) + 1 letter (category) + 1-2 letters (series) + 4 digits
+   */
+  PLATE_NUMBER_DELHI_REGEX: /^DL[0-9]{1,2}[A-Z][A-Z]{1,2}[0-9]{4}$/,
+
+  // Length constraints
+  PLATE_NUMBER_MIN_LENGTH: 8, // Minimum: DL8CAA99 (8 chars without spaces)
+  PLATE_NUMBER_MAX_LENGTH: 12, // Maximum: DL01CAA1234 (11 chars) or 26BH1234AA (10 chars)
+
+  // Example formats for user guidance
+  PLATE_NUMBER_EXAMPLES: ['MH12AB1234', '26BH1234AA', 'DL01CAA1234'],
+  PLATE_NUMBER_FORMAT: 'MH12AB1234 or 26BH1234AA',
+
+  // ========================================
+  // OTHER VALIDATIONS (unchanged)
+  // ========================================
+
   EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+
   PHONE_REGEX: /^[6-9]\d{9}$/,
   PHONE_MIN_LENGTH: 10,
   PHONE_MAX_LENGTH: 10,
-  RC_NUMBER_REGEX: /^[A-Z]{2}\d{2}[A-Z]{2}\d{9}$/, // ✅ ADD THIS
+
+  RC_NUMBER_REGEX: /^[A-Z]{2}\d{2}[A-Z]{2}\d{9}$/,
+
   REFERRAL_CODE_LENGTH: 8,
+  REFERRAL_CODE_REGEX: /^[A-Z0-9]{8}$/,
+
   RC_MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   RC_ALLOWED_FORMATS: ['jpg', 'jpeg', 'png', 'heic'],
 };
+
+/**
+ * Indian State Codes (2026)
+ * For additional validation if needed
+ */
+export const INDIAN_STATE_CODES = [
+  'AN', 'AP', 'AR', 'AS', 'BR', 'CH', 'CG', 'DD', 'DL', 'GA',
+  'GJ', 'HP', 'HR', 'JH', 'JK', 'KA', 'KL', 'LA', 'LD', 'MH',
+  'ML', 'MN', 'MP', 'MZ', 'NL', 'OD', 'PB', 'PY', 'RJ', 'SK',
+  'TN', 'TR', 'TS', 'UK', 'UP', 'WB',
+];
 
 // Referral System
 export const REFERRAL = {

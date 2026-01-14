@@ -49,14 +49,15 @@ export const AuthProvider = ({children}) => {
       }
     } catch (error) {
       console.error('Failed to initialize auth:', error);
-      await SecureStorage.clearAuth();
+      // ✅ CHANGED: Use clearAllData instead of clearAuth
+      await SecureStorage.clearAllData();
     } finally {
       setIsLoading(false);
     }
   };
 
   /**
-   * Google Sign-In (NEW METHOD)
+   * Google Sign-In (Primary Method)
    */
   const googleLogin = useCallback(async () => {
     try {
@@ -67,7 +68,6 @@ export const AuthProvider = ({children}) => {
 
       if (!googleResult.success) {
         if (googleResult.cancelled) {
-          // User cancelled - don't show error
           return {success: false, cancelled: true};
         }
         throw new Error(googleResult.error);
@@ -88,22 +88,23 @@ export const AuthProvider = ({children}) => {
           lastName: backendData.lastName,
           fullName: backendData.fullName,
           email: backendData.email,
-          phoneNumber: backendData.phoneNumber,
+          phoneNumber: backendData.phoneNumber || '',
           deviceType: backendData.deviceType,
           fcmToken: Array.isArray(backendData.fcmToken)
             ? backendData.fcmToken
             : [backendData.fcmToken],
           referralCode: backendData.referralCode,
+          callBalance: backendData.callBalance || 0,
+          alertBalance: backendData.alertBalance || 0,
           photo: googleResult.data.photo || null,
-          userInfo: backendData.userInfo || null,
-          vehicles: backendData.userInfo?.vehicle || [],
-          emergencyContact: backendData.userInfo?.emergencyContact || '',
-          isFirstTime:
-            !backendData.userInfo || backendData.userInfo.vehicle?.length === 0,
+          // Statistics (will be fetched from /user/home later)
+          vehicleSearched: 0,
+          timesContacted: 0,
+          vehicleRegistered: 0,
         };
 
-        // Save to secure storage
-        await SecureStorage.saveTokens(backendData.token, backendData.token); // Backend doesn't return separate refresh token
+        // Save to secure storage (backend returns single 'token', no separate refresh token)
+        await SecureStorage.saveTokens(backendData.token, backendData.token);
         await SecureStorage.saveUserData(userData);
 
         // Update state
@@ -111,14 +112,12 @@ export const AuthProvider = ({children}) => {
         setAuthToken(backendData.token);
         setIsAuthenticated(true);
 
-        showSuccess(
-          userData.isFirstTime ? 'Welcome to QR Parking!' : 'Welcome back!',
-        );
+        showSuccess('Welcome to QR Parking!');
 
         return {
           success: true,
-          isFirstTime: userData.isFirstTime,
           user: userData,
+          isFirstTime: backendData.isFirstTime || false, // ✅ Add this for referral screen
         };
       }
 
@@ -152,19 +151,18 @@ export const AuthProvider = ({children}) => {
             lastName: backendData.lastName,
             fullName: backendData.fullName,
             email: backendData.email,
-            phoneNumber: backendData.phoneNumber,
+            phoneNumber: backendData.phoneNumber || '',
             deviceType: backendData.deviceType,
             fcmToken: Array.isArray(backendData.fcmToken)
               ? backendData.fcmToken
               : [backendData.fcmToken],
             referralCode: backendData.referralCode,
+            callBalance: backendData.callBalance || 0,
+            alertBalance: backendData.alertBalance || 0,
             photo: loginData.photo || null,
-            userInfo: backendData.userInfo || null,
-            vehicles: backendData.userInfo?.vehicle || [],
-            emergencyContact: backendData.userInfo?.emergencyContact || '',
-            isFirstTime:
-              !backendData.userInfo ||
-              backendData.userInfo.vehicle?.length === 0,
+            vehicleSearched: 0,
+            timesContacted: 0,
+            vehicleRegistered: 0,
           };
 
           await SecureStorage.saveTokens(backendData.token, backendData.token);
@@ -174,15 +172,10 @@ export const AuthProvider = ({children}) => {
           setAuthToken(backendData.token);
           setIsAuthenticated(true);
 
-          showSuccess(
-            userData.isFirstTime
-              ? 'Account created successfully!'
-              : 'Welcome back!',
-          );
+          showSuccess('Welcome!');
 
           return {
             success: true,
-            isFirstTime: userData.isFirstTime,
             user: userData,
           };
         }
@@ -199,106 +192,66 @@ export const AuthProvider = ({children}) => {
   );
 
   /**
-   * Logout (Updated to include Google Sign-Out)
+   * Logout (No backend API - local cleanup only)
+   * ✅ UPDATED: Complete cleanup to prevent data leaking between accounts
    */
   const logout = useCallback(async () => {
     try {
-      setIsLoading(true);
+      console.log('🚪 Logging out...');
 
-      // Call logout API
-      await AuthService.logout();
-
-      // Sign out from Google
-      await GoogleSignInService.signOut();
-
-      // Clear storage
-      await SecureStorage.clearAuth();
-
-      // Clear state
+      // ✅ 1. Clear state FIRST (immediate UI update)
       setUser(null);
       setAuthToken(null);
       setIsAuthenticated(false);
 
-      showSuccess('Logged out successfully');
+      // ✅ 2. Sign out from Google (don't block on this)
+      try {
+        await GoogleSignInService.signOut();
+        console.log('✅ Signed out from Google');
+      } catch (googleError) {
+        console.error('⚠️ Google sign-out error (non-critical):', googleError);
+      }
+
+      // ✅ 3. Clear ALL storage (complete wipe)
+      await SecureStorage.clearAllData();
+      console.log('✅ All storage cleared');
 
       return {success: true};
     } catch (error) {
-      console.error('Logout error:', error);
-      // Even if API fails, clear local state
-      await SecureStorage.clearAuth();
+      console.error('❌ Logout error:', error);
+
+      // ✅ Even if something fails, still clear everything
       setUser(null);
       setAuthToken(null);
       setIsAuthenticated(false);
 
-      return {success: true}; // Still return success since we cleared locally
+      // Force clear storage
+      try {
+        await SecureStorage.clearAllData();
+      } catch (clearError) {
+        console.error('Failed to clear storage:', clearError);
+      }
+
+      return {success: true}; // Still return success
     } finally {
       setIsLoading(false);
     }
-  }, [showSuccess]);
+  }, []);
 
   /**
-   * Refresh token
+   * Update user data in local state and storage
+   * Used by UserContext after fetching fresh data
    */
-  const refreshToken = useCallback(async () => {
+  const syncUserData = useCallback(async userData => {
     try {
-      const tokens = await SecureStorage.getTokens();
-
-      if (!tokens.refreshToken) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await AuthService.refreshToken(tokens.refreshToken);
-
-      if (response.success) {
-        await SecureStorage.saveTokens(
-          response.data.token,
-          response.data.refreshToken,
-        );
-        setAuthToken(response.data.token);
-        return {success: true};
-      }
-
-      return {success: false};
+      setUser(userData);
+      await SecureStorage.saveUserData(userData);
+      return {success: true};
     } catch (error) {
-      console.error('Token refresh failed:', error);
-      await logout();
+      console.error('Failed to sync user data:', error);
       return {success: false, error: error.message};
     }
-  }, [logout]);
-
-  /**
-   * Update user data locally
-   */
-  const updateUser = useCallback(
-    async updates => {
-      try {
-        const updatedUser = {...user, ...updates};
-        setUser(updatedUser);
-        await SecureStorage.saveUserData(updatedUser);
-        return {success: true};
-      } catch (error) {
-        console.error('Failed to update user:', error);
-        return {success: false, error: error.message};
-      }
-    },
-    [user],
-  );
-
-  /**
-   * Check if user is first time
-   */
-  const isFirstTimeUser = useCallback(() => {
-    return user?.isFirstTime || false;
-  }, [user]);
-
-  /**
-   * Mark onboarding as complete
-   */
-  const completeOnboarding = useCallback(async () => {
-    if (user) {
-      await updateUser({isFirstTime: false});
-    }
-  }, [user, updateUser]);
+  }, []);
 
   const value = {
     // State
@@ -308,13 +261,10 @@ export const AuthProvider = ({children}) => {
     authToken,
 
     // Methods
-    googleLogin, // ✅ NEW: Primary Google login method
+    googleLogin, // Primary login method
     socialLogin, // Generic social login
     logout,
-    refreshToken,
-    updateUser,
-    isFirstTimeUser,
-    completeOnboarding,
+    syncUserData, // ✅ Used by UserContext to update user data
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -4,7 +4,7 @@
  * FULLY THEME-AWARE WITH CORRECT TRANSLATION KEYS
  */
 
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -15,28 +15,21 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSearch } from '../../contexts/SearchContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import { validatePlateNumber } from '../../utils/validators';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useSearch} from '../../contexts/SearchContext';
+import {useTheme} from '../../contexts/ThemeContext';
+import {validatePlateNumber} from '../../utils/validators';
 import AppBar from '../../components/navigation/AppBar';
 import TextInput from '../../components/common/Input/TextInput';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import Card from '../../components/common/Card/Card';
-import {
-  SearchIcon,
-  SearchIcon as SearchSvg,
-} from '../../assets/icons';
+import {SearchIcon, SearchIcon as SearchSvg} from '../../assets/icons';
 
-const FindVehicleScreen = ({ navigation }) => {
-  const { t, theme } = useTheme();
-  const { colors, spacing, layout } = theme;
-  const {
-    searchVehicle,
-    recentSearches,
-    clearRecentSearches,
-    isLoading,
-  } = useSearch();
+const FindVehicleScreen = ({navigation}) => {
+  const {t, theme} = useTheme();
+  const {colors, spacing, layout} = theme;
+  const {searchVehicle, recentSearches, clearRecentSearches, isSearching} =
+    useSearch();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
@@ -66,162 +59,223 @@ const FindVehicleScreen = ({ navigation }) => {
         });
       }
     } else {
-      Alert.alert(
-        t('common.error'),
-        result.error || t('search.searchFailed'),
-      );
+      Alert.alert(t('common.error'), result.error || t('search.searchFailed'));
     }
   };
 
-  const handleRecentSearchPress = (search) => {
+  const handleRecentSearchPress = search => {
     setSearchQuery(search.plateNumber);
   };
 
   const handleClearAllSearches = () => {
     Alert.alert(
-      t('search.recentTitle'),
-      t('search.recentEmpty'),
+      t('search.clearRecent.title') || 'Clear Recent Searches',
+      t('search.clearRecent.message') ||
+        'Are you sure you want to clear all recent searches?',
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        {text: t('common.cancel'), style: 'cancel'},
         {
           text: t('common.delete'),
           style: 'destructive',
           onPress: () => clearRecentSearches(),
         },
-      ]
+      ],
     );
   };
 
-  const getTimeAgo = (timestamp) => {
+  const getTimeAgo = timestamp => {
     const now = Date.now();
     const diff = now - new Date(timestamp).getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (hours < 1) {return t('time.justNow');}
-    if (hours < 24) {return t('time.hoursAgo', { count: hours });}
-    if (days < 7) {return t('time.daysAgo', { count: days });}
-    return t('time.weeksAgo', { count: Math.floor(days / 7) });
+    if (hours < 1) return t('time.justNow');
+    if (hours < 24) return t('time.hoursAgo', {count: hours});
+    if (days < 7) return t('time.daysAgo', {count: days});
+    return t('time.weeksAgo', {count: Math.floor(days / 7)});
   };
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['top']}
-    >
-      <AppBar
-        title={t('search.title')}
-        showBack={false}
-      />
+      style={[styles.container, {backgroundColor: colors.background}]}
+      edges={['top']}>
+      <AppBar title={t('search.title')} showBack={false} />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, {
-            padding: layout.screenPadding,
-            paddingBottom: spacing.xxxl,
-          }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              padding: layout.screenPadding,
+              paddingBottom: spacing.xxxl,
+            },
+          ]}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           {/* Search Input Section */}
-          <View style={[styles.searchSection, { marginBottom: spacing.lg }]}>
+          <View style={[styles.searchSection, {marginBottom: spacing.lg}]}>
             <TextInput
               label={t('search.inputLabel')}
               value={searchQuery}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setSearchQuery(text.toUpperCase());
                 setError('');
               }}
-              placeholder={t('search.inputPlaceholder')}
+              placeholder={
+                t('search.inputPlaceholder') || 'MH12AB1234 or 26BH1234AA'
+              } // ✅ Updated
               autoCapitalize="characters"
-              maxLength={13}
+              maxLength={15} // ✅ Updated (was 13)
               error={error}
-              helperText={!error ? t('search.inputHelper') : undefined}
+              helperText={
+                !error
+                  ? t('search.inputHelper') ||
+                    'Standard, BH series, or Delhi special formats' // ✅ Updated
+                  : undefined
+              }
             />
 
             <PrimaryButton
               title={t('search.searchButton')}
               onPress={handleSearch}
-              loading={isLoading}
-              disabled={searchQuery.length < 6}
+              loading={isSearching}
+              disabled={searchQuery.length < 8} // ✅ Updated (was 6)
               fullWidth
               icon={<SearchSvg width={20} height={20} fill={colors.white} />}
-              style={{ marginTop: spacing.base }}
+              style={{marginTop: spacing.base}}
             />
           </View>
 
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
-            <View style={[styles.recentSection, { marginBottom: spacing.lg }]}>
-              <View style={[styles.recentHeader, { marginBottom: spacing.md }]}>
-                <Text style={[styles.recentTitle, { color: colors.textPrimary }]}>
+            <View style={[styles.recentSection, {marginBottom: spacing.lg}]}>
+              <View style={[styles.recentHeader, {marginBottom: spacing.md}]}>
+                <Text style={[styles.recentTitle, {color: colors.textPrimary}]}>
                   {t('search.recentTitle')}
                 </Text>
                 <TouchableOpacity onPress={handleClearAllSearches}>
-                  <Text style={[styles.clearAllText, { color: colors.error }]}>
-                    {t('common.delete')}
+                  <Text style={[styles.clearAllText, {color: colors.error}]}>
+                    {t('common.clearAll') || t('common.delete')}
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              <Card style={{ padding: 0 }}>
-                {recentSearches.map((search, index) => (
-                  <TouchableOpacity
-                    key={`${search.plateNumber}-${index}`}
-                    style={[
-                      styles.recentItem,
-                      {
-                        paddingVertical: spacing.md,
-                        paddingHorizontal: spacing.base,
-                        borderBottomWidth: index < recentSearches.length - 1 ? 1 : 0,
-                        borderBottomColor: colors.border,
-                      }
-                    ]}
-                    onPress={() => handleRecentSearchPress(search)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.searchIcon, { marginRight: spacing.sm }]}>
-                      <SearchSvg width={20} height={20} fill={colors.primary} />
-                    </Text>
-                    <View style={styles.recentInfo}>
-                      <Text style={[styles.recentPlate, { color: colors.textPrimary }]}>
-                        {search.plateNumber}
+              <Card style={{padding: 0}}>
+                {recentSearches.map((search, index) => {
+                  // ✅ SAFETY CHECK - Skip invalid items
+                  if (
+                    !search ||
+                    typeof search !== 'object' ||
+                    !search.plateNumber
+                  ) {
+                    console.warn('Invalid search item:', search);
+                    return null;
+                  }
+
+                  return (
+                    <TouchableOpacity
+                      key={`${search.plateNumber}-${index}`}
+                      style={[
+                        styles.recentItem,
+                        {
+                          paddingVertical: spacing.md,
+                          paddingHorizontal: spacing.base,
+                          borderBottomWidth:
+                            index < recentSearches.length - 1 ? 1 : 0,
+                          borderBottomColor: colors.border,
+                        },
+                      ]}
+                      onPress={() => handleRecentSearchPress(search)}
+                      activeOpacity={0.7}>
+                      <View
+                        style={[
+                          styles.searchIconContainer,
+                          {marginRight: spacing.sm},
+                        ]}>
+                        <SearchSvg
+                          width={20}
+                          height={20}
+                          fill={colors.primary}
+                        />
+                      </View>
+                      <View style={styles.recentInfo}>
+                        <Text
+                          style={[
+                            styles.recentPlate,
+                            {color: colors.textPrimary},
+                          ]}>
+                          {String(search.plateNumber)} {/* ✅ Ensure string */}
+                        </Text>
+                        {search.found !== undefined && (
+                          <Text
+                            style={[
+                              styles.recentStatus,
+                              {
+                                color: search.found
+                                  ? colors.success
+                                  : colors.textSecondary,
+                                fontSize: 12,
+                                marginTop: 2,
+                              },
+                            ]}>
+                            {search.found ? '✓ Found' : 'Not found'}
+                          </Text>
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.recentTime,
+                          {
+                            color: colors.textSecondary,
+                            marginRight: spacing.sm,
+                          },
+                        ]}>
+                        {search.timestamp
+                          ? getTimeAgo(search.timestamp)
+                          : 'Recently'}{' '}
+                        {/* ✅ Safety check */}
                       </Text>
-                    </View>
-                    <Text style={[styles.recentTime, { 
-                      color: colors.textSecondary,
-                      marginRight: spacing.sm,
-                    }]}>
-                      {getTimeAgo(search.timestamp)}
-                    </Text>
-                    <Text style={[styles.chevron, { color: colors.textSecondary }]}>
-                      ›
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[styles.chevron, {color: colors.textSecondary}]}>
+                        ›
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </Card>
             </View>
           )}
 
           {/* Empty State */}
           {recentSearches.length === 0 && (
-            <View style={[styles.emptyState, {
-              paddingVertical: spacing.xxxl,
-              alignItems: 'center',
-            }]}>
-              <SearchSvg width={30} height={30} fill={colors.primary} />
-              <Text style={[styles.emptyTitle, {
-                color: colors.textPrimary,
-                marginBottom: spacing.sm,
-              }]}>
-                {t('search.recentEmpty')}
-              </Text>
-              <Text style={[styles.emptyMessage, { color: colors.textSecondary }]}>
-                {t('search.inputHelper')}
+            <View
+              style={[
+                styles.emptyState,
+                {
+                  paddingVertical: spacing.xxxl,
+                  alignItems: 'center',
+                },
+              ]}>
+              <View style={{marginBottom: spacing.md}}>
+                <SearchSvg
+                  width={64}
+                  height={64}
+                  fill={colors.primary}
+                  opacity={0.3}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.emptyTitle,
+                  {
+                    color: colors.textPrimary,
+                    marginBottom: spacing.sm,
+                  },
+                ]}>
+                {t('search.recentEmpty') || 'No Recent Searches'}
               </Text>
             </View>
           )}
@@ -241,15 +295,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    // Styles applied dynamically
-  },
-  searchSection: {
-    // Styles applied dynamically
-  },
-  recentSection: {
-    // Styles applied dynamically
-  },
+  scrollContent: {},
+  searchSection: {},
+  recentSection: {},
   recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -267,8 +315,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  searchIcon: {
-    fontSize: 20,
+  searchIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   recentInfo: {
     flex: 1,
@@ -277,6 +326,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  recentStatus: {
+    fontSize: 12,
+  },
   recentTime: {
     fontSize: 14,
   },
@@ -284,13 +336,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '300',
   },
-  emptyState: {
-    // Styles applied dynamically
-  },
-  emptyIcon: {
-    fontSize: 64,
-    opacity: 0.5,
-  },
+  emptyState: {},
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',

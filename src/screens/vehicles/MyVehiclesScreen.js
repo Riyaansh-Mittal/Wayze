@@ -37,7 +37,7 @@ const MyVehiclesScreen = ({navigation}) => {
   const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
-    // Load vehicles on mount
+    // Vehicles are auto-loaded by VehicleContext
   }, []);
 
   const handleRefresh = useCallback(() => {
@@ -81,17 +81,8 @@ const MyVehiclesScreen = ({navigation}) => {
     }
   };
 
-  const getVehicleIcon = type => {
-    switch (type) {
-      case '2-wheeler':
-        return <VehicleIcon type="2-wheeler" size={32} />;
-      case '3-wheeler':
-        return <VehicleIcon type="3-wheeler" size={48} />;
-      case '4-wheeler':
-        return <VehicleIcon type="4-wheeler" size={64} />;
-      default:
-        return <VehicleIcon type="4-wheeler" size={64} />;
-    }
+  const getVehicleIcon = wheelType => {
+    return <VehicleIcon type={`${wheelType}-wheeler`} size={40} />;
   };
 
   const formatTimeAgo = dateString => {
@@ -134,9 +125,9 @@ const MyVehiclesScreen = ({navigation}) => {
         onPress={() => handleVehiclePress(item)}
         activeOpacity={0.7}>
         <View style={styles.vehicleRow}>
-          <Text style={[styles.vehicleIcon, {marginRight: spacing.md}]}>
-            {getVehicleIcon(item.vehicleType)}
-          </Text>
+          <View style={{marginRight: spacing.md}}>
+            {getVehicleIcon(item.wheelType)}
+          </View>
 
           <View style={styles.vehicleInfo}>
             <Text
@@ -158,8 +149,7 @@ const MyVehiclesScreen = ({navigation}) => {
                   marginBottom: spacing.xs,
                 },
               ]}>
-              {t(`vehicles.types.${item.vehicleType}`)} ·{' '}
-              {formatTimeAgo(item.createdAt)}
+              {item.wheelType} Wheeler · {formatTimeAgo(item.createdAt)}
             </Text>
 
             <Text style={[styles.vehicleStats, {color: colors.textSecondary}]}>
@@ -207,18 +197,13 @@ const MyVehiclesScreen = ({navigation}) => {
     );
   }
 
-  // ✅ Determine FAB style based on whether vehicles exist
   const hasVehicles = vehicles.length > 0;
 
   return (
     <SafeAreaView
       style={[styles.container, {backgroundColor: colors.background}]}
       edges={['top']}>
-      <AppBar
-        title={t('vehicles.title')}
-        showBack={false}
-        // ✅ Remove rightIcon - we're using FAB now
-      />
+      <AppBar title={t('vehicles.title')} showBack={false} />
 
       <FlatList
         data={vehicles}
@@ -228,7 +213,7 @@ const MyVehiclesScreen = ({navigation}) => {
           styles.listContent,
           {
             padding: layout.screenPadding,
-            paddingBottom: spacing.xxxl + 80, // Extra space for FAB
+            paddingBottom: spacing.xxxl + 80,
           },
           vehicles.length === 0 && styles.listContentEmpty,
         ]}
@@ -244,7 +229,7 @@ const MyVehiclesScreen = ({navigation}) => {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* ✅ FLOATING ACTION BUTTON (FAB) */}
+      {/* FLOATING ACTION BUTTON (FAB) */}
       <TouchableOpacity
         style={[
           hasVehicles ? styles.fabCompact : styles.fabExtended,
@@ -253,12 +238,11 @@ const MyVehiclesScreen = ({navigation}) => {
         onPress={handleAddVehicle}
         activeOpacity={0.85}>
         {hasVehicles ? (
-          // ✅ Compact FAB (just + icon) when vehicles exist
           <Text style={[styles.fabIcon, {color: colors.white}]}>+</Text>
         ) : (
-          // ✅ Extended FAB (+ icon + text) when no vehicles
           <>
-            <Text style={[styles.fabIcon, {color: colors.white, marginRight: 8}]}>
+            <Text
+              style={[styles.fabIcon, {color: colors.white, marginRight: 8}]}>
               +
             </Text>
             <Text style={[styles.fabText, {color: colors.white}]}>
@@ -283,9 +267,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 15,
   },
-  listContent: {
-    // Styles applied dynamically
-  },
+  listContent: {},
   listContentEmpty: {
     flexGrow: 1,
   },
@@ -298,9 +280,6 @@ const styles = StyleSheet.create({
   vehicleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  vehicleIcon: {
-    fontSize: 36,
   },
   vehicleInfo: {
     flex: 1,
@@ -333,11 +312,10 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
 
-  // ✅ FAB STYLES
   fabCompact: {
     position: 'absolute',
     right: 24,
-    bottom: 88, // Above bottom nav (64dp height + 24dp margin)
+    bottom: 88,
     width: 56,
     height: 56,
     borderRadius: 28,

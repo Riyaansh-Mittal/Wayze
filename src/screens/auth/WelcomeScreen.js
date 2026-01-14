@@ -34,12 +34,13 @@ const WelcomeScreen = ({navigation}) => {
       const result = await googleLogin();
 
       if (result.success) {
-        // Navigate based on user status
+        // ✅ FIXED: Only navigate for first-time users
         if (result.isFirstTime) {
           navigation.replace('ReferralEntry');
-        } else {
-          navigation.replace('Main');
         }
+        // ✅ For returning users, do nothing - AuthContext will handle navigation
+        // When googleLogin() succeeds, isAuthenticated becomes true
+        // AppNavigator will automatically switch to Main screen
       } else if (result.cancelled) {
         // User cancelled - do nothing
         console.log('User cancelled Google Sign-In');

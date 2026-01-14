@@ -3,9 +3,9 @@
  * Central export for all navigators
  */
 
-import RootNavigator from './RootNavigator';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
+import AppNavigator from './AppNavigator';
 
-export { RootNavigator, AuthNavigator, MainNavigator };
-export default RootNavigator;
+export { AppNavigator, AuthNavigator, MainNavigator };
+export default AppNavigator;

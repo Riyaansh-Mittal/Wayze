@@ -5,12 +5,12 @@
  */
 
 import AsyncStorage from './AsyncStorage';
-import { STORAGE_KEYS } from '../../config/constants';
+import {STORAGE_KEYS} from '../../config/constants';
 
 /**
  * Save auth token
  */
-export const saveAuthToken = async (token) => {
+export const saveAuthToken = async token => {
   return await AsyncStorage.save(STORAGE_KEYS.AUTH_TOKEN, token);
 };
 
@@ -24,7 +24,7 @@ export const getAuthToken = async () => {
 /**
  * Save refresh token
  */
-export const saveRefreshToken = async (token) => {
+export const saveRefreshToken = async token => {
   return await AsyncStorage.save(STORAGE_KEYS.REFRESH_TOKEN, token);
 };
 
@@ -71,10 +71,26 @@ export const clearAuth = async () => {
   ]);
 };
 
+// ✅ NEW: Clear ALL app data (complete logout)
+/**
+ * Clear all app data (tokens, user data, cache, etc.)
+ * Use this on logout to prevent data leaking between accounts
+ */
+export const clearAllData = async () => {
+  try {
+    await AsyncStorage.clear();
+    console.log('✅ All storage cleared');
+    return {success: true};
+  } catch (error) {
+    console.error('❌ Error clearing all storage:', error);
+    return {success: false, error};
+  }
+};
+
 /**
  * Save user data
  */
-export const saveUserData = async (userData) => {
+export const saveUserData = async userData => {
   return await AsyncStorage.save(STORAGE_KEYS.USER_DATA, userData);
 };
 
@@ -109,6 +125,7 @@ export default {
   saveTokens,
   getTokens,
   clearAuth,
+  clearAllData, // ✅ NEW: Export this
   saveUserData,
   getUserData,
   isAuthenticated,

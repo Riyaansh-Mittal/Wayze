@@ -129,27 +129,7 @@ export const mockSearchHistory = async (userId, limit = 20) => {
   );
 };
 
-/**
- * Mock log contact action
- */
-export const mockLogContact = async (contactData) => {
-  await delay(600);
-
-  const logEntry = {
-    _id: `contact_${Date.now()}`,
-    ...contactData,
-    timestamp: new Date().toISOString(),
-  };
-
-  return formatResponse(
-    logEntry,
-    true,
-    'Contact logged successfully'
-  );
-};
-
 export default {
   mockSearchVehicle,
   mockSearchHistory,
-  mockLogContact,
 };

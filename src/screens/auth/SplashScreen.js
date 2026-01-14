@@ -1,66 +1,36 @@
 /**
  * Splash Screen
  * App initialization and auto-login check
- * FULLY THEME-AWARE - MATCHES DESIGN
  */
 
-import React, {useEffect, useCallback} from 'react';
+import React, {useEffect} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
-import {useAuth} from '../../hooks';
 import {useTheme} from '../../contexts/ThemeContext';
 import {TIME} from '../../config/constants';
 
 const SplashScreen = ({navigation}) => {
   const {t, theme} = useTheme();
   const {colors} = theme;
-  const {isAuthenticated, isLoading, isFirstTimeUser} = useAuth();
-
-  const navigateToNextScreen = useCallback(() => {
-    setTimeout(() => {
-      if (isAuthenticated) {
-        // User is logged in
-        if (isFirstTimeUser()) {
-          navigation.replace('ReferralEntry');
-        } else {
-          navigation.replace('Main');
-        }
-      } else {
-        navigation.replace('Welcome');
-      }
-    }, 300);
-  }, [isAuthenticated, isFirstTimeUser, navigation]);
-
-  const initializeApp = useCallback(async () => {
-    // Minimum splash display time for branding
-    await new Promise(resolve => setTimeout(resolve, TIME.SPLASH_MIN_DURATION));
-
-    if (!isLoading) {
-      navigateToNextScreen();
-    }
-  }, [isLoading, navigateToNextScreen]);
 
   useEffect(() => {
-    initializeApp();
-  }, [initializeApp]);
+    // ✅ Simple timer - just show splash for branding
+    const timer = setTimeout(() => {
+      navigation.replace('Welcome');
+    }, TIME.SPLASH_MIN_DURATION || 2000);
 
-  useEffect(() => {
-    if (!isLoading) {
-      navigateToNextScreen();
-    }
-  }, [isLoading, navigateToNextScreen]);
+    return () => clearTimeout(timer);
+  }, [navigation]);
 
   return (
     <View style={[styles.container, {backgroundColor: colors.primary}]}>
       {/* Logo Container */}
       <View style={styles.logoContainer}>
-        {/* App Icon/Logo - Replace with your actual logo */}
         <View style={[styles.logoCircle, {backgroundColor: colors.white}]}>
           <Text style={[styles.logoIcon, {color: colors.primary}]}>
             {t?.('common.appIcon') || '🚗'}
           </Text>
         </View>
 
-        {/* App Name */}
         <Text style={[styles.appName, {color: colors.white}]}>
           {t?.('common.appName') || 'QR Parking'}
         </Text>
@@ -95,12 +65,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    // Add shadow for iOS
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    // Add elevation for Android
     elevation: 8,
   },
   logoIcon: {

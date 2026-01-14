@@ -10,7 +10,7 @@ const getBaseURL = () => {
     return 'https://parking-backbone.onrender.com/'; // ✅ REMOVE /api/ from base
   } else {
     // Production
-    return 'https://api.qrparking.com/';
+    return 'https://parking-backbone.onrender.com/';
   }
 };
 
@@ -21,34 +21,28 @@ export const ENDPOINTS = {
   // Authentication
   auth: {
     socialLogin: 'api/auth/socialLogin', // ✅ CHANGED: Matches your old system
-    refreshToken: 'auth/token-refresh/', // ✅ CHANGED: Matches your old system
     logout: 'auth/logout/',
-    verifyPhone: 'auth/verify-otp/', // ✅ CHANGED: Matches your old system
   },
 
   // User
   user: {
-    profile: 'api/users/profile',
-    update: 'api/users/update',
-    delete: 'api/users/delete',
-    exportData: 'api/users/export-data',
-    preferences: 'api/users/preferences',
+    home: 'api/user/home',
+    activities: 'api/user/activity',
+    settings: 'api/user/settings',
   },
 
   // Vehicles
   vehicles: {
-    list: 'api/vehicles',
-    create: 'api/vehicles',
-    details: (id) => `api/vehicles/${id}`,
-    update: (id) => `api/vehicles/${id}`,
-    delete: (id) => `api/vehicles/${id}`,
-    checkPlate: (plate) => `api/vehicles/check-plate/${plate}`,
+    list: 'api/user/userInfo',
+    create: 'api/user/userInfo',
+    details: id => `api/user/vehicleById?vehicleId=${id}`,
+    delete: id => `api/user/delete-vehicle?id=${id}`,
   },
 
   // Search
   search: {
-    vehicle: 'api/search/vehicle',
-    history: 'api/search/history',
+    vehicle: 'api/user/search-vehicle',
+    // history endpoint doesn't exist yet
   },
 
   // Contact
@@ -60,7 +54,7 @@ export const ENDPOINTS = {
   // Ownership Claims
   ownership: {
     create: 'api/ownership-claims',
-    status: (id) => `api/ownership-claims/${id}`,
+    status: id => `api/ownership-claims/${id}`,
     list: 'api/ownership-claims',
   },
 
@@ -122,7 +116,7 @@ export const HTTP_METHODS = {
 // Request Headers
 export const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
-  'Accept': 'application/json',
+  Accept: 'application/json',
 };
 
 // API Response Status

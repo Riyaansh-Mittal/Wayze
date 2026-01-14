@@ -29,7 +29,9 @@
     "comingSoon": "जल्द आ रहा है",
     "tagline": "वाहन स्वामी तुरंत खोजें",
     "free": "मुफ्त",
-    "optional": "वैकल्पिक"
+    "optional": "वैकल्पिक",
+    "clearAll": "सभी साफ़ करें",
+    "never": "कभी नहीं"
   },
 
   "auth": {
@@ -114,17 +116,22 @@
     "form": {
       "introTitle": "अपना वाहन जोड़ें",
       "introSubtitle": "अपने वाहन के लिए QR बनाएं और जब कोई इसे स्कैन करे तो अलर्ट प्राप्त करें।",
+      "referralTitle": "क्या आपके पास रेफरल कोड है?",
+      "referralSubtitle": "अपने दोस्त का रेफरल कोड दर्ज करें और उन्हें पुरस्कार दें!",
+      "referralCode": "रेफरल कोड",
+      "referralPlaceholder": "A3F92CDE",
+      "referralHelper": "अपने दोस्त से 8-अक्षर का कोड",
       "vehicleType": "वाहन का प्रकार",
       "vehicleTypePlaceholder": "वाहन का प्रकार चुनें",
       "vehicleDetailsTitle": "वाहन विवरण",
       "plateNumber": "वाहन नंबर",
-      "platePlaceholder": "PB10AB1234",
-      "plateHelper": "प्रारूप: 2 अक्षर + 2 अंक + 2 अक्षर + 4 अंक",
+      "platePlaceholder": "MH12AB1234 या 26BH1234AA",
+      "plateHelper": "मानक (MH12AB1234), BH सीरीज (26BH1234AA), या दिल्ली (DL01CAA1234)",
       "plateError": "अमान्य प्रारूप। MH01AB1234 का उपयोग करें",
       "plateChangeHelper": "प्लेट नंबर बदलने के लिए सहायता से संपर्क करें",
-      "contactPhone": "संपर्क नंबर",
+      "contactPhone": "आपातकालीन संपर्क",
       "contactPhonePlaceholder": "10 अंकों का मोबाइल नंबर",
-      "contactPhoneHelper": "लोग आपसे संपर्क के लिए इसका उपयोग करेंगे",
+      "contactPhoneHelper": "जब कोई आपका वाहन खोजेगा तो यह दिखाया जाएगा",
       "contactMethods": "संपर्क के तरीके",
       "allowCalls": "फोन कॉल की अनुमति दें",
       "allowSMS": "SMS की अनुमति दें",
@@ -133,7 +140,7 @@
       "saveButton": "वाहन सहेजें",
       "saveChangesButton": "परिवर्तन सहेजें",
       "cancelButton": "रद्द करें",
-      "success": "वाहन सफलतापूर्वक जोड़ा गया",
+      "success": "वाहन सफलतापूर्वक जोड़ा गया!",
       "updateSuccess": "परिवर्तन सहेजे गए",
       "updateFailed": "परिवर्तन सहेजने में विफल",
       "deleteFailed": "वाहन हटाने में विफल"
@@ -221,20 +228,23 @@
   "search": {
     "title": "वाहन स्वामी खोजें",
     "inputLabel": "वाहन संख्या दर्ज करें",
-    "inputPlaceholder": "MH01AB1234",
-    "inputHelper": "प्रारूप: 2 अक्षर + 2 अंक + 2 अक्षर + 4 अंक",
+    "inputPlaceholder": "MH12AB1234 या 26BH1234AA",
+    "inputHelper": "मानक, BH सीरीज, या दिल्ली विशेष प्रारूप",
     "searchButton": "वाहन खोजें",
     "recentTitle": "हाल की खोजें",
     "recentEmpty": "कोई हाल की खोज नहीं",
     "searching": "खोज रहे हैं...",
     "searchFailed": "खोज विफल। पुनः प्रयास करें।",
+    "clearRecent":{
+      "title": "हाल की खोजें साफ़ करें?",
+      "message": "इससे आपकी सभी हाल की खोज इतिहास हटा दिया जाएगा।"
+    },
     "results": {
       "title": "खोज परिणाम",
       "found": {
         "vehicleTitle": "वाहन मिला",
-        "registered": "{{time}} पंजीकृत",
+        "registered": "पंजीकृत",
         "ownerTitle": "स्वामी की जानकारी",
-        "memberSince": "{{date}} से सदस्य",
         "contactTitle": "स्वामी से संपर्क करें",
         "alertTitle": "अलर्ट भेजें",
         "alertDescription": "मालिक को मुफ्त में सूचित करें। वे आपका संदेश देखेंगे।",

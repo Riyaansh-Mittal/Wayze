@@ -1,14 +1,10 @@
-/**
- * Balance Context
- * Manages call balance and referral data
- */
-
 import React, {
   createContext,
   useContext,
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from 'react';
 import {BalanceService, ReferralService} from '../services/api';
 import {useToast} from '../components/common/Toast/ToastProvider';
@@ -17,52 +13,82 @@ import {useAuth} from './AuthContext';
 const BalanceContext = createContext();
 
 export const BalanceProvider = ({children}) => {
-  const {user, isAuthenticated, updateUser} = useAuth();
+  const {user, isAuthenticated, updateUserData} = useAuth();
   const {showSuccess, showError} = useToast();
 
-  const [balance, setBalance] = useState(2);
+  const [balance, setBalance] = useState(0);
   const [balanceHistory, setBalanceHistory] = useState([]);
   const [referralStats, setReferralStats] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // ✅ Track if data has been loaded for this user
+  const hasLoadedBalanceRef = useRef(false);
+  const hasLoadedReferralRef = useRef(false);
+  const currentUserIdRef = useRef(null);
+
   /**
    * Load balance when authenticated
+   * ✅ FIXED: Only load once per user session
    */
   useEffect(() => {
     if (isAuthenticated && user) {
-      setBalance(user.callBalance || 2);
-      loadBalance();
+      const userBalance = user.callBalance || 0;
+      setBalance(userBalance);
+      console.log('💰 Balance initialized from user:', userBalance);
+
+      if (currentUserIdRef.current !== user._id) {
+        console.log('🔄 User changed, resetting load flags');
+        hasLoadedBalanceRef.current = false;
+        hasLoadedReferralRef.current = false;
+        currentUserIdRef.current = user._id;
+      }
     } else {
-      setBalance(2);
+      console.log('🧹 Clearing balance data (logged out)');
+      setBalance(0);
       setBalanceHistory([]);
       setReferralStats(null);
+      hasLoadedBalanceRef.current = false;
+      hasLoadedReferralRef.current = false;
+      currentUserIdRef.current = null;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user?._id, user?.callBalance, loadBalance, user]);
 
   /**
    * Get current balance
+   * ✅ Manual load only
    */
   const loadBalance = useCallback(async () => {
-    if (!user || !user._id) {
+    if (!user) {
+      console.log('⏭️ No user, skipping balance load');
       return {success: false, error: 'Not authenticated'};
     }
 
     try {
-      const response = await BalanceService.get(user._id);
+      console.log('💰 Loading balance from API...');
+
+      const response = await BalanceService.get();
 
       if (response.success) {
-        setBalance(response.data.balance);
-        await updateUser({callBalance: response.data.balance});
+        const newBalance =
+          response.data.balance || response.data.callBalance || 0;
+        console.log('✅ Balance loaded from API:', newBalance);
+
+        setBalance(newBalance);
+        hasLoadedBalanceRef.current = true;
+
+        if (updateUserData) {
+          await updateUserData({callBalance: newBalance});
+        }
+
         return {success: true, data: response.data};
       }
 
       return {success: false};
     } catch (error) {
-      console.error('Failed to load balance:', error);
+      console.error('❌ Failed to load balance:', error);
       return {success: false, error: error.message};
     }
-  }, [user, updateUser]);
+  }, [user, updateUserData]);
 
   /**
    * Get balance history
@@ -75,22 +101,26 @@ export const BalanceProvider = ({children}) => {
 
       try {
         setIsLoading(true);
-        const response = await BalanceService.history(user._id, limit);
+        console.log('📜 Loading balance history...');
+
+        const response = await BalanceService.history(limit);
 
         if (response.success) {
-          setBalanceHistory(response.data);
+          console.log('✅ Balance history loaded:', response.data?.length || 0);
+          setBalanceHistory(response.data || []);
           return {success: true, data: response.data};
         }
 
         return {success: false};
       } catch (error) {
-        showError('Failed to load balance history');
+        console.error('❌ Failed to load balance history:', error);
+        // Don't show toast - let caller handle
         return {success: false, error: error.message};
       } finally {
         setIsLoading(false);
       }
     },
-    [user, showError],
+    [user],
   );
 
   /**
@@ -104,12 +134,17 @@ export const BalanceProvider = ({children}) => {
       }
 
       const newBalance = balance - amount;
+      console.log(`💸 Deducting ${amount} credits. New balance: ${newBalance}`);
+
       setBalance(newBalance);
-      await updateUser({callBalance: newBalance});
+
+      if (updateUserData) {
+        await updateUserData({callBalance: newBalance});
+      }
 
       return {success: true, balance: newBalance};
     },
-    [balance, updateUser, showError],
+    [balance, updateUserData, showError],
   );
 
   /**
@@ -118,14 +153,19 @@ export const BalanceProvider = ({children}) => {
   const addBalance = useCallback(
     async amount => {
       const newBalance = balance + amount;
+      console.log(`💰 Adding ${amount} credits. New balance: ${newBalance}`);
+
       setBalance(newBalance);
-      await updateUser({callBalance: newBalance});
+
+      if (updateUserData) {
+        await updateUserData({callBalance: newBalance});
+      }
 
       showSuccess(`+${amount} calls added to your balance!`);
 
       return {success: true, balance: newBalance};
     },
-    [balance, updateUser, showSuccess],
+    [balance, updateUserData, showSuccess],
   );
 
   /**
@@ -134,9 +174,11 @@ export const BalanceProvider = ({children}) => {
   const validateReferralCode = useCallback(
     async code => {
       try {
+        console.log('🔍 Validating referral code:', code);
         const response = await ReferralService.validate(code);
 
         if (response.success && response.data.valid) {
+          console.log('✅ Referral code valid');
           return {
             success: true,
             data: response.data,
@@ -145,6 +187,7 @@ export const BalanceProvider = ({children}) => {
 
         throw new Error('Invalid referral code');
       } catch (error) {
+        console.error('❌ Invalid referral code:', error);
         showError(error.message || 'Invalid referral code');
         return {success: false, error: error.message};
       }
@@ -163,16 +206,22 @@ export const BalanceProvider = ({children}) => {
 
       try {
         setIsLoading(true);
-        const response = await ReferralService.apply(user._id, code);
+        console.log('🎁 Applying referral code:', code);
+
+        const response = await ReferralService.apply(code);
 
         if (response.success) {
           const {reward, newBalance} = response.data;
+          console.log('✅ Referral applied! Reward:', reward);
 
           setBalance(newBalance);
-          await updateUser({
-            callBalance: newBalance,
-            referredBy: response.data.referrerId,
-          });
+
+          if (updateUserData) {
+            await updateUserData({
+              callBalance: newBalance,
+              referredBy: response.data.referrerId,
+            });
+          }
 
           showSuccess(`🎉 ${reward} free calls added to your account!`);
 
@@ -181,40 +230,54 @@ export const BalanceProvider = ({children}) => {
 
         return {success: false};
       } catch (error) {
+        console.error('❌ Failed to apply referral:', error);
         showError(error.message || 'Failed to apply referral code');
         return {success: false, error: error.message};
       } finally {
         setIsLoading(false);
       }
     },
-    [user, updateUser, showSuccess, showError],
+    [user, updateUserData, showSuccess, showError],
   );
 
   /**
    * Get referral stats
+   * ✅ FIXED: Added debounce protection
    */
   const getReferralStats = useCallback(async () => {
     if (!user) {
+      console.log('⏭️ No user, skipping referral stats load');
       return {success: false, error: 'Not authenticated'};
+    }
+
+    // ✅ Prevent duplicate calls
+    if (hasLoadedReferralRef.current) {
+      console.log('⏭️ Referral stats already loaded, using cached data');
+      return {success: true, data: referralStats};
     }
 
     try {
       setIsLoading(true);
-      const response = await ReferralService.getStats(user._id);
+      console.log('📊 Loading referral stats...');
+
+      const response = await ReferralService.getStats();
 
       if (response.success) {
+        console.log('✅ Referral stats loaded');
         setReferralStats(response.data);
+        hasLoadedReferralRef.current = true;
         return {success: true, data: response.data};
       }
 
       return {success: false};
     } catch (error) {
-      showError('Failed to load referral stats');
+      console.error('❌ Failed to load referral stats:', error);
+      // Don't show toast - let caller handle
       return {success: false, error: error.message};
     } finally {
       setIsLoading(false);
     }
-  }, [user, showError]);
+  }, [user, referralStats]);
 
   /**
    * Get user's referral code
@@ -225,7 +288,6 @@ export const BalanceProvider = ({children}) => {
 
   /**
    * Check if user can make a contact (has at least 1 credit)
-   * ✅ ADD THIS FUNCTION
    */
   const canMakeContact = useCallback(() => {
     return balance >= 1;
@@ -235,7 +297,7 @@ export const BalanceProvider = ({children}) => {
    * Check if balance is low
    */
   const isBalanceLow = useCallback(() => {
-    return balance < 5; // LOW_BALANCE_THRESHOLD
+    return balance < 5;
   }, [balance]);
 
   const value = {
@@ -254,7 +316,7 @@ export const BalanceProvider = ({children}) => {
     applyReferralCode,
     getReferralStats,
     getReferralCode,
-    canMakeContact, // ✅ ADD THIS TO VALUE
+    canMakeContact,
     isBalanceLow,
   };
 

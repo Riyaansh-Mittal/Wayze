@@ -29,7 +29,9 @@
     "comingSoon": "Coming soon",
     "tagline": "Find vehicle owners instantly",
     "free": "Free",
-    "optional": "Optional"
+    "optional": "Optional",
+    "clearAll": "Clear All",
+    "never": "Never"
   },
 
   "auth": {
@@ -114,17 +116,22 @@
     "form": {
       "introTitle": "Add Your Vehicle",
       "introSubtitle": "Create a QR for your vehicle and receive alerts when someone scans it.",
+      "referralTitle": "Have a Referral Code?",
+      "referralSubtitle": "Enter your friend's referral code to give them rewards!",
+      "referralCode": "Referral Code",
+      "referralPlaceholder": "A3F92CDE",
+      "referralHelper": "8-character code from your friend",
       "vehicleType": "Vehicle Type",
       "vehicleTypePlaceholder": "Select vehicle type",
       "vehicleDetailsTitle": "Vehicle Details",
       "plateNumber": "Vehicle Number",
-      "platePlaceholder": "PB10AB1234",
-      "plateHelper": "Format: 2 letters + 2 digits + 2 letters + 4 digits",
+      "platePlaceholder": "MH12AB1234 or 26BH1234AA",
+      "plateHelper": "Standard (MH12AB1234), BH series (26BH1234AA), or Delhi (DL01CAA1234)",
       "plateError": "Invalid format. Use MH01AB1234",
       "plateChangeHelper": "Contact support to change plate number",
-      "contactPhone": "Contact Number",
+      "contactPhone": "Emergency Contact",
       "contactPhonePlaceholder": "10 digit mobile number",
-      "contactPhoneHelper": "People will use this to reach you",
+      "contactPhoneHelper": "This will be shown when someone searches your vehicle",
       "contactMethods": "Contact Methods",
       "allowCalls": "Allow phone calls",
       "allowSMS": "Allow SMS",
@@ -133,7 +140,7 @@
       "saveButton": "Save Vehicle",
       "saveChangesButton": "Save Changes",
       "cancelButton": "Cancel",
-      "success": "Vehicle added successfully",
+      "success": "Vehicle added successfully!",
       "updateSuccess": "Changes saved",
       "updateFailed": "Failed to save changes",
       "deleteFailed": "Failed to delete vehicle"
@@ -221,20 +228,23 @@
   "search": {
     "title": "Find Vehicle Owner",
     "inputLabel": "Enter Vehicle Number",
-    "inputPlaceholder": "MH01AB1234",
-    "inputHelper": "Format: 2 letters + 2 digits + 2 letters + 4 digits",
+    "inputPlaceholder": "MH12AB1234 or 26BH1234AA",
+    "inputHelper": "Standard, BH series, or Delhi special formats",
     "searchButton": "Search Vehicle",
     "recentTitle": "Recent Searches",
     "recentEmpty": "No recent searches",
     "searching": "Searching...",
     "searchFailed": "Search failed. Try again.",
+    "clearRecent":{
+      "title": "Clear Recent Searches?",
+      "message": "This will remove all your recent search history."
+    },
     "results": {
       "title": "Search Result",
       "found": {
         "vehicleTitle": "Vehicle Found",
-        "registered": "Registered {{time}}",
+        "registered": "Registered",
         "ownerTitle": "Owner Information",
-        "memberSince": "Member since {{date}}",
         "contactTitle": "Contact Owner",
         "alertTitle": "Send Alert",
         "alertDescription": "Notify owner for free. They'll see your message.",

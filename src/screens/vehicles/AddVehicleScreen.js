@@ -3,7 +3,7 @@
  * Premium UX – Fully Theme Aware & Translation Ready
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -30,26 +30,69 @@ import TextInput from '../../components/common/Input/TextInput';
 import VehicleIcon from '../../components/common/Icon/VehicleIcon';
 
 const VEHICLE_TYPES = [
-  {value: '2-wheeler', label: '2 Wheeler (Bike / Scooter)'},
-  {value: '3-wheeler', label: '3 Wheeler (Auto)'},
-  {value: '4-wheeler', label: '4 Wheeler (Car / SUV)'},
+  {value: 2, label: '2 Wheeler (Bike / Scooter)'},
+  {value: 3, label: '3 Wheeler (Auto)'},
+  {value: 4, label: '4 Wheeler (Car / SUV)'},
 ];
 
-const AddVehicleScreen = ({navigation}) => {
+const AddVehicleScreen = ({navigation, route}) => {
   const {t, theme} = useTheme();
   const {colors, spacing, typography, layout} = theme;
-  const {addVehicle, checkPlateExists, isLoading} = useVehicles();
+  const {
+    addVehicle,
+    getModelUseCount, // ✅ Now available
+    getEmergencyContact,
+    isLoading,
+  } = useVehicles();
+
+  const referralCodeParam = route.params?.referralCode || '';
 
   const [formData, setFormData] = useState({
     plateNumber: '',
-    vehicleType: '',
-    contactPhone: '',
+    vehicleType: null,
+    emergencyContact: '',
+    referralCode: referralCodeParam,
   });
 
   const [errors, setErrors] = useState({});
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [checkingPlate, setCheckingPlate] = useState(false);
+  const [isFirstVehicle, setIsFirstVehicle] = useState(false);
+
+  /**
+   * ✅ Check if this is the first vehicle
+   */
+  useEffect(() => {
+    try {
+      // Check if methods exist before calling
+      if (typeof getModelUseCount === 'function') {
+        const modelUseCount = getModelUseCount();
+        const isFirst = modelUseCount === 0;
+        setIsFirstVehicle(isFirst);
+        console.log(
+          '📊 Vehicle count:',
+          modelUseCount,
+          '| First vehicle:',
+          isFirst,
+        );
+      } else {
+        console.warn('⚠️ getModelUseCount is not available');
+        setIsFirstVehicle(true); // Assume first vehicle if method not available
+      }
+
+      // Pre-fill emergency contact if exists
+      if (typeof getEmergencyContact === 'function') {
+        const existingContact = getEmergencyContact();
+        if (existingContact) {
+          setFormData(prev => ({...prev, emergencyContact: existingContact}));
+          console.log('📱 Pre-filled emergency contact:', existingContact);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error in useEffect:', error);
+      setIsFirstVehicle(true);
+    }
+  }, [getEmergencyContact, getModelUseCount]);
 
   /**
    * Update form field and clear error
@@ -67,21 +110,35 @@ const AddVehicleScreen = ({navigation}) => {
 
     // Vehicle type is required
     if (!formData.vehicleType) {
-      err.vehicleType = t('validation.required') || 'This field is required';
+      err.vehicleType = t('validation.required') || 'Vehicle type is required';
     }
 
     // Plate number validation
-    if (!validatePlateNumber(formData.plateNumber).valid) {
-      err.plateNumber =
-        t('validation.invalidPlate') || 'Invalid plate number format';
+    const plateValidation = validatePlateNumber(formData.plateNumber);
+    if (!plateValidation.valid) {
+      err.plateNumber = t('validation.invalidPlate') || plateValidation.message;
     }
 
-    // Contact phone validation (optional, but if provided must be valid)
-    if (
-      formData.contactPhone &&
-      !validatePhoneNumber(formData.contactPhone).valid
-    ) {
-      err.contactPhone = t('validation.invalidPhone') || 'Invalid phone number';
+    // Emergency contact validation (required)
+    if (!formData.emergencyContact) {
+      err.emergencyContact =
+        t('validation.required') || 'Emergency contact is required';
+    } else {
+      const phoneValidation = validatePhoneNumber(formData.emergencyContact);
+      if (!phoneValidation.valid) {
+        err.emergencyContact =
+          t('validation.invalidPhone') || phoneValidation.message;
+      }
+    }
+
+    // Referral code validation (optional, only for first vehicle)
+    if (isFirstVehicle && formData.referralCode) {
+      // Basic format check: 8 alphanumeric characters
+      if (!/^[A-Z0-9]{8}$/i.test(formData.referralCode)) {
+        err.referralCode =
+          t('validation.invalidReferral') ||
+          'Referral code must be 8 alphanumeric characters';
+      }
     }
 
     setErrors(err);
@@ -92,6 +149,8 @@ const AddVehicleScreen = ({navigation}) => {
    * Handle form submission
    */
   const handleSubmit = async () => {
+    console.log('📝 Submitting form:', formData);
+
     // Validate form
     if (!validateForm()) {
       Alert.alert(
@@ -101,28 +160,27 @@ const AddVehicleScreen = ({navigation}) => {
       return;
     }
 
-    // Check if plate exists
-    setCheckingPlate(true);
-    const plateCheck = await checkPlateExists(formData.plateNumber);
-    setCheckingPlate(false);
+    // ✅ Prepare data according to API format
+    const vehicleData = {
+      wheelType: formData.vehicleType, // Number: 2, 3, 4
+      plateNumber: formData.plateNumber.toUpperCase().trim(),
+      emergencyContact: formData.emergencyContact.trim(),
+    };
 
-    if (plateCheck?.exists) {
-      // Navigate to ownership conflict screen
-      navigation.navigate('OwnershipConflict', {
-        plateNumber: formData.plateNumber,
-        existingVehicle: plateCheck.vehicle,
-        newVehicleData: formData,
-      });
-      return;
+    // ✅ Only include referralCode if it's the first vehicle and code is provided
+    if (isFirstVehicle && formData.referralCode) {
+      vehicleData.referralCode = formData.referralCode.toUpperCase().trim();
     }
 
+    console.log('📤 Sending to API:', vehicleData);
+
     // Add vehicle
-    const result = await addVehicle(formData);
+    const result = await addVehicle(vehicleData);
 
     if (result?.success) {
       Alert.alert(
         t('common.success') || 'Success',
-        t('vehicles.form.success') || 'Vehicle added successfully',
+        t('vehicles.form.success') || 'Vehicle added successfully!',
         [
           {
             text: t('common.ok') || 'OK',
@@ -133,9 +191,14 @@ const AddVehicleScreen = ({navigation}) => {
     } else {
       Alert.alert(
         t('common.error') || 'Error',
-        result?.error || t('errors.unknown') || 'Something went wrong',
+        result?.error || t('errors.unknown') || 'Failed to add vehicle',
       );
     }
+  };
+
+  const getVehicleTypeLabel = wheelType => {
+    const type = VEHICLE_TYPES.find(v => v.value === wheelType);
+    return type ? type.label : `${wheelType} Wheeler`;
   };
 
   return (
@@ -172,6 +235,54 @@ const AddVehicleScreen = ({navigation}) => {
             </Text>
           </Card>
 
+          {/* ✅ REFERRAL CODE CARD (Only for first vehicle) */}
+          {isFirstVehicle && (
+            <Card
+              style={{
+                marginBottom: spacing.lg,
+                backgroundColor: colors.primaryLight,
+              }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: spacing.sm,
+                }}>
+                <Text style={{fontSize: 24, marginRight: spacing.sm}}>🎁</Text>
+                <Text style={[typography.h2, {color: colors.primary}]}>
+                  {t('vehicles.form.referralTitle') || 'Have a Referral Code?'}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  typography.caption,
+                  {color: colors.textSecondary, marginBottom: spacing.base},
+                ]}>
+                {t('vehicles.form.referralSubtitle') ||
+                  "Enter your friend's referral code to give them rewards!"}
+              </Text>
+
+              <TextInput
+                label={`${
+                  t('vehicles.form.referralCode') || 'Referral Code'
+                } (${t('common.optional') || 'Optional'})`}
+                placeholder={
+                  t('vehicles.form.referralPlaceholder') || 'A3F92CDE'
+                }
+                value={formData.referralCode}
+                maxLength={8}
+                autoCapitalize="characters"
+                onChangeText={v => updateField('referralCode', v.toUpperCase())}
+                error={errors.referralCode}
+                helperText={
+                  t('vehicles.form.referralHelper') ||
+                  '8-character code from your friend'
+                }
+                leftIcon={<Text style={{fontSize: 18}}>🎫</Text>}
+              />
+            </Card>
+          )}
+
           {/* VEHICLE TYPE SELECTION */}
           <Card style={{marginBottom: spacing.lg}}>
             <Text style={[typography.captionBold, {marginBottom: spacing.sm}]}>
@@ -194,7 +305,11 @@ const AddVehicleScreen = ({navigation}) => {
                 setDropdownOpen(!dropdownOpen);
               }}>
               <VehicleIcon
-                type={formData.vehicleType || '4-wheeler'}
+                type={
+                  formData.vehicleType
+                    ? `${formData.vehicleType}-wheeler`
+                    : '4-wheeler'
+                }
                 size={28}
               />
 
@@ -209,9 +324,7 @@ const AddVehicleScreen = ({navigation}) => {
                     : colors.textSecondary,
                 }}>
                 {formData.vehicleType
-                  ? t(`vehicles.types.${formData.vehicleType}`) ||
-                    VEHICLE_TYPES.find(v => v.value === formData.vehicleType)
-                      ?.label
+                  ? getVehicleTypeLabel(formData.vehicleType)
                   : t('vehicles.form.vehicleTypePlaceholder') ||
                     'Select vehicle type'}
               </Text>
@@ -251,7 +364,7 @@ const AddVehicleScreen = ({navigation}) => {
                       setDropdownOpen(false);
                     }}
                     activeOpacity={0.7}>
-                    <VehicleIcon type={item.value} size={22} />
+                    <VehicleIcon type={`${item.value}-wheeler`} size={22} />
                     <Text
                       style={{
                         flex: 1,
@@ -261,7 +374,7 @@ const AddVehicleScreen = ({navigation}) => {
                         fontWeight:
                           formData.vehicleType === item.value ? '600' : '400',
                       }}>
-                      {t(`vehicles.types.${item.value}`) || item.label}
+                      {item.label}
                     </Text>
                     {formData.vehicleType === item.value && (
                       <Icon
@@ -297,35 +410,42 @@ const AddVehicleScreen = ({navigation}) => {
             {/* Vehicle Number */}
             <TextInput
               label={t('vehicles.form.plateNumber') || 'Vehicle Number'}
-              placeholder={t('vehicles.form.platePlaceholder') || 'PB10AB1234'}
+              placeholder={
+                t('vehicles.form.platePlaceholder') ||
+                'MH12AB1234 or 26BH1234AA' // ✅ Updated
+              }
               value={formData.plateNumber}
-              maxLength={13}
+              maxLength={15} // ✅ Updated (was 13)
               autoCapitalize="characters"
               onChangeText={v => updateField('plateNumber', v.toUpperCase())}
               error={errors.plateNumber}
-              helperText={t('vehicles.form.plateHelper')}
+              helperText={
+                t('vehicles.form.plateHelper') ||
+                'Standard (MH12AB1234), BH series (26BH1234AA), or Delhi (DL01CAA1234)' // ✅ Updated
+              }
               leftIcon={<VehicleIcon type="4-wheeler" size={30} />}
             />
 
             <View style={{height: spacing.lg}} />
 
-            {/* Contact Number (Optional) */}
+            {/* Emergency Contact (Required) */}
             <TextInput
-              label={`${t('vehicles.form.contactPhone') || 'Contact Number'} (${
-                t('common.optional') || 'Optional'
-              })`}
+              label={t('vehicles.form.contactPhone') || 'Emergency Contact'}
               placeholder={
                 t('vehicles.form.contactPhonePlaceholder') ||
                 '10 digit mobile number'
               }
               keyboardType="phone-pad"
               maxLength={10}
-              value={formData.contactPhone}
+              value={formData.emergencyContact}
               onChangeText={v =>
-                updateField('contactPhone', v.replace(/\D/g, ''))
+                updateField('emergencyContact', v.replace(/\D/g, ''))
               }
-              error={errors.contactPhone}
-              helperText={t('vehicles.form.contactPhoneHelper')}
+              error={errors.emergencyContact}
+              helperText={
+                t('vehicles.form.contactPhoneHelper') ||
+                'This will be shown when someone searches your vehicle'
+              }
               leftIcon={<Text style={{fontSize: 18}}>📱</Text>}
             />
           </Card>
@@ -370,7 +490,7 @@ const AddVehicleScreen = ({navigation}) => {
             title={t('vehicles.form.saveButton') || 'Save Vehicle'}
             fullWidth
             disabled={!confirmed}
-            loading={isLoading || checkingPlate}
+            loading={isLoading}
             onPress={handleSubmit}
           />
 
@@ -379,7 +499,7 @@ const AddVehicleScreen = ({navigation}) => {
             fullWidth
             style={{marginTop: spacing.md}}
             onPress={() => navigation.goBack()}
-            disabled={isLoading || checkingPlate}
+            disabled={isLoading}
           />
         </ScrollView>
       </KeyboardAvoidingView>

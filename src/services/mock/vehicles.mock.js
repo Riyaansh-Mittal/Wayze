@@ -1,173 +1,186 @@
 /**
  * Mock Vehicle Data
- * Sample vehicles for testing
+ * UPDATED: API v1.1.0 format (userInfo structure)
  */
 
-import { generateId } from '../../utils/helpers';
+import {generateId} from '../../utils/helpers';
 
-export const MOCK_VEHICLES = [
+/**
+ * Mock UserInfo Documents (matches API structure)
+ */
+export const MOCK_USER_INFO = [
   {
-    _id: 'vehicle_001',
+    _id: 'userinfo_001',
     userId: 'user_001',
-    plateNumber: 'MH01AB1234',
-    rcNumber: 'MH0120240012345',
-    vehicleType: '2-wheeler',
-    contactPhone: '9876543210',
-    contactMethods: {
-      phone: true,
-      sms: true,
-      whatsapp: false,
-      email: false,
-    },
-    rcPhotoUrl: 'https://example.com/rc/vehicle_001.jpg',
-    stats: {
-      totalSearches: 12,
-      contactRequests: 3,
-      lastSearched: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-    },
+    emergencyContact: '+919876543210',
+    vehicle: [
+      {
+        _id: 'vehicle_001',
+        wheelType: 2,
+        vehicleRegistration: 'MH01AB1234',
+        isVerified: true,
+        createdAt: new Date('2024-06-15').toISOString(),
+      },
+      {
+        _id: 'vehicle_002',
+        wheelType: 4,
+        vehicleRegistration: 'MH02CD5678',
+        isVerified: true,
+        createdAt: new Date('2024-07-01').toISOString(),
+      },
+    ],
     createdAt: new Date('2024-06-15').toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    _id: 'vehicle_002',
-    userId: 'user_001',
-    plateNumber: 'MH02CD5678',
-    rcNumber: 'MH0220240056789',
-    vehicleType: '4-wheeler',
-    contactPhone: '9876543210',
-    contactMethods: {
-      phone: true,
-      sms: false,
-      whatsapp: true,
-      email: true,
-    },
-    rcPhotoUrl: 'https://example.com/rc/vehicle_002.jpg',
-    stats: {
-      totalSearches: 5,
-      contactRequests: 1,
-      lastSearched: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    },
-    createdAt: new Date('2024-07-01').toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    _id: 'vehicle_003',
+    _id: 'userinfo_002',
     userId: 'user_002',
-    plateNumber: 'MH03EF9012',
-    rcNumber: 'MH0320240090123',
-    vehicleType: '2-wheeler',
-    contactPhone: '9123456789',
-    contactMethods: {
-      phone: true,
-      sms: true,
-      whatsapp: true,
-      email: false,
-    },
-    rcPhotoUrl: 'https://example.com/rc/vehicle_003.jpg',
-    stats: {
-      totalSearches: 8,
-      contactRequests: 2,
-      lastSearched: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-    },
+    emergencyContact: '+919123456789',
+    vehicle: [
+      {
+        _id: 'vehicle_003',
+        wheelType: 2,
+        vehicleRegistration: 'MH03EF9012',
+        isVerified: true,
+        createdAt: new Date('2024-07-20').toISOString(),
+      },
+    ],
     createdAt: new Date('2024-07-20').toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    _id: 'vehicle_004',
+    _id: 'userinfo_003',
     userId: 'user_003',
-    plateNumber: 'MH12GH3456',
-    rcNumber: 'MH1220240034567',
-    vehicleType: '3-wheeler',
-    contactPhone: '9988776655',
-    contactMethods: {
-      phone: true,
-      sms: false,
-      whatsapp: false,
-      email: true,
-    },
-    rcPhotoUrl: 'https://example.com/rc/vehicle_004.jpg',
-    stats: {
-      totalSearches: 15,
-      contactRequests: 4,
-      lastSearched: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 min ago
-    },
+    emergencyContact: '+919988776655',
+    vehicle: [
+      {
+        _id: 'vehicle_004',
+        wheelType: 3,
+        vehicleRegistration: 'MH12GH3456',
+        isVerified: true,
+        createdAt: new Date('2024-08-10').toISOString(),
+      },
+      {
+        _id: 'vehicle_005',
+        wheelType: 4,
+        vehicleRegistration: 'DL01IJ7890',
+        isVerified: true,
+        createdAt: new Date('2024-09-05').toISOString(),
+      },
+    ],
     createdAt: new Date('2024-08-10').toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    _id: 'vehicle_005',
-    userId: 'user_003',
-    plateNumber: 'DL01IJ7890',
-    rcNumber: 'DL0120240078901',
-    vehicleType: '4-wheeler',
-    contactPhone: '9988776655',
-    contactMethods: {
-      phone: true,
-      sms: true,
-      whatsapp: true,
-      email: true,
-    },
-    rcPhotoUrl: 'https://example.com/rc/vehicle_005.jpg',
-    stats: {
-      totalSearches: 3,
-      contactRequests: 0,
-      lastSearched: null,
-    },
-    createdAt: new Date('2024-09-05').toISOString(),
     updatedAt: new Date().toISOString(),
   },
 ];
 
 /**
- * Get vehicle by ID
+ * Get userInfo by userId
  */
-export const getVehicleById = (vehicleId) => {
-  return MOCK_VEHICLES.find((vehicle) => vehicle._id === vehicleId);
+export const getUserInfoByUserId = userId => {
+  return MOCK_USER_INFO.find(info => info.userId === userId);
 };
 
 /**
- * Get vehicle by plate number
+ * Get vehicle by ID (search across all userInfo)
  */
-export const getVehicleByPlate = (plateNumber) => {
-  return MOCK_VEHICLES.find(
-    (vehicle) => vehicle.plateNumber.toUpperCase() === plateNumber.toUpperCase()
-  );
+export const getVehicleById = vehicleId => {
+  for (const userInfo of MOCK_USER_INFO) {
+    const vehicle = userInfo.vehicle.find(v => v._id === vehicleId);
+    if (vehicle) {
+      return {
+        ...vehicle,
+        emergencyContact: userInfo.emergencyContact,
+        userInfoId: userInfo._id,
+      };
+    }
+  }
+  return null;
 };
 
 /**
- * Get vehicles by user ID
+ * Get vehicle by plate number (search across all userInfo)
  */
-export const getVehiclesByUserId = (userId) => {
-  return MOCK_VEHICLES.filter((vehicle) => vehicle.userId === userId);
+export const getVehicleByPlate = plateNumber => {
+  const upperPlate = plateNumber.toUpperCase().trim();
+
+  for (const userInfo of MOCK_USER_INFO) {
+    const vehicle = userInfo.vehicle.find(
+      v => v.vehicleRegistration.toUpperCase() === upperPlate,
+    );
+    if (vehicle) {
+      return {
+        userInfo,
+        vehicle,
+      };
+    }
+  }
+  return null;
 };
 
 /**
- * Create new vehicle (mock)
+ * Create new vehicle for user
  */
-export const createMockVehicle = (userId, vehicleData) => {
-  return {
+export const addVehicleToUserInfo = (userId, vehicleData) => {
+  let userInfo = getUserInfoByUserId(userId);
+
+  const newVehicle = {
     _id: generateId(),
-    userId,
-    plateNumber: vehicleData.plateNumber.toUpperCase(),
-    rcNumber: vehicleData.rcNumber,
-    vehicleType: vehicleData.vehicleType,
-    contactPhone: vehicleData.contactPhone,
-    contactMethods: vehicleData.contactMethods,
-    rcPhotoUrl: vehicleData.rcPhotoUrl || 'https://example.com/rc/default.jpg',
-    stats: {
-      totalSearches: 0,
-      contactRequests: 0,
-      lastSearched: null,
-    },
+    wheelType: vehicleData.wheelType,
+    vehicleRegistration: vehicleData.vehicleRegistration.toUpperCase().trim(),
+    isVerified: true,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
   };
+
+  // If userInfo doesn't exist, create it
+  if (!userInfo) {
+    userInfo = {
+      _id: generateId(),
+      userId: userId,
+      emergencyContact: vehicleData.emergencyContact || '',
+      vehicle: [newVehicle],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    MOCK_USER_INFO.push(userInfo);
+  } else {
+    // Update existing userInfo
+    userInfo.vehicle.push(newVehicle);
+    if (vehicleData.emergencyContact) {
+      userInfo.emergencyContact = vehicleData.emergencyContact;
+    }
+    userInfo.updatedAt = new Date().toISOString();
+  }
+
+  return userInfo;
+};
+
+/**
+ * Delete vehicle from userInfo
+ */
+export const deleteVehicleFromUserInfo = (userId, vehicleId) => {
+  const userInfo = getUserInfoByUserId(userId);
+
+  if (!userInfo) {
+    return null;
+  }
+
+  const vehicleIndex = userInfo.vehicle.findIndex(v => v._id === vehicleId);
+
+  if (vehicleIndex === -1) {
+    return null;
+  }
+
+  userInfo.vehicle.splice(vehicleIndex, 1);
+  userInfo.updatedAt = new Date().toISOString();
+
+  return userInfo;
 };
 
 export default {
-  MOCK_VEHICLES,
+  MOCK_USER_INFO,
+  getUserInfoByUserId,
   getVehicleById,
   getVehicleByPlate,
-  getVehiclesByUserId,
-  createMockVehicle,
+  addVehicleToUserInfo,
+  deleteVehicleFromUserInfo,
 };

@@ -7,90 +7,124 @@ import authMock from './auth.mock';
 import vehiclesMock from './vehicles.mock';
 import searchMock from './search.mock';
 import usersMock from './users.mock';
-import { delay, generateId } from '../../utils/helpers';
-import { formatResponse } from '../../utils/error.handler';
+import {delay, generateId} from '../../utils/helpers';
+import {formatResponse} from '../../utils/error.handler';
+import SecureStorage from '../storage/SecureStorage'; // ✅ Import SecureStorage
 
 /**
  * Mock Vehicles Service
  */
 export const MockVehiclesService = {
   /**
-   * Get user's vehicles
+   * Get user's vehicle information (userInfo)
+   * GET /api/user/userInfo
    */
-  list: async (userId) => {
+  list: async () => {
+    console.log('🚗 Loading vehicles from mock');
     await delay(1000);
-    const vehicles = vehiclesMock.getVehiclesByUserId(userId);
-    return formatResponse(vehicles, true, 'Vehicles retrieved');
+
+    try {
+      // Get from storage or context (in real app)
+      // For mock, we'll use the first user
+      const userId = 'user_001'; // This should come from auth context
+
+      const userInfo = vehiclesMock.getUserInfoByUserId(userId);
+
+      console.log('✅ Vehicles loaded:', userInfo);
+
+      return formatResponse(userInfo || null, true, 'OK');
+    } catch (error) {
+      console.error('❌ Failed to load vehicles:', error);
+      return formatResponse(null, false, error.message);
+    }
   },
 
   /**
    * Create new vehicle
+   * POST /api/user/userInfo
    */
-  create: async (userId, vehicleData) => {
+  create: async vehicleData => {
+    console.log('➕ Adding vehicle:', vehicleData);
     await delay(1500);
-    const newVehicle = vehiclesMock.createMockVehicle(userId, vehicleData);
-    vehiclesMock.MOCK_VEHICLES.push(newVehicle);
-    return formatResponse(newVehicle, true, 'Vehicle added successfully');
+
+    try {
+      const userId = 'user_001'; // This should come from auth context
+
+      // Check if vehicle already exists (globally)
+      const existingVehicle = vehiclesMock.getVehicleByPlate(
+        vehicleData.vehicleRegistration,
+      );
+
+      if (existingVehicle) {
+        // Check if it's the same user
+        if (existingVehicle.userInfo.userId === userId) {
+          return formatResponse(null, false, 'vehicle_already_added');
+        } else {
+          return formatResponse(null, false, 'vehicle_already_registered');
+        }
+      }
+
+      // Add vehicle to userInfo
+      const updatedUserInfo = vehiclesMock.addVehicleToUserInfo(
+        userId,
+        vehicleData,
+      );
+
+      console.log('✅ Vehicle added successfully');
+
+      return formatResponse(updatedUserInfo, true, 'OK');
+    } catch (error) {
+      console.error('❌ Failed to add vehicle:', error);
+      return formatResponse(null, false, error.message);
+    }
   },
 
   /**
    * Get vehicle details
+   * GET /api/user/vehicleById?vehicleId=<vehicle_id>
    */
-  details: async (vehicleId) => {
+  details: async vehicleId => {
+    console.log('🔍 Getting vehicle details:', vehicleId);
     await delay(800);
-    const vehicle = vehiclesMock.getVehicleById(vehicleId);
 
-    if (!vehicle) {
-      throw new Error('Vehicle not found');
+    try {
+      const vehicle = vehiclesMock.getVehicleById(vehicleId);
+
+      if (!vehicle) {
+        return formatResponse(null, false, 'Vehicle not found');
+      }
+
+      console.log('✅ Vehicle details retrieved');
+      return formatResponse(vehicle, true, 'OK');
+    } catch (error) {
+      console.error('❌ Failed to get vehicle details:', error);
+      return formatResponse(null, false, error.message);
     }
-
-    return formatResponse(vehicle, true, 'Vehicle details retrieved');
-  },
-
-  /**
-   * Update vehicle
-   */
-  update: async (vehicleId, updates) => {
-    await delay(1200);
-    const vehicle = vehiclesMock.getVehicleById(vehicleId);
-
-    if (!vehicle) {
-      throw new Error('Vehicle not found');
-    }
-
-    // Apply updates
-    Object.assign(vehicle, updates, { updatedAt: new Date().toISOString() });
-
-    return formatResponse(vehicle, true, 'Vehicle updated successfully');
   },
 
   /**
    * Delete vehicle
+   * DELETE /api/user/delete-vehicle?id=<vehicle_id>
    */
-  delete: async (vehicleId) => {
+  delete: async vehicleId => {
+    console.log('🗑️ Deleting vehicle:', vehicleId);
     await delay(1000);
-    const index = vehiclesMock.MOCK_VEHICLES.findIndex(v => v._id === vehicleId);
 
-    if (index === -1) {
-      throw new Error('Vehicle not found');
+    try {
+      const userId = 'user_001'; // This should come from auth context
+
+      const result = vehiclesMock.deleteVehicleFromUserInfo(userId, vehicleId);
+
+      if (!result) {
+        return formatResponse(null, false, 'vehicle_not_found');
+      }
+
+      console.log('✅ Vehicle deleted successfully');
+      return formatResponse({}, true, 'Deleted Successfully');
+    } catch (error) {
+      console.error('❌ Failed to delete vehicle:', error);
+      return formatResponse(null, false, error.message);
     }
-
-    vehiclesMock.MOCK_VEHICLES.splice(index, 1);
-    return formatResponse(null, true, 'Vehicle deleted successfully');
-  },
-
-  /**
-   * Check if plate number exists
-   */
-  checkPlate: async (plateNumber) => {
-    await delay(800);
-    const vehicle = vehiclesMock.getVehicleByPlate(plateNumber);
-
-    return formatResponse(
-      { exists: !!vehicle, vehicle: vehicle || null },
-      true,
-      vehicle ? 'Plate number already exists' : 'Plate number available'
-    );
   },
 };
 
@@ -99,9 +133,7 @@ export const MockVehiclesService = {
  */
 export const MockAuthService = {
   socialLogin: authMock.mockSocialLogin,
-  refreshToken: authMock.mockRefreshToken,
   logout: authMock.mockLogout,
-  verifyPhone: authMock.mockVerifyPhone,
 };
 
 /**
@@ -110,7 +142,6 @@ export const MockAuthService = {
 export const MockSearchService = {
   searchVehicle: searchMock.mockSearchVehicle,
   getHistory: searchMock.mockSearchHistory,
-  logContact: searchMock.mockLogContact,
 };
 
 /**
@@ -120,7 +151,7 @@ export const MockUserService = {
   /**
    * Get user profile
    */
-  getProfile: async (userId) => {
+  getProfile: async userId => {
     await delay(800);
     const user = usersMock.getUserById(userId);
 
@@ -142,7 +173,7 @@ export const MockUserService = {
       throw new Error('User not found');
     }
 
-    Object.assign(user, updates, { updatedAt: new Date().toISOString() });
+    Object.assign(user, updates, {updatedAt: new Date().toISOString()});
 
     return formatResponse(user, true, 'Profile updated successfully');
   },
@@ -158,7 +189,7 @@ export const MockUserService = {
       throw new Error('User not found');
     }
 
-    user.preferences = { ...user.preferences, ...preferences };
+    user.preferences = {...user.preferences, ...preferences};
     user.updatedAt = new Date().toISOString();
 
     return formatResponse(user.preferences, true, 'Preferences updated');
@@ -167,7 +198,7 @@ export const MockUserService = {
   /**
    * Delete account
    */
-  deleteAccount: async (userId) => {
+  deleteAccount: async userId => {
     await delay(1500);
     // In mock, we just simulate success
     return formatResponse(null, true, 'Account deleted successfully');
@@ -181,115 +212,145 @@ export const MockReferralService = {
   /**
    * Validate referral code
    */
-  validate: async (code) => {
-    await delay(800);
-    const referrer = usersMock.getUserByReferralCode(code);
+  validate: async code => {
+    await delay(500);
 
-    if (!referrer) {
-      throw new Error('Invalid referral code');
+    // Simple validation - just check format
+    const isValid = /^[A-Z0-9]{8}$/i.test(code);
+
+    if (!isValid) {
+      throw new Error('Invalid referral code format');
     }
+
+    console.log('✅ Mock referral code validated:', code);
 
     return formatResponse(
       {
         valid: true,
-        referrerId: referrer._id,
-        referrerName: referrer.fullName,
-        reward: 10, // 10 calls
+        code: code.toUpperCase(),
+        reward: 10,
       },
       true,
-      'Valid referral code'
+      'Referral code is valid',
     );
   },
 
   /**
    * Apply referral code
    */
-  apply: async (userId, code) => {
-    await delay(1000);
-    const referrer = usersMock.getUserByReferralCode(code);
+  apply: async code => {
+    await delay(800);
 
-    if (!referrer) {
-      throw new Error('Invalid referral code');
+    // ✅ Get current user from SecureStorage
+    const currentUser = await SecureStorage.getUserData();
+
+    if (!currentUser || !currentUser._id) {
+      console.error('❌ No authenticated user for referral apply');
+      throw new Error('User not authenticated');
     }
 
-    const user = usersMock.getUserById(userId);
+    // ✅ Use async getUserById
+    const user = await usersMock.getUserById(currentUser._id);
+
     if (!user) {
+      console.error('❌ User not found:', currentUser._id);
       throw new Error('User not found');
     }
 
-    // Check if using own code
-    if (referrer._id === userId) {
-      throw new Error("You can't use your own referral code");
+    // Check if already referred
+    if (user.referredBy) {
+      throw new Error('Referral code already applied');
     }
 
-    // Apply reward
-    user.callBalance += 10;
-    user.referredBy = referrer._id;
+    const reward = 10;
+    const newBalance = (user.callBalance || 0) + reward;
+
+    // Update user in storage
+    const updatedUser = {
+      ...currentUser,
+      callBalance: newBalance,
+      referredBy: 'mock_referrer_id',
+    };
+    await SecureStorage.saveUserData(updatedUser);
+
+    console.log('✅ Mock referral applied. New balance:', newBalance);
 
     return formatResponse(
       {
-        applied: true,
-        reward: 10,
-        newBalance: user.callBalance,
+        reward,
+        newBalance,
+        referrerId: 'mock_referrer_id',
       },
       true,
-      'Referral code applied successfully'
+      'Referral code applied successfully',
     );
   },
 
   /**
    * Get referral stats
    */
-  getStats: async (userId) => {
-    await delay(800);
-    const user = usersMock.getUserById(userId);
+  getStats: async () => {
+    await delay(600);
+
+    // ✅ Get current user from SecureStorage
+    const currentUser = await SecureStorage.getUserData();
+
+    if (!currentUser || !currentUser._id) {
+      console.error('❌ No authenticated user for referral stats');
+      throw new Error('User not authenticated');
+    }
+
+    // ✅ Use async getUserById
+    const user = await usersMock.getUserById(currentUser._id);
 
     if (!user) {
+      console.error('❌ User not found:', currentUser._id);
       throw new Error('User not found');
     }
 
+    console.log('✅ Mock referral stats fetched for user:', user.fullName);
+
     // Mock stats
     const stats = {
-      referralCode: user.referralCode,
       totalReferrals: 3,
       totalEarned: 30,
-      recentRedemptions: [
+      pendingRewards: 0,
+      referralCode: user.referralCode || currentUser.referralCode,
+      referrals: [
         {
           _id: 'ref_001',
           referredUserId: 'user_002',
           referredUserName: 'Priya Sharma',
+          status: 'completed',
           reward: 10,
-          redeemedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date(
+            Date.now() - 10 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
         },
         {
           _id: 'ref_002',
-          referredUserId: 'user_004',
-          referredUserName: 'Amit Kumar',
+          referredUserId: 'user_003',
+          referredUserName: 'Rahul Kumar',
+          status: 'completed',
           reward: 10,
-          redeemedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date(
+            Date.now() - 5 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+        },
+        {
+          _id: 'ref_003',
+          referredUserId: 'user_004',
+          referredUserName: 'Anjali Verma',
+          status: 'completed',
+          reward: 10,
+          createdAt: new Date(
+            Date.now() - 2 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
         },
       ],
     };
 
     return formatResponse(stats, true, 'Referral stats retrieved');
-  },
-
-  /**
-   * Generate referral code
-   */
-  generateCode: async (userId) => {
-    await delay(600);
-    const user = usersMock.getUserById(userId);
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    return formatResponse(
-      { referralCode: user.referralCode },
-      true,
-      'Referral code generated'
-    );
   },
 };
 
@@ -342,14 +403,14 @@ export const MockActivityService = {
     return formatResponse(
       activities.slice(0, limit),
       true,
-      'Activity retrieved'
+      'Activity retrieved',
     );
   },
 
   /**
    * Get activity stats
    */
-  stats: async (userId) => {
+  stats: async userId => {
     await delay(800);
 
     const stats = {
@@ -370,7 +431,7 @@ export const MockOwnershipService = {
   /**
    * Create ownership claim
    */
-  create: async (claimData) => {
+  create: async claimData => {
     await delay(2000); // Longer delay for file upload simulation
 
     const claim = {
@@ -393,7 +454,7 @@ export const MockOwnershipService = {
   /**
    * Get claim status
    */
-  getStatus: async (claimId) => {
+  getStatus: async claimId => {
     await delay(800);
 
     // Mock claim status
@@ -415,25 +476,50 @@ export const MockBalanceService = {
   /**
    * Get call balance
    */
-  get: async (userId) => {
+  get: async () => {
     await delay(600);
-    const user = usersMock.getUserById(userId);
+
+    // ✅ Get current user from SecureStorage
+    const currentUser = await SecureStorage.getUserData();
+
+    if (!currentUser || !currentUser._id) {
+      console.error('❌ No authenticated user for balance fetch');
+      throw new Error('User not authenticated');
+    }
+
+    // ✅ Use async getUserById
+    const user = await usersMock.getUserById(currentUser._id);
+
     if (!user) {
+      console.error('❌ User not found:', currentUser._id);
       throw new Error('User not found');
     }
 
+    console.log('✅ Mock balance fetched:', user.callBalance);
+
     return formatResponse(
-      { balance: user.callBalance },
+      {
+        balance: user.callBalance || 0,
+        callBalance: user.callBalance || 0,
+      },
       true,
-      'Balance retrieved'
+      'Balance retrieved',
     );
   },
 
   /**
    * Get balance history
    */
-  history: async (userId, limit = 20) => {
+  history: async (limit = 20) => {
     await delay(800);
+
+    // ✅ Get current user from SecureStorage
+    const currentUser = await SecureStorage.getUserData();
+
+    if (!currentUser || !currentUser._id) {
+      console.error('❌ No authenticated user for balance history');
+      throw new Error('User not authenticated');
+    }
 
     const history = [
       {
@@ -442,6 +528,7 @@ export const MockBalanceService = {
         amount: 10,
         description: 'Referral reward from Priya Sharma',
         timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
       },
       {
         _id: 'bal_002',
@@ -449,10 +536,25 @@ export const MockBalanceService = {
         amount: -1,
         description: 'Called vehicle owner',
         timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        _id: 'bal_003',
+        type: 'earned',
+        amount: 10,
+        description: 'Referral reward from Amit Singh',
+        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       },
     ];
 
-    return formatResponse(history.slice(0, limit), true, 'Balance history retrieved');
+    console.log('✅ Mock balance history fetched:', history.length, 'items');
+
+    return formatResponse(
+      history.slice(0, limit),
+      true,
+      'Balance history retrieved',
+    );
   },
 };
 

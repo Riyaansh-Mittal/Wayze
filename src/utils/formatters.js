@@ -9,7 +9,9 @@
  * @param {string} format - Format type ('short', 'long', 'relative')
  */
 export const formatDate = (dateString, format = 'relative') => {
-  if (!dateString) {return 'N/A';}
+  if (!dateString) {
+    return 'N/A';
+  }
 
   const date = new Date(dateString);
   const now = new Date();
@@ -20,10 +22,18 @@ export const formatDate = (dateString, format = 'relative') => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) {return 'Just now';}
-    if (diffMins < 60) {return `${diffMins}m ago`;}
-    if (diffHours < 24) {return `${diffHours}h ago`;}
-    if (diffDays < 7) {return `${diffDays}d ago`;}
+    if (diffMins < 1) {
+      return 'Just now';
+    }
+    if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    }
+    if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    }
+    if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    }
 
     return date.toLocaleDateString();
   }
@@ -42,8 +52,10 @@ export const formatDate = (dateString, format = 'relative') => {
 /**
  * Format relative time (e.g., "2 hours ago", "just now")
  */
-export const formatRelativeTime = (date) => {
-  if (!date) {return '';}
+export const formatRelativeTime = date => {
+  if (!date) {
+    return '';
+  }
 
   const dateObj = new Date(date);
   const now = new Date();
@@ -90,8 +102,10 @@ export const formatRelativeTime = (date) => {
  * @param {string} phoneNumber - Phone number to format
  * @returns {string} - Formatted phone number (e.g., "+91 98765 43210")
  */
-export const formatPhoneNumber = (phone) => {
-  if (!phone) {return '';}
+export const formatPhoneNumber = phone => {
+  if (!phone) {
+    return '';
+  }
 
   // Remove non-digits
   const cleaned = phone.replace(/\D/g, '');
@@ -109,8 +123,10 @@ export const formatPhoneNumber = (phone) => {
  * @param {string} phoneNumber - Phone number to mask
  * @returns {string} - Masked phone number (e.g., "+91 *****3210")
  */
-export const maskPhoneNumber = (phoneNumber) => {
-  if (!phoneNumber) {return '';}
+export const maskPhoneNumber = phoneNumber => {
+  if (!phoneNumber) {
+    return '';
+  }
 
   const formatted = formatPhoneNumber(phoneNumber);
   const parts = formatted.split(' ');
@@ -126,8 +142,10 @@ export const maskPhoneNumber = (phoneNumber) => {
 /**
  * Format plate number to uppercase
  */
-export const formatPlateNumber = (plateNumber) => {
-  if (!plateNumber) {return '';}
+export const formatPlateNumber = plateNumber => {
+  if (!plateNumber) {
+    return '';
+  }
   return plateNumber.trim().toUpperCase();
 };
 
@@ -139,8 +157,10 @@ export const formatPlateNumber = (plateNumber) => {
 /**
  * Mask name for privacy (show first name + first letter of last name)
  */
-export const maskName = (fullName) => {
-  if (!fullName) {return 'Unknown';}
+export const maskName = fullName => {
+  if (!fullName) {
+    return 'Unknown';
+  }
 
   const parts = fullName.trim().split(' ');
   if (parts.length === 1) {
@@ -156,8 +176,10 @@ export const maskName = (fullName) => {
 /**
  * Format currency (Indian Rupees)
  */
-export const formatCurrency = (amount) => {
-  if (amount === null || amount === undefined) {return '₹0';}
+export const formatCurrency = amount => {
+  if (amount === null || amount === undefined) {
+    return '₹0';
+  }
 
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -170,8 +192,10 @@ export const formatCurrency = (amount) => {
 /**
  * Format number with commas
  */
-export const formatNumber = (number) => {
-  if (number === null || number === undefined) {return '0';}
+export const formatNumber = number => {
+  if (number === null || number === undefined) {
+    return '0';
+  }
 
   return new Intl.NumberFormat('en-IN').format(number);
 };
@@ -179,8 +203,10 @@ export const formatNumber = (number) => {
 /**
  * Format file size to human readable format
  */
-export const formatFileSize = (bytes) => {
-  if (bytes === 0) {return '0 Bytes';}
+export const formatFileSize = bytes => {
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
 
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -192,13 +218,15 @@ export const formatFileSize = (bytes) => {
 /**
  * Capitalize first letter of each word
  */
-export const capitalizeWords = (str) => {
-  if (!str) {return '';}
+export const capitalizeWords = str => {
+  if (!str) {
+    return '';
+  }
 
   return str
     .toLowerCase()
     .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
 
@@ -206,8 +234,12 @@ export const capitalizeWords = (str) => {
  * Truncate text with ellipsis
  */
 export const truncateText = (text, maxLength = 50) => {
-  if (!text) {return '';}
-  if (text.length <= maxLength) {return text;}
+  if (!text) {
+    return '';
+  }
+  if (text.length <= maxLength) {
+    return text;
+  }
   return text.slice(0, maxLength) + '...';
 };
 
@@ -230,19 +262,31 @@ export const getGreeting = (name = '') => {
 /**
  * Format call balance display
  */
-export const formatCallBalance = (balance) => {
+export const formatCallBalance = balance => {
   return `${balance} ${balance === 1 ? 'call' : 'calls'}`;
 };
 
 /**
  * Format timeline date groups (Today, Yesterday, Last Week, etc.)
  */
-export const formatTimelineGroup = (date) => {
+export const formatTimelineGroup = date => {
   if (!date) {return '';}
 
   const dateObj = new Date(date);
+
+  // ✅ Validate date
+  if (isNaN(dateObj.getTime())) {
+    console.warn('Invalid date provided to formatTimelineGroup:', date);
+    return '';
+  }
+
   const now = new Date();
-  const diffInDays = Math.floor((now - dateObj) / (1000 * 60 * 60 * 24));
+  now.setHours(0, 0, 0, 0);
+
+  const dateCopy = new Date(dateObj);
+  dateCopy.setHours(0, 0, 0, 0);
+
+  const diffInDays = Math.floor((now - dateCopy) / (1000 * 60 * 60 * 24));
 
   if (diffInDays === 0) {return 'Today';}
   if (diffInDays === 1) {return 'Yesterday';}
@@ -254,12 +298,12 @@ export const formatTimelineGroup = (date) => {
 /**
  * Format vehicle type display
  */
-export const formatVehicleType = (type) => {
+export const formatVehicleType = type => {
   const typeMap = {
     '2-wheeler': '2-wheeler',
     '3-wheeler': '3-wheeler',
     '4-wheeler': '4-wheeler',
-    'Other': 'Other',
+    Other: 'Other',
   };
 
   return typeMap[type] || type;
@@ -268,14 +312,24 @@ export const formatVehicleType = (type) => {
 /**
  * Format contact methods to readable string
  */
-export const formatContactMethods = (methods) => {
-  if (!methods) {return '';}
+export const formatContactMethods = methods => {
+  if (!methods) {
+    return '';
+  }
 
   const enabledMethods = [];
-  if (methods.phone) {enabledMethods.push('Call');}
-  if (methods.sms) {enabledMethods.push('SMS');}
-  if (methods.whatsapp) {enabledMethods.push('WhatsApp');}
-  if (methods.email) {enabledMethods.push('Email');}
+  if (methods.phone) {
+    enabledMethods.push('Call');
+  }
+  if (methods.sms) {
+    enabledMethods.push('SMS');
+  }
+  if (methods.whatsapp) {
+    enabledMethods.push('WhatsApp');
+  }
+  if (methods.email) {
+    enabledMethods.push('Email');
+  }
 
   return enabledMethods.join(', ');
 };
@@ -283,12 +337,18 @@ export const formatContactMethods = (methods) => {
 /**
  * Parse and format API error messages
  */
-export const formatErrorMessage = (error) => {
-  if (typeof error === 'string') {return error;}
+export const formatErrorMessage = error => {
+  if (typeof error === 'string') {
+    return error;
+  }
 
-  if (error?.message) {return error.message;}
+  if (error?.message) {
+    return error.message;
+  }
 
-  if (error?.response?.data?.message) {return error.response.data.message;}
+  if (error?.response?.data?.message) {
+    return error.response.data.message;
+  }
 
   return 'Something went wrong. Please try again.';
 };

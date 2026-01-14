@@ -68,7 +68,7 @@ const ReferralEntryScreen = ({navigation}) => {
 
         if (applyResult.success) {
           await completeOnboarding();
-          navigation.replace('Main');
+          // navigation.replace('Main');
         }
       } else {
         setError(t?.('auth.referral.invalidCode') || 'Invalid referral code');
@@ -86,7 +86,7 @@ const ReferralEntryScreen = ({navigation}) => {
 
   const handleSkip = async () => {
     await completeOnboarding();
-    navigation.replace('Main');
+    // navigation.replace('Main');
   };
 
   return (

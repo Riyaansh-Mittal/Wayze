@@ -1,53 +1,92 @@
-/**
- * Home Screen
- * Main dashboard with balance, activity stats, and quick actions
- * FULLY THEME-AWARE
- */
-
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from 'react-native';
+import React, {useState, useCallback, useRef, useEffect} from 'react';
+import {View, Text, StyleSheet, ScrollView, RefreshControl} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useFocusEffect} from '@react-navigation/native'; // ✅ Import this
 import {useAuth} from '../../contexts/AuthContext';
-import {useBalance} from '../../contexts/BalanceContext';
+import {useUser} from '../../contexts/UserContext';
 import {useVehicles} from '../../contexts/VehicleContext';
 import {useTheme} from '../../contexts/ThemeContext';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {
-  BoltIcon,
-  WarningIcon,
-} from '../../assets/icons';
+import {BoltIcon, WarningIcon} from '../../assets/icons';
+import Spinner from '../../components/common/Loading/Spinner';
 
 const HomeScreen = ({navigation}) => {
   const {user} = useAuth();
-  const {balance} = useBalance();
+  const {getUserHome, userStats, isLoading, isRefreshing} = useUser();
   const {vehicles} = useVehicles();
   const {t, theme} = useTheme();
 
   const {colors, typography, spacing, layout} = theme;
-  const isBalanceLow = balance < 5;
+
+  const callBalance = userStats?.callBalance ?? user?.callBalance ?? 0;
+  const isBalanceLow = callBalance < 5;
+
+  const lastRefreshRef = useRef(0);
+  const MIN_REFRESH_INTERVAL = 3000;
+
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      const timeSinceLastRefresh = now - lastRefreshRef.current;
+
+      if (timeSinceLastRefresh > MIN_REFRESH_INTERVAL) {
+        console.log('🏠 Home screen focused - refreshing data');
+        lastRefreshRef.current = now;
+        getUserHome();
+      } else {
+        console.log(
+          '⏭️ Skip refresh (called',
+          Math.round(timeSinceLastRefresh / 1000),
+          's ago)',
+        );
+      }
+    }, [getUserHome]),
+  );
 
   const userName = user?.fullName || user?.displayName || 'User';
-  const memberSince = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric',
-      })
-    : 'June 2024';
 
-  // Greeting based on time
+  const memberSince =
+    userStats?.memberSince || user?.memberSince || user?.createdAt
+      ? new Date(
+          userStats?.memberSince || user?.memberSince || user?.createdAt,
+        ).toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric',
+        })
+      : 'Recently';
+
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return t('home.greeting.morning');
-    if (hour < 17) return t('home.greeting.afternoon');
-    return t('home.greeting.evening');
+    if (hour < 12) return t('home.greeting.morning') || 'Good Morning';
+    if (hour < 17) return t('home.greeting.afternoon') || 'Good Afternoon';
+    return t('home.greeting.evening') || 'Good Evening';
   };
+
+  const handleRefresh = useCallback(async () => {
+    console.log('🔄 Manual refresh triggered');
+    await getUserHome(true);
+  }, [getUserHome]);
+
+  // ✅ FIXED: Show loading skeleton only on FIRST load with no data at all
+  const hasAnyData = userStats || user?.vehicleRegistered !== undefined;
+  const showLoadingSkeleton = isLoading && !hasAnyData;
+
+  // ✅ FIXED: If first load is taking too long, still show UI with defaults
+  const [showDefaultUI, setShowDefaultUI] = useState(false);
+
+  useEffect(() => {
+    // ✅ After 2 seconds of loading, show UI anyway
+    if (isLoading && !hasAnyData) {
+      const timeout = setTimeout(() => {
+        console.log('⏱️ Loading timeout - showing default UI');
+        setShowDefaultUI(true);
+      }, 2000); // Show UI after 2 seconds even if API hasn't responded
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading, hasAnyData]);
 
   return (
     <SafeAreaView
@@ -73,18 +112,26 @@ const HomeScreen = ({navigation}) => {
           styles.scrollContent,
           {paddingHorizontal: layout.screenPadding},
         ]}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }>
         {/* Greeting Section */}
         <View style={{marginBottom: spacing.lg}}>
           <Text style={[typography.h1, {marginBottom: spacing.xs}]}>
             {getGreeting()}, {userName}
           </Text>
           <Text style={typography.caption}>
-            {t('home.subtitle')}
+            {t('home.subtitle') || 'Welcome back to QR Parking'}
           </Text>
         </View>
 
-        {/* Balance Card */}
+        {/* Balance Card - Always show */}
         <Card
           style={[
             styles.balanceCard,
@@ -93,21 +140,21 @@ const HomeScreen = ({navigation}) => {
           <View style={styles.balanceHeader}>
             <View style={styles.balanceLeft}>
               <Text style={[styles.balanceLabel, {color: colors.white}]}>
-                {t('home.balance.title')}
+                {t('home.balance.title') || 'Your Balance'}
               </Text>
               <Text
                 style={[
                   styles.balanceValue,
                   {color: colors.white, marginTop: spacing.xs},
                 ]}>
-                {t('home.balance.calls', {count: balance})}
+                {callBalance} {t('home.balance.calls') || 'calls'}
               </Text>
               <Text
                 style={[
                   styles.balanceHelper,
                   {color: colors.white, marginTop: spacing.xs},
                 ]}>
-                {t('home.balance.helper')}
+                {t('home.balance.helper') || '1 call = 1 vehicle contact'}
               </Text>
             </View>
             <BoltIcon width={48} height={48} fill={colors.white} />
@@ -121,7 +168,7 @@ const HomeScreen = ({navigation}) => {
                   styles.warningText,
                   {color: colors.white, marginLeft: spacing.sm},
                 ]}>
-                {t('home.balance.lowBalance')}
+                {t('home.balance.lowBalance') || 'Low balance. Top up now!'}
               </Text>
             </View>
           )}
@@ -130,61 +177,76 @@ const HomeScreen = ({navigation}) => {
         {/* Your Activity Stats */}
         <View style={{marginBottom: spacing.lg}}>
           <Text style={[typography.h2, {marginBottom: spacing.sm}]}>
-            {t('home.activity.title')}
+            {t('home.activity.title') || 'Your Activity'}
           </Text>
-          <View style={[styles.statsGrid, {gap: spacing.sm}]}>
-            <Card style={styles.statCard}>
-              <Text style={[styles.statValue, {color: colors.primary}]}>
-                {vehicles.length}
-              </Text>
-              <Text
-                style={[
-                  typography.caption,
-                  {textAlign: 'center', marginTop: spacing.xs},
-                ]}>
-                {t('home.activity.vehiclesRegistered')}
-              </Text>
-            </Card>
 
-            <Card style={styles.statCard}>
-              <Text style={[styles.statValue, {color: colors.primary}]}>
-                12
-              </Text>
+          {/* ✅ FIXED: Show loading only if no data AND timeout hasn't occurred */}
+          {showLoadingSkeleton && !showDefaultUI ? (
+            <View style={{padding: spacing.xl, alignItems: 'center'}}>
+              <Spinner size="large" color={colors.primary} />
               <Text
                 style={[
                   typography.caption,
-                  {textAlign: 'center', marginTop: spacing.xs},
+                  {marginTop: spacing.md, color: colors.textSecondary},
                 ]}>
-                {t('home.activity.vehicleSearches')}
+                {t('common.loading') || 'Loading...'}
               </Text>
-            </Card>
+            </View>
+          ) : (
+            <View style={[styles.statsGrid, {gap: spacing.sm}]}>
+              <Card style={styles.statCard}>
+                <Text style={[styles.statValue, {color: colors.primary}]}>
+                  {userStats?.vehicleRegistered ?? user?.vehicleRegistered ?? 0}
+                </Text>
+                <Text
+                  style={[
+                    typography.caption,
+                    {textAlign: 'center', marginTop: spacing.xs},
+                  ]}>
+                  {t('home.activity.vehiclesRegistered') || 'Vehicles'}
+                </Text>
+              </Card>
 
-            <Card style={styles.statCard}>
-              <Text style={[styles.statValue, {color: colors.primary}]}>
-                3
-              </Text>
-              <Text
-                style={[
-                  typography.caption,
-                  {textAlign: 'center', marginTop: spacing.xs},
-                ]}>
-                {t('home.activity.peopleContacted')}
-              </Text>
-            </Card>
+              <Card style={styles.statCard}>
+                <Text style={[styles.statValue, {color: colors.primary}]}>
+                  {userStats?.vehicleSearched ?? user?.vehicleSearched ?? 0}
+                </Text>
+                <Text
+                  style={[
+                    typography.caption,
+                    {textAlign: 'center', marginTop: spacing.xs},
+                  ]}>
+                  {t('home.activity.vehicleSearches') || 'Searches'}
+                </Text>
+              </Card>
 
-            <Card style={styles.statCard}>
-              <Text style={[styles.statValue, {color: colors.primary}]}>
-                {memberSince}
-              </Text>
-              <Text
-                style={[
-                  typography.caption,
-                  {textAlign: 'center', marginTop: spacing.xs},
-                ]}>
-                {t('home.activity.memberSince')}
-              </Text>
-            </Card>
-          </View>
+              <Card style={styles.statCard}>
+                <Text style={[styles.statValue, {color: colors.primary}]}>
+                  {userStats?.timesContacted ?? user?.timesContacted ?? 0}
+                </Text>
+                <Text
+                  style={[
+                    typography.caption,
+                    {textAlign: 'center', marginTop: spacing.xs},
+                  ]}>
+                  {t('home.activity.peopleContacted') || 'Contacted'}
+                </Text>
+              </Card>
+
+              <Card style={styles.statCard}>
+                <Text style={[styles.statValue, {color: colors.primary}]}>
+                  {memberSince}
+                </Text>
+                <Text
+                  style={[
+                    typography.caption,
+                    {textAlign: 'center', marginTop: spacing.xs},
+                  ]}>
+                  {t('home.activity.memberSince') || 'Member Since'}
+                </Text>
+              </Card>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -249,23 +311,6 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-  },
-  quickActionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  quickActionIcon: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chevron: {
-    fontSize: 20,
-  },
-  divider: {
-    height: 1,
-    marginHorizontal: 16,
   },
 });
 

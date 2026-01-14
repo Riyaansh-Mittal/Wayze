@@ -34,8 +34,9 @@ import {
 class FetchAPIClient {
   constructor() {
     this.baseURL = BASE_URL;
-    this.timeout = 30000;
+    this.timeout = 60000;
     this.maxRetries = 3;
+    this.retryDelayBase = 1000; // in ms
   }
 
   /**
@@ -347,23 +348,41 @@ const request = async (method, endpoint, data = null, config = {}) => {
 // ═══════════════════════════════════════════════════════════════
 
 export const AuthService = {
+  /**
+   * Social Login (Google/Apple)
+   * POST /api/auth/socialLogin
+   */
   socialLogin: async loginData => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      console.log('🎭 Using MOCK social login');
-      return MockAuthService.socialLogin(loginData);
-    }
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   console.log('🎭 Using MOCK social login');
+    //   return MockAuthService.socialLogin(loginData);
+    // }
+
+    // Build request body according to API spec
+    const deviceType = Platform.OS.toUpperCase(); // 'ANDROID' or 'IOS'
 
     const requestBody = {
-      firstName: loginData.firstName || '',
-      lastName: loginData.lastName || '',
-      fullName:
-        loginData.fullName || `${loginData.firstName} ${loginData.lastName}`,
-      phoneNumber: loginData.phoneNumber || '',
-      deviceType: Platform.OS.toUpperCase(),
       email: loginData.email,
-      password: loginData.password || '',
-      fcmToken: loginData.fcmToken || 'Sample-FCM',
+      fcmToken: loginData.fcmToken || 'sample-fcm-token',
+      deviceType: deviceType,
     };
+
+    // Add fields based on device type
+    if (deviceType === 'ANDROID') {
+      // Android requires firstName, lastName
+      requestBody.firstName = loginData.firstName || '';
+      requestBody.lastName = loginData.lastName || '';
+      requestBody.fullName =
+        loginData.fullName ||
+        `${loginData.firstName || ''} ${loginData.lastName || ''}`.trim();
+      requestBody.phoneNumber = loginData.phoneNumber || '';
+    } else {
+      // iOS/WEB - firstName, lastName, fullName auto-set by backend
+      // Only send optional phoneNumber if available
+      if (loginData.phoneNumber) {
+        requestBody.phoneNumber = loginData.phoneNumber;
+      }
+    }
 
     console.log('🔐 Social Login Request:', {
       endpoint: ENDPOINTS.auth.socialLogin,
@@ -371,13 +390,15 @@ export const AuthService = {
     });
 
     try {
-      return await request(
+      const response = await request(
         HTTP_METHODS.POST,
         ENDPOINTS.auth.socialLogin,
         requestBody,
       );
+
+      // Backend returns: { success: true, message: "Success", data: {...} }
+      return response;
     } catch (error) {
-      // Log to analytics/crashlytics
       logError(error, {
         service: 'AuthService',
         method: 'socialLogin',
@@ -387,62 +408,17 @@ export const AuthService = {
     }
   },
 
-  refreshToken: async refreshToken => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockAuthService.refreshToken(refreshToken);
-    }
-
-    console.log('🔄 Refresh Token Request:', {
-      endpoint: ENDPOINTS.auth.refreshToken,
-    });
-
-    try {
-      return await request(HTTP_METHODS.POST, ENDPOINTS.auth.refreshToken, {
-        refresh: refreshToken,
-      });
-    } catch (error) {
-      logError(error, {
-        service: 'AuthService',
-        method: 'refreshToken',
-      });
-      throw error;
-    }
-  },
-
+  /**
+   * Logout
+   * No API endpoint - just local cleanup
+   */
   logout: async () => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
       return MockAuthService.logout();
     }
 
-    try {
-      return await request(HTTP_METHODS.POST, ENDPOINTS.auth.logout);
-    } catch (error) {
-      logError(error, {
-        service: 'AuthService',
-        method: 'logout',
-      });
-      throw error;
-    }
-  },
-
-  verifyPhone: async (phoneNumber, otp) => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockAuthService.verifyPhone(phoneNumber, otp);
-    }
-
-    try {
-      return await request(HTTP_METHODS.POST, ENDPOINTS.auth.verifyPhone, {
-        phoneNumber,
-        otp,
-      });
-    } catch (error) {
-      logError(error, {
-        service: 'AuthService',
-        method: 'verifyPhone',
-        phoneNumber,
-      });
-      throw error;
-    }
+    // No backend API for logout - just return success
+    return {success: true, message: 'Logged out successfully'};
   },
 };
 
@@ -451,53 +427,106 @@ export const AuthService = {
 // ═══════════════════════════════════════════════════════════════
 
 export const VehiclesService = {
-  list: async userId => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockVehiclesService.list(userId);
+  /**
+   * Get User Vehicle Information
+   * GET /api/user/userInfo
+   */
+  list: async () => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockVehiclesService.list();
+    // }
+
+    try {
+      return await request(HTTP_METHODS.GET, ENDPOINTS.vehicles.list);
+    } catch (error) {
+      logError(error, {
+        service: 'VehiclesService',
+        method: 'list',
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.GET, ENDPOINTS.vehicles.list);
   },
 
-  create: async (userId, vehicleData) => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockVehiclesService.create(userId, vehicleData);
+  /**
+   * Add or Update Vehicle Information (With Referral)
+   * POST /api/user/userInfo
+   */
+  create: async vehicleData => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockVehiclesService.create(vehicleData);
+    // }
+
+    // Map to API format
+    const requestBody = {
+      wheelType: vehicleData.vehicleType || vehicleData.wheelType,
+      vehicleRegistration:
+        vehicleData.plateNumber || vehicleData.vehicleRegistration,
+      emergencyContact: vehicleData.emergencyContact,
+      referralCode: vehicleData.referralCode,
+    };
+
+    try {
+      return await request(
+        HTTP_METHODS.POST,
+        ENDPOINTS.vehicles.create,
+        requestBody,
+      );
+    } catch (error) {
+      logError(error, {
+        service: 'VehiclesService',
+        method: 'create',
+        data: requestBody,
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.vehicles.create, vehicleData);
   },
 
+  /**
+   * Get Vehicle Details by ID
+   * GET /api/user/vehicleById?vehicleId=<vehicle_id>
+   */
   details: async vehicleId => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockVehiclesService.details(vehicleId);
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockVehiclesService.details(vehicleId);
+    // }
+
+    try {
+      return await request(
+        HTTP_METHODS.GET,
+        ENDPOINTS.vehicles.details(vehicleId),
+      );
+    } catch (error) {
+      logError(error, {
+        service: 'VehiclesService',
+        method: 'details',
+        vehicleId,
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.GET, ENDPOINTS.vehicles.details(vehicleId));
   },
 
-  update: async (vehicleId, updates) => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockVehiclesService.update(vehicleId, updates);
-    }
-    return request(
-      HTTP_METHODS.PUT,
-      ENDPOINTS.vehicles.update(vehicleId),
-      updates,
-    );
-  },
-
+  /**
+   * Delete Vehicle
+   * DELETE /api/user/delete-vehicle?id=<vehicle_id>
+   */
   delete: async vehicleId => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockVehiclesService.delete(vehicleId);
-    }
-    return request(HTTP_METHODS.DELETE, ENDPOINTS.vehicles.delete(vehicleId));
-  },
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockVehiclesService.delete(vehicleId);
+    // }
 
-  checkPlate: async plateNumber => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockVehiclesService.checkPlate(plateNumber);
+    try {
+      return await request(
+        HTTP_METHODS.DELETE,
+        ENDPOINTS.vehicles.delete(vehicleId),
+      );
+    } catch (error) {
+      logError(error, {
+        service: 'VehiclesService',
+        method: 'delete',
+        vehicleId,
+      });
+      throw error;
     }
-    return request(
-      HTTP_METHODS.GET,
-      ENDPOINTS.vehicles.checkPlate(plateNumber),
-    );
   },
 };
 
@@ -506,87 +535,235 @@ export const VehiclesService = {
 // ═══════════════════════════════════════════════════════════════
 
 export const SearchService = {
+  /**
+   * Search Vehicle by Registration
+   * POST /api/user/search-vehicle
+   */
   searchVehicle: async plateNumber => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockSearchService.searchVehicle(plateNumber);
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockSearchService.searchVehicle(plateNumber);
+    // }
+
+    try {
+      const response = await request(
+        HTTP_METHODS.POST,
+        ENDPOINTS.search.vehicle,
+        {vehicleRegistration: plateNumber},
+      );
+
+      return response;
+    } catch (error) {
+      // ✅ Don't log error for "not found" - it's expected
+      if (error.message === 'Vehicle not found') {
+        console.log('ℹ️ Vehicle not found (expected):', plateNumber);
+        return {
+          success: false,
+          data: {found: false},
+          message: 'Vehicle not found',
+        };
+      }
+
+      // ✅ Log only real errors
+      logError(error, {
+        service: 'SearchService',
+        method: 'searchVehicle',
+        plateNumber,
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.search.search, {plateNumber});
   },
 
+  /**
+   * Get Search History
+   * NOTE: This endpoint doesn't exist yet in the API
+   * Keeping for future implementation
+   */
   getHistory: async (limit = 20) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
       return MockSearchService.getHistory('user_001', limit);
     }
-    return request(HTTP_METHODS.GET, ENDPOINTS.search.history, {limit});
-  },
 
-  logContact: async contactData => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockSearchService.logContact(contactData);
-    }
-    return request(HTTP_METHODS.POST, ENDPOINTS.contact.log, contactData);
+    // TODO: Implement when API endpoint is available
+    // For now, return empty history
+    return {
+      success: true,
+      message: 'Success',
+      data: [],
+    };
   },
 };
 
 // ... (Keep all other services as they were)
 
+// ═══════════════════════════════════════════════════════════════
+// USER SERVICE
+// ═══════════════════════════════════════════════════════════════
+
 export const UserService = {
-  getProfile: async userId => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockUserService.getProfile(userId);
+  /**
+   * Get User Home Dashboard
+   * GET /api/user/home
+   */
+  getHome: async () => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockUserService.getHome();
+    // }
+
+    try {
+      return await request(HTTP_METHODS.GET, ENDPOINTS.user.home);
+    } catch (error) {
+      logError(error, {
+        service: 'UserService',
+        method: 'getHome',
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.GET, ENDPOINTS.user.profile);
   },
 
-  updateProfile: async (userId, updates) => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockUserService.updateProfile(userId, updates);
+  /**
+   * Get User Activity History
+   * GET /api/user/activity?type=<type>&page=<page>&limit=<limit>
+   */
+  getActivities: async (filters = {}) => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockUserService.getActivities(filters);
+    // }
+
+    const queryParams = {
+      type: filters.type || 'ALL',
+      page: filters.page || 1,
+      limit: filters.limit || 20,
+    };
+
+    try {
+      return await request(
+        HTTP_METHODS.GET,
+        ENDPOINTS.user.activities,
+        queryParams,
+      );
+    } catch (error) {
+      logError(error, {
+        service: 'UserService',
+        method: 'getActivities',
+        filters,
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.PUT, ENDPOINTS.user.update, updates);
   },
 
-  updatePreferences: async (userId, preferences) => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockUserService.updatePreferences(userId, preferences);
+  /**
+   * Get User Settings
+   * GET /api/user/settings
+   */
+  getSettings: async () => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockUserService.getSettings();
+    // }
+
+    try {
+      return await request(HTTP_METHODS.GET, ENDPOINTS.user.settings);
+    } catch (error) {
+      logError(error, {
+        service: 'UserService',
+        method: 'getSettings',
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.PUT, ENDPOINTS.user.preferences, preferences);
   },
 
-  deleteAccount: async userId => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockUserService.deleteAccount(userId);
+  /**
+   * Update User Settings
+   * POST /api/user/settings
+   */
+  updateSettings: async settings => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockUserService.updateSettings(settings);
+    // }
+
+    try {
+      return await request(
+        HTTP_METHODS.POST,
+        ENDPOINTS.user.settings,
+        settings,
+      );
+    } catch (error) {
+      logError(error, {
+        service: 'UserService',
+        method: 'updateSettings',
+        settings,
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.DELETE, ENDPOINTS.user.delete);
   },
 };
 
 export const ReferralService = {
+  /**
+   * Validate referral code
+   * POST /api/referral/validate
+   */
   validate: async code => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
       return MockReferralService.validate(code);
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.referral.validate, {code});
+
+    try {
+      return await request(HTTP_METHODS.POST, ENDPOINTS.referral.validate, {
+        code,
+      });
+    } catch (error) {
+      logError(error, {
+        service: 'ReferralService',
+        method: 'validate',
+        code,
+      });
+      throw error;
+    }
   },
 
-  apply: async (userId, code) => {
+  /**
+   * Apply referral code
+   * POST /api/referral/apply
+   */
+  apply: async code => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockReferralService.apply(userId, code);
+      // ✅ Mock service handles userId internally
+      return MockReferralService.apply(code);
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.referral.apply, {code});
+
+    try {
+      // ✅ No userId needed - comes from Bearer token
+      return await request(HTTP_METHODS.POST, ENDPOINTS.referral.apply, {code});
+    } catch (error) {
+      logError(error, {
+        service: 'ReferralService',
+        method: 'apply',
+        code,
+      });
+      throw error;
+    }
   },
 
-  getStats: async userId => {
+  /**
+   * Get referral stats
+   * GET /api/referral/stats
+   */
+  getStats: async () => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockReferralService.getStats(userId);
+      // ✅ Mock service handles userId internally
+      return MockReferralService.getStats();
     }
-    return request(HTTP_METHODS.GET, ENDPOINTS.referral.stats);
-  },
 
-  generateCode: async userId => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockReferralService.generateCode(userId);
+    try {
+      // ✅ No userId needed - comes from Bearer token
+      return await request(HTTP_METHODS.GET, ENDPOINTS.referral.stats);
+    } catch (error) {
+      logError(error, {
+        service: 'ReferralService',
+        method: 'getStats',
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.referral.generate);
   },
 };
 
@@ -797,5 +974,4 @@ export default {
   ActivityService,
   OwnershipService,
   ContactService,
-  BalanceService,
 };
