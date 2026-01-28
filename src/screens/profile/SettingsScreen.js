@@ -22,6 +22,7 @@ import {LANGUAGES} from '../../config/constants';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
 import Spinner from '../../components/common/Loading/Spinner';
+import {BellIcon} from '../../assets/icons';
 
 const SettingsScreen = ({navigation}) => {
   const {
@@ -81,23 +82,27 @@ const SettingsScreen = ({navigation}) => {
         console.error(`❌ Failed to update ${key}`);
         // Revert on failure
         setter(!value);
-        showError(`Failed to update ${key}`);
+        showError(t('toast.settings.updateFailed'));
       } else {
         console.log(`✅ ${key} updated successfully`);
       }
     },
-    [updateUserSettings, showError],
+    [updateUserSettings, showError, t],
   );
 
   // ✅ Handle dark mode toggle (local preference, not API)
   const handleDarkModeToggle = useCallback(async () => {
     const result = await toggleTheme();
     if (result.success) {
-      showSuccess(`${result.theme === 'dark' ? 'Dark' : 'Light'} mode enabled`);
+      showSuccess(
+        result.theme === 'dark'
+          ? t('toast.settings.darkModeEnabled')
+          : t('toast.settings.lightModeEnabled'),
+      );
     } else {
-      showError('Failed to change theme');
+      showError(t('toast.settings.themeChangeFailed'));
     }
-  }, [toggleTheme, showSuccess, showError]);
+  }, [toggleTheme, showSuccess, showError, t]);
 
   // ✅ Handle language change (local preference, not API)
   const handleLanguageChange = useCallback(
@@ -108,11 +113,13 @@ const SettingsScreen = ({navigation}) => {
 
       if (result.success) {
         showSuccess(
-          t('profile.settings.languageChanged') ||
+          t('toast.settings.languageChanged') ||
             'Language changed successfully',
         );
       } else {
-        showError('Failed to change language');
+        showError(
+          t('toast.settings.updateFailed') || 'Failed to change language',
+        );
       }
     },
     [changeLanguage, showSuccess, showError, t],
@@ -131,12 +138,12 @@ const SettingsScreen = ({navigation}) => {
           onPress: async () => {
             console.log('📦 Requesting data export...');
             showSuccess(
-              t('profile.settings.dataExport.preparing') ||
+              t('toast.dataExport.preparing') ||
                 'Preparing your data...',
             );
             setTimeout(() => {
               showSuccess(
-                t('profile.settings.dataExport.checkEmail') ||
+                t('toast.dataExport.checkEmail') ||
                   'Check your email for download link',
               );
             }, 2000);
@@ -212,7 +219,7 @@ const SettingsScreen = ({navigation}) => {
           </Text>
           <Card>
             <ToggleItem
-              icon="🔔"
+              icon={<BellIcon width={24} height={24} fill={colors.warning} />}
               label={
                 t('profile.settings.notifications.push') || 'Push Notifications'
               }

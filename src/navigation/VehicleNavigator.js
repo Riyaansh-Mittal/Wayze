@@ -12,6 +12,8 @@ import VehicleDetailsScreen from '../screens/vehicles/VehicleDetailsScreen';
 import OwnershipConflictScreen from '../screens/vehicles/OwnershipConflictScreen';
 import UploadRCScreen from '../screens/vehicles/UploadRCScreen';
 import ClaimSubmittedScreen from '../screens/vehicles/ClaimSubmittedScreen';
+import VerifyOwnershipScreen from '../screens/vehicles/VerifyOwnershipScreen';
+import VerificationSentScreen from '../screens/vehicles/VerificationSentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -47,6 +49,16 @@ const VehicleNavigator = () => {
         options={{
           gestureEnabled: false,
         }}
+      />
+      <Stack.Screen
+        name="VerifyOwnership"
+        component={VerifyOwnershipScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="VerificationSent"
+        component={VerificationSentScreen}
+        options={{headerShown: false}}
       />
     </Stack.Navigator>
   );

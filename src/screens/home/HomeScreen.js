@@ -5,6 +5,7 @@ import {useFocusEffect} from '@react-navigation/native'; // ✅ Import this
 import {useAuth} from '../../contexts/AuthContext';
 import {useUser} from '../../contexts/UserContext';
 import {useVehicles} from '../../contexts/VehicleContext';
+import {useNotifications} from '../../contexts/NotificationContext';
 import {useTheme} from '../../contexts/ThemeContext';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
@@ -101,9 +102,7 @@ const HomeScreen = ({navigation}) => {
             color={colors.textPrimary}
           />
         }
-        onRightPress={() =>
-          navigation.navigate('Profile', {screen: 'Notifications'})
-        }
+        onRightPress={() => navigation.navigate('Notifications')}
       />
 
       <ScrollView

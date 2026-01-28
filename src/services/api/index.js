@@ -26,6 +26,7 @@ import {
   MockActivityService,
   MockOwnershipService,
   MockBalanceService,
+  MockNotificationService,
 } from '../mock';
 
 /**
@@ -409,16 +410,39 @@ export const AuthService = {
   },
 
   /**
-   * Logout
-   * No API endpoint - just local cleanup
+   * ✅ UPDATED: Logout with FCM token removal
+   * POST /logout
    */
-  logout: async () => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockAuthService.logout();
+  logout: async fcmToken => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockAuthService.logout();
+    // }
+
+    if (!fcmToken) {
+      console.warn('⚠️ No FCM token provided for logout');
+      // Still allow logout even without token
+      return {success: true, message: 'Logged out successfully'};
     }
 
-    // No backend API for logout - just return success
-    return {success: true, message: 'Logged out successfully'};
+    try {
+      console.log('🚪 Logging out with FCM token:', fcmToken);
+
+      const response = await request(HTTP_METHODS.POST, ENDPOINTS.auth.logout, {
+        fcmToken,
+      });
+
+      return response;
+    } catch (error) {
+      // Don't block logout if API fails
+      console.error('⚠️ Logout API failed (continuing anyway):', error);
+      logError(error, {
+        service: 'AuthService',
+        method: 'logout',
+      });
+
+      // Return success anyway - local logout still works
+      return {success: true, message: 'Logged out locally'};
+    }
   },
 };
 
@@ -830,28 +854,23 @@ export const OwnershipService = {
 };
 
 export const BalanceService = {
-  get: async userId => {
+  get: async () => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockBalanceService.get(userId);
+      return MockBalanceService.get();
     }
     return request(HTTP_METHODS.GET, ENDPOINTS.balance.get);
   },
 
-  history: async (userId, limit = 20) => {
+  history: async (limit = 20) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      return MockBalanceService.history(userId, limit);
+      return MockBalanceService.history(limit);
     }
     return request(HTTP_METHODS.GET, ENDPOINTS.balance.history, {limit});
   },
 
-  deduct: async (userId, amount, reason) => {
+  deduct: async (amount, reason) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return {
-        success: true,
-        data: {newBalance: 14, deducted: amount, reason},
-        message: 'Balance deducted successfully',
-      };
+      return MockBalanceService.deduct(amount, reason);
     }
     return request(HTTP_METHODS.POST, ENDPOINTS.balance.deduct, {
       amount,
@@ -859,105 +878,118 @@ export const BalanceService = {
     });
   },
 
-  add: async (userId, amount, reason) => {
+  add: async (amount, reason) => {
     if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return {
-        success: true,
-        data: {newBalance: 25, added: amount, reason},
-        message: 'Balance added successfully',
-      };
+      return MockBalanceService.add(amount, reason);
     }
     return request(HTTP_METHODS.POST, ENDPOINTS.balance.add, {amount, reason});
   },
 };
 
 export const ContactService = {
-  create: async contactData => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      await new Promise(resolve => setTimeout(resolve, 600));
-      return {
-        success: true,
-        data: {
-          _id: `contact_${Date.now()}`,
-          ...contactData,
-          createdAt: new Date().toISOString(),
-        },
-        message: 'Contact logged successfully',
-      };
-    }
-    return request(HTTP_METHODS.POST, ENDPOINTS.contacts.create, contactData);
+  /**
+   * Fetch Zego token
+   * GET /initiate-call
+   */
+  fetchToken: async () => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   await new Promise(resolve => setTimeout(resolve, 600));
+    //   return {
+    //     success: true,
+    //     data: {
+    //       nonce: 'mock_nonce_' + Date.now(),
+    //       timestamp: Math.floor(Date.now() / 1000),
+    //       token: 'mock_zego_token_' + Date.now(),
+    //     },
+    //     message: 'Success',
+    //   };
+    // }
+    return request(HTTP_METHODS.GET, ENDPOINTS.contacts.initiateCall);
   },
 
-  getUserContacts: async userId => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return {
-        success: true,
-        data: [
-          {
-            _id: 'contact_001',
-            userId,
-            vehicleId: 'vehicle_001',
-            plateNumber: 'MH01AB1234',
-            contactType: 'phone',
-            contactedAt: new Date(
-              Date.now() - 2 * 60 * 60 * 1000,
-            ).toISOString(),
-          },
-        ],
-        message: 'Contact history retrieved',
-      };
-    }
-    return request(HTTP_METHODS.GET, ENDPOINTS.contacts.userHistory(userId));
-  },
-
-  getVehicleContacts: async vehicleId => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return {
-        success: true,
-        data: [
-          {
-            _id: 'contact_v001',
-            vehicleId,
-            contactedBy: 'user_002',
-            contactType: 'phone',
-            contactedAt: new Date(
-              Date.now() - 3 * 60 * 60 * 1000,
-            ).toISOString(),
-          },
-        ],
-        message: 'Vehicle contact history retrieved',
-      };
-    }
+  /**
+   * ✅ Initiate call - Create call session and get callId
+   * GET /update-call-status?receiverId=<receiver_id>&status=INITIATED
+   * @param {string} receiverId - User ID of the person being called
+   * @returns {Promise} { success: true, data: { callId: "uuid" } }
+   */
+  initiateCall: async receiverId => {
     return request(
-      HTTP_METHODS.GET,
-      ENDPOINTS.contacts.vehicleHistory(vehicleId),
+      HTTP_METHODS.PATCH,
+      `${ENDPOINTS.contacts.initiateCall}?receiverId=${receiverId}&status=INITIATED`,
     );
   },
 
-  revealContact: async (vehicleId, plateNumber) => {
-    if (FEATURE_FLAGS.USE_MOCK_DATA) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return {
-        success: true,
-        data: {
-          vehicleId,
-          plateNumber,
-          contactPhone: '+919876543210',
-          owner: {
-            name: 'Riyaansh Mittal',
-            photo: 'https://i.pravatar.cc/150?img=1',
-          },
-        },
-        message: 'Contact details revealed',
-      };
+  /**
+   * ✅ Update call status
+   * GET /update-call-status?callId=<call_id>&status=<status>
+   * @param {string} callId - UUID from initiateCall response
+   * @param {string} status - One of: "ANSWERED", "ENDED", "FAILED"
+   * @returns {Promise} { success: true, data: {} }
+   */
+  updateCallStatus: async (callId, status) => {
+    return request(
+      HTTP_METHODS.PATCH,
+      `${ENDPOINTS.contacts.initiateCall}?callId=${callId}&status=${status}`,
+    );
+  },
+
+  initiateAlert: async data => {
+    return request(HTTP_METHODS.POST, ENDPOINTS.contacts.initiateAlert, data);
+  },
+};
+
+export const NotificationService = {
+  /**
+   * Get all notifications (paginated)
+   * GET /notifications?page=1&limit=20
+   */
+  getAll: async (page = 1, limit = 20) => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockNotificationService.getAll(page, limit);
+    // }
+
+    try {
+      const response = await request(
+        HTTP_METHODS.GET,
+        `${ENDPOINTS.notifications.list}?page=${page}&limit=${limit}`,
+      );
+      return response;
+    } catch (error) {
+      logError(error, {
+        service: 'NotificationService',
+        method: 'getAll',
+        page,
+        limit,
+      });
+      throw error;
     }
-    return request(HTTP_METHODS.POST, ENDPOINTS.contacts.reveal, {
-      vehicleId,
-      plateNumber,
-    });
+  },
+
+  /**
+   * Mark notification as read (and acknowledge if alert)
+   * POST /notifications
+   */
+  markAsRead: async notificationId => {
+    // if (FEATURE_FLAGS.USE_MOCK_DATA) {
+    //   return MockNotificationService.markAsRead(notificationId);
+    // }
+
+    try {
+      const response = await request(
+        HTTP_METHODS.POST,
+        ENDPOINTS.notifications.markRead,
+        {notificationId},
+      );
+      return response;
+    } catch (error) {
+      logError(error, {
+        service: 'NotificationService',
+        method: 'markAsRead',
+        notificationId,
+      });
+      throw error;
+    }
   },
 };
 

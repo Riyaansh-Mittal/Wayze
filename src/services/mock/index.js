@@ -479,7 +479,6 @@ export const MockBalanceService = {
   get: async () => {
     await delay(600);
 
-    // ✅ Get current user from SecureStorage
     const currentUser = await SecureStorage.getUserData();
 
     if (!currentUser || !currentUser._id) {
@@ -487,7 +486,6 @@ export const MockBalanceService = {
       throw new Error('User not authenticated');
     }
 
-    // ✅ Use async getUserById
     const user = await usersMock.getUserById(currentUser._id);
 
     if (!user) {
@@ -508,12 +506,93 @@ export const MockBalanceService = {
   },
 
   /**
+   * Deduct balance
+   */
+  deduct: async (amount, reason) => {
+    await delay(500);
+
+    const currentUser = await SecureStorage.getUserData();
+    if (!currentUser || !currentUser._id) {
+      throw new Error('User not authenticated');
+    }
+
+    const user = await usersMock.getUserById(currentUser._id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // ✅ Deduct from mock user
+    const newBalance = Math.max(0, (user.callBalance || 0) - amount);
+    user.callBalance = newBalance;
+
+    // ✅ Update SecureStorage so it persists during session
+    await SecureStorage.saveUserData({
+      ...currentUser,
+      callBalance: newBalance,
+    });
+
+    console.log(
+      `💸 Mock balance deducted: -${amount}, new balance: ${newBalance}`,
+    );
+
+    return formatResponse(
+      {
+        newBalance,
+        deducted: amount,
+        reason,
+      },
+      true,
+      'Balance deducted successfully',
+    );
+  },
+
+  /**
+   * Add balance
+   */
+  add: async (amount, reason) => {
+    await delay(500);
+
+    const currentUser = await SecureStorage.getUserData();
+    if (!currentUser || !currentUser._id) {
+      throw new Error('User not authenticated');
+    }
+
+    const user = await usersMock.getUserById(currentUser._id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // ✅ Add to mock user
+    const newBalance = (user.callBalance || 0) + amount;
+    user.callBalance = newBalance;
+
+    // ✅ Update SecureStorage
+    await SecureStorage.saveUserData({
+      ...currentUser,
+      callBalance: newBalance,
+    });
+
+    console.log(
+      `💰 Mock balance added: +${amount}, new balance: ${newBalance}`,
+    );
+
+    return formatResponse(
+      {
+        newBalance,
+        added: amount,
+        reason,
+      },
+      true,
+      'Balance added successfully',
+    );
+  },
+
+  /**
    * Get balance history
    */
   history: async (limit = 20) => {
     await delay(800);
 
-    // ✅ Get current user from SecureStorage
     const currentUser = await SecureStorage.getUserData();
 
     if (!currentUser || !currentUser._id) {
@@ -558,6 +637,311 @@ export const MockBalanceService = {
   },
 };
 
+/**
+ * Mock Notification Service
+ * Simulates notification API responses for development/testing
+ */
+
+// Mock user IDs for testing
+const MOCK_USER_ID = '507f191e810c19729de860ea';
+const MOCK_SENDER_ID = '60d5ec49f1b2c82048d2a456';
+
+// Generate mock notifications
+const generateMockNotifications = (count = 50) => {
+  const notifications = [];
+  const types = [
+    'VEHICLE_SEARCHED',
+    'ALERT_HIGH',
+    'ALERT_LOW',
+    'CALL',
+    'ALERT_ACKNOWLEDGED',
+  ];
+
+  const titles = {
+    VEHICLE_SEARCHED: 'Your vehicle was searched',
+    ALERT_HIGH: 'High Priority Alert',
+    ALERT_LOW: 'Low Priority Alert',
+    CALL: 'Missed Call',
+    ALERT_ACKNOWLEDGED: 'Your alert has been acknowledged',
+  };
+
+  const bodies = {
+    VEHICLE_SEARCHED:
+      'Someone searched your vehicle with registration number {plate}. They may try to contact you.',
+    ALERT_HIGH:
+      'You have received a high priority alert regarding your vehicle. Please check immediately.',
+    ALERT_LOW: 'You have received a low priority alert regarding your vehicle.',
+    CALL: "You missed a call. The caller's details are not available for privacy reasons.",
+    ALERT_ACKNOWLEDGED:
+      'Your alert regarding vehicle {plate} has been acknowledged by the owner.',
+  };
+
+  const mockPlates = [
+    'MH12AB1234',
+    'DL5CAC9999',
+    'KA01MH1420',
+    'TN09BB7788',
+    'UP16CD5432',
+    'GJ06DE3456',
+    'RJ14EF6789',
+  ];
+
+  for (let i = 0; i < count; i++) {
+    const type = types[Math.floor(Math.random() * types.length)];
+    const isRead = Math.random() > 0.4; // 40% unread
+    const hoursAgo = Math.floor(Math.random() * 168); // Up to 7 days ago
+    const createdAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
+
+    // Assign senderId only for user-to-user notifications
+    const senderId =
+      type === 'ALERT_HIGH' ||
+      type === 'ALERT_LOW' ||
+      type === 'ALERT_ACKNOWLEDGED'
+        ? MOCK_SENDER_ID
+        : null;
+
+    // Assign registration number randomly
+    const hasPlate =
+      type === 'VEHICLE_SEARCHED' ||
+      type === 'ALERT_HIGH' ||
+      type === 'ALERT_LOW' ||
+      type === 'ALERT_ACKNOWLEDGED';
+    const registrationNumber = hasPlate
+      ? mockPlates[Math.floor(Math.random() * mockPlates.length)]
+      : null;
+
+    notifications.push({
+      _id: `mock_notif_${i + 1}_${Date.now()}`,
+      userId: MOCK_USER_ID,
+      senderId,
+      type,
+      title: titles[type],
+      body: bodies[type].replace('{plate}', registrationNumber || 'ABC1234'),
+      isRead,
+      registrationNumber,
+      createdAt: createdAt.toISOString(),
+      updatedAt: createdAt.toISOString(),
+    });
+  }
+
+  // Sort by newest first
+  return notifications.sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+  );
+};
+
+// Store mock notifications in memory
+let mockNotifications = generateMockNotifications(50);
+
+export const MockNotificationService = {
+  /**
+   * Get paginated notifications
+   * @param {number} page - Page number (1-indexed)
+   * @param {number} limit - Items per page
+   */
+  getAll: async (page = 1, limit = 20) => {
+    console.log(
+      '🔔 [MOCK] Getting notifications - page:',
+      page,
+      'limit:',
+      limit,
+    );
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Calculate pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedNotifications = mockNotifications.slice(
+      startIndex,
+      endIndex,
+    );
+
+    const totalData = mockNotifications.length;
+    const hasNext = endIndex < totalData;
+    const hasPrevious = page > 1;
+
+    console.log(
+      `✅ [MOCK] Returning ${paginatedNotifications.length} notifications`,
+    );
+
+    return {
+      success: true,
+      message: 'Success',
+      data: {
+        notifications: paginatedNotifications,
+        totalData,
+        page,
+        limit,
+        hasNext,
+        hasPrevious,
+      },
+    };
+  },
+
+  /**
+   * Mark notification as read
+   * For ALERT_HIGH/ALERT_LOW, creates acknowledgment notification
+   * @param {string} notificationId - Notification ID
+   */
+  markAsRead: async notificationId => {
+    console.log('👁️ [MOCK] Marking notification as read:', notificationId);
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Find notification
+    const notificationIndex = mockNotifications.findIndex(
+      n => n._id === notificationId,
+    );
+
+    if (notificationIndex === -1) {
+      console.error('❌ [MOCK] Notification not found:', notificationId);
+      return {
+        success: false,
+        message: 'Notification not found',
+      };
+    }
+
+    const notification = mockNotifications[notificationIndex];
+
+    // Mark as read
+    notification.isRead = true;
+    notification.updatedAt = new Date().toISOString();
+
+    // If it's an alert, create acknowledgment notification
+    if (
+      notification.type === 'ALERT_HIGH' ||
+      notification.type === 'ALERT_LOW'
+    ) {
+      console.log('📢 [MOCK] Creating acknowledgment notification for sender');
+
+      const ackNotification = {
+        _id: `mock_ack_${Date.now()}`,
+        userId: notification.senderId, // Send to original sender
+        senderId: notification.userId, // From current user
+        type: 'ALERT_ACKNOWLEDGED',
+        title: 'Your alert has been acknowledged',
+        body: `Your alert regarding vehicle ${
+          notification.registrationNumber || 'ABC1234'
+        } has been acknowledged by the owner.`,
+        isRead: false,
+        registrationNumber: notification.registrationNumber,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Add acknowledgment to the beginning (newest first)
+      mockNotifications.unshift(ackNotification);
+
+      console.log('✅ [MOCK] Acknowledgment notification created');
+    }
+
+    console.log('✅ [MOCK] Notification marked as read');
+
+    return {
+      success: true,
+      message: 'Success',
+      data: notification,
+    };
+  },
+
+  /**
+   * Simulate receiving a new notification (for testing)
+   * This can be called manually to test real-time updates
+   */
+  simulateNewNotification: type => {
+    console.log('📨 [MOCK] Simulating new notification:', type);
+
+    const types = {
+      VEHICLE_SEARCHED: {
+        title: 'Your vehicle was searched',
+        body: 'Someone searched your vehicle with registration number MH12AB1234. They may try to contact you.',
+        senderId: null,
+        registrationNumber: 'MH12AB1234',
+      },
+      ALERT_HIGH: {
+        title: 'High Priority Alert',
+        body: 'You have received a high priority alert regarding your vehicle. Please check immediately.',
+        senderId: MOCK_SENDER_ID,
+        registrationNumber: 'MH12AB1234',
+      },
+      ALERT_LOW: {
+        title: 'Low Priority Alert',
+        body: 'You have received a low priority alert regarding your vehicle.',
+        senderId: MOCK_SENDER_ID,
+        registrationNumber: 'MH12AB1234',
+      },
+      CALL: {
+        title: 'Missed Call',
+        body: "You missed a call. The caller's details are not available for privacy reasons.",
+        senderId: null,
+        registrationNumber: null,
+      },
+      ALERT_ACKNOWLEDGED: {
+        title: 'Your alert has been acknowledged',
+        body: 'Your alert regarding vehicle MH12AB1234 has been acknowledged by the owner.',
+        senderId: MOCK_SENDER_ID,
+        registrationNumber: 'MH12AB1234',
+      },
+    };
+
+    const config = types[type] || types.VEHICLE_SEARCHED;
+
+    const newNotification = {
+      _id: `mock_new_${Date.now()}`,
+      userId: MOCK_USER_ID,
+      senderId: config.senderId,
+      type,
+      title: config.title,
+      body: config.body,
+      isRead: false,
+      registrationNumber: config.registrationNumber,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Add to beginning (newest first)
+    mockNotifications.unshift(newNotification);
+
+    console.log('✅ [MOCK] New notification added:', newNotification._id);
+
+    return newNotification;
+  },
+
+  /**
+   * Reset mock data (useful for testing)
+   */
+  reset: () => {
+    console.log('🔄 [MOCK] Resetting mock notifications');
+    mockNotifications = generateMockNotifications(50);
+  },
+
+  /**
+   * Delete notification (if you add this feature later)
+   */
+  delete: async notificationId => {
+    console.log('🗑️ [MOCK] Deleting notification:', notificationId);
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const initialLength = mockNotifications.length;
+    mockNotifications = mockNotifications.filter(n => n._id !== notificationId);
+
+    if (mockNotifications.length === initialLength) {
+      return {
+        success: false,
+        message: 'Notification not found',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Notification deleted',
+    };
+  },
+};
+
 export default {
   MockVehiclesService,
   MockAuthService,
@@ -567,4 +951,5 @@ export default {
   MockActivityService,
   MockOwnershipService,
   MockBalanceService,
+  MockNotificationService,
 };

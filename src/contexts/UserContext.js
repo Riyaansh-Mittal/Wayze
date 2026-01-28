@@ -13,6 +13,7 @@ import React, {
 import {UserService} from '../services/api';
 import {useToast} from '../components/common/Toast/ToastProvider';
 import {useAuth} from './AuthContext';
+import { useTheme } from './ThemeContext';
 
 const UserContext = createContext();
 
@@ -32,6 +33,7 @@ export const UserProvider = ({children}) => {
     hasPrevious: false,
   });
   const [settings, setSettings] = useState(null);
+  const t = useTheme().t;
 
   // ✅ Track if home data has been loaded
   const hasLoadedHomeRef = useRef(false);
@@ -227,12 +229,12 @@ export const UserProvider = ({children}) => {
       return {success: false};
     } catch (error) {
       console.error('❌ Failed to load settings:', error);
-      showError('Failed to load settings');
+      showError(t('toast.settings.loadFailed') || 'Failed to load settings');
       return {success: false, error: error.message};
     } finally {
       setIsLoading(false);
     }
-  }, [user, showError]);
+  }, [user, showError, t]);
 
   /**
    * Update User Settings
@@ -253,20 +255,20 @@ export const UserProvider = ({children}) => {
         if (response.success) {
           console.log('✅ Settings updated');
           setSettings(response.data);
-          showSuccess('Settings updated successfully');
+          showSuccess(t('toast.settings.updated') || 'Settings updated');
           return {success: true, data: response.data};
         }
 
         return {success: false};
       } catch (error) {
         console.error('❌ Failed to update settings:', error);
-        showError('Failed to update settings');
+        showError(t('toast.settings.updateFailed') || 'Failed to update settings');
         return {success: false, error: error.message};
       } finally {
         setIsLoading(false);
       }
     },
-    [user, showSuccess, showError],
+    [user, showSuccess, showError, t],
   );
 
   /**

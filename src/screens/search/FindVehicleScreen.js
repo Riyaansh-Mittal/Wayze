@@ -23,7 +23,7 @@ import AppBar from '../../components/navigation/AppBar';
 import TextInput from '../../components/common/Input/TextInput';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import Card from '../../components/common/Card/Card';
-import {SearchIcon, SearchIcon as SearchSvg} from '../../assets/icons';
+import {SearchIcon as SearchSvg} from '../../assets/icons';
 
 const FindVehicleScreen = ({navigation}) => {
   const {t, theme} = useTheme();
@@ -49,8 +49,9 @@ const FindVehicleScreen = ({navigation}) => {
 
     if (result.success) {
       if (result.data?.found) {
+        // ✅ vehicle now contains owner.userId
         navigation.navigate('SearchResultFound', {
-          vehicle: result.data.vehicle,
+          vehicle: result.data.vehicle, // Contains { plateNumber, owner: { name, photo, userId } }
           searchQuery,
         });
       } else {

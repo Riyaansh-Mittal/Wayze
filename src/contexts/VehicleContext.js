@@ -9,12 +9,14 @@ import React, {
 import {VehiclesService} from '../services/api';
 import {useToast} from '../components/common/Toast/ToastProvider';
 import {useAuth} from './AuthContext';
+import {useTheme} from './ThemeContext';
 
 const VehicleContext = createContext();
 
 export const VehicleProvider = ({children}) => {
   const {user, isAuthenticated} = useAuth();
   const {showSuccess, showError} = useToast();
+  const {t} = useTheme();
 
   const [vehicles, setVehicles] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
@@ -68,13 +70,13 @@ export const VehicleProvider = ({children}) => {
         return {success: false};
       } catch (error) {
         console.error('❌ Failed to load vehicles:', error);
-        showError('Failed to load vehicles');
+        showError(t('toast.vehicle.loadFailed') || 'Failed to load vehicles');
         return {success: false, error: error.message};
       } finally {
         if (showLoader) setIsLoading(false);
       }
     },
-    [user, showError],
+    [user, showError, t],
   );
 
   /**
@@ -136,7 +138,7 @@ export const VehicleProvider = ({children}) => {
         if (result.success) {
           console.log('✅ Vehicle added successfully');
           await loadVehicles(false);
-          showSuccess('Vehicle added successfully');
+          showSuccess(t('toast.vehicle.added'));
         } else {
           console.error('❌ Failed to add vehicle:', result.error);
           showError(result.error || 'Failed to add vehicle');
@@ -145,13 +147,13 @@ export const VehicleProvider = ({children}) => {
         return result;
       } catch (error) {
         console.error('❌ Error adding vehicle:', error);
-        showError('Failed to add vehicle');
+        showError(t('toast.vehicle.addFailed') || 'Failed to add vehicle');
         return {success: false, error: error.message};
       } finally {
         setIsLoading(false);
       }
     },
-    [user, loadVehicles, showSuccess, showError],
+    [user, loadVehicles, showSuccess, showError, t],
   );
 
   /**
@@ -171,20 +173,20 @@ export const VehicleProvider = ({children}) => {
         if (result.success) {
           console.log('✅ Vehicle deleted successfully');
           await loadVehicles(false);
-          showSuccess('Vehicle deleted successfully');
+          showSuccess(t('toast.vehicle.deleted') || 'Vehicle deleted');
         } else {
           console.error('❌ Failed to delete vehicle:', result.error);
-          showError('Failed to delete vehicle');
+          showError(t('toast.vehicle.deleteFailed') || 'Failed to delete vehicle');
         }
 
         return result;
       } catch (error) {
         console.error('❌ Error deleting vehicle:', error);
-        showError('Failed to delete vehicle');
+        showError(t('toast.vehicle.deleteFailed') || 'Failed to delete vehicle');
         return {success: false, error: error.message};
       }
     },
-    [user, loadVehicles, showSuccess, showError],
+    [user, loadVehicles, showSuccess, showError, t],
   );
 
   /**

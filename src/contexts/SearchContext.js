@@ -16,6 +16,7 @@ import {useToast} from '../components/common/Toast/ToastProvider';
 import {useAuth} from './AuthContext';
 import AsyncStorage from '../services/storage/AsyncStorage';
 import {STORAGE_KEYS} from '../config/constants';
+import { useTheme } from './ThemeContext';
 
 const SearchContext = createContext();
 
@@ -29,6 +30,8 @@ export const SearchProvider = ({children}) => {
   const [recentSearches, setRecentSearches] = useState([]);
   const [searchResult, setSearchResult] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  const {t} = useTheme();
 
   /**
    * Load recent searches from storage on mount
@@ -140,11 +143,10 @@ export const SearchProvider = ({children}) => {
 
         const response = await SearchService.searchVehicle(plateNumber);
 
-        console.log('📦 Search response:', response); // ✅ Debug log
+        console.log('📦 Search response:', response);
 
-        // ✅ FIXED: Check if vehicle data exists
+        // ✅ UPDATED: Check if vehicle data exists and extract userId
         if (response.success) {
-          // ✅ Check if response has vehicle owner data
           const hasVehicleData =
             response.data &&
             (response.data.fullName ||
@@ -158,20 +160,34 @@ export const SearchProvider = ({children}) => {
 
           console.log(
             found
-              ? '✅ Vehicle found - Owner: ' + response.data.fullName
+              ? '✅ Vehicle found - Owner: ' +
+                  response.data.fullName +
+                  ' (ID: ' +
+                  response.data.userId +
+                  ')'
               : 'ℹ️ Vehicle not found (no owner data)',
           );
 
+          // ✅ UPDATED: Include userId in vehicle data
           return {
             success: true,
             data: {
               found: found,
-              vehicle: found ? response.data : null,
+              vehicle: found
+                ? {
+                    plateNumber: plateNumber.toUpperCase(),
+                    owner: {
+                      name: response.data.fullName,
+                      photo: response.data.image,
+                      userId: response.data.userId, // ✅ ADD THIS
+                    },
+                  }
+                : null,
             },
           };
         }
 
-        // ✅ Handle "Vehicle not found" as expected response (not error)
+        // Handle "Vehicle not found"
         if (response.message?.includes('Vehicle not found')) {
           addToRecentSearches(plateNumber.toUpperCase(), false);
 
@@ -208,9 +224,9 @@ export const SearchProvider = ({children}) => {
         saveRecentSearches(filtered);
         return filtered;
       });
-      showSuccess('Search removed');
+      showSuccess(t('toast.search.removed') || 'Search removed from recent');
     },
-    [showSuccess],
+    [showSuccess, t],
   );
 
   /**
@@ -220,13 +236,13 @@ export const SearchProvider = ({children}) => {
     try {
       setRecentSearches([]);
       await AsyncStorage.remove(STORAGE_KEYS.RECENT_SEARCHES);
-      showSuccess('Recent searches cleared');
+      showSuccess(t('toast.search.cleared') || 'Recent searches cleared');
       return {success: true};
     } catch (error) {
-      showError('Failed to clear searches');
+      showError(t('toast.search.clearFailed') || 'Failed to clear recent searches');
       return {success: false, error: error.message};
     }
-  }, [showSuccess, showError]);
+  }, [showSuccess, showError, t]);
 
   /**
    * Get search history from API

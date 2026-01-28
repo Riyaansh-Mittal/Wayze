@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "104858287148",
-    "project_id": "qr-parking-app",
-    "storage_bucket": "qr-parking-app.firebasestorage.app"
+    "project_number": "483312777993",
+    "project_id": "zegocloud-3d68b",
+    "storage_bucket": "zegocloud-3d68b.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:104858287148:android:acd4ca1fc7eac80e8f2589",
+        "mobilesdk_app_id": "1:483312777993:android:54a78bf50153f5abeaf1d8",
         "android_client_info": {
           "package_name": "com.qrparkingappbare"
         }
@@ -15,7 +15,26 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDv987Kj1DKokEn7a9j0ZQ6TIWA68A-EEY"
+          "current_key": "AIzaSyB-V6DIUQv6tKN7RMqdAV6n8vpvLynJXRM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483312777993:android:63831dfb3fbb9debeaf1d8",
+        "android_client_info": {
+          "package_name": "com.zegovoicecall"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-V6DIUQv6tKN7RMqdAV6n8vpvLynJXRM"
         }
       ],
       "services": {

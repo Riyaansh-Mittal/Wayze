@@ -160,14 +160,14 @@ const AddVehicleScreen = ({navigation, route}) => {
       return;
     }
 
-    // ✅ Prepare data according to API format
+    // Prepare data according to API format
     const vehicleData = {
-      wheelType: formData.vehicleType, // Number: 2, 3, 4
-      plateNumber: formData.plateNumber.toUpperCase().trim(),
+      wheelType: formData.vehicleType,
+      vehicleRegistration: formData.plateNumber.toUpperCase().trim(), // ✅ Changed from plateNumber to vehicleRegistration
       emergencyContact: formData.emergencyContact.trim(),
     };
 
-    // ✅ Only include referralCode if it's the first vehicle and code is provided
+    // Only include referralCode if it's the first vehicle and code is provided
     if (isFirstVehicle && formData.referralCode) {
       vehicleData.referralCode = formData.referralCode.toUpperCase().trim();
     }
@@ -189,10 +189,23 @@ const AddVehicleScreen = ({navigation, route}) => {
         ],
       );
     } else {
-      Alert.alert(
-        t('common.error') || 'Error',
-        result?.error || t('errors.unknown') || 'Failed to add vehicle',
-      );
+      // ✅ Check if error is "Vehicle already registered"
+      if (
+        result?.error === 'Vehicle already registered' ||
+        result?.error?.includes('already registered')
+      ) {
+        // Navigate to VerifyOwnership screen
+        navigation.navigate('VerifyOwnership', {
+          plateNumber: formData.plateNumber.toUpperCase().trim(),
+          vehicleType: formData.vehicleType,
+        });
+      } else {
+        // Show generic error
+        Alert.alert(
+          t('common.error') || 'Error',
+          result?.error || t('errors.unknown') || 'Failed to add vehicle',
+        );
+      }
     }
   };
 

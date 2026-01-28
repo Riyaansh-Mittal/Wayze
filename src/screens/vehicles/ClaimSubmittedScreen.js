@@ -10,6 +10,7 @@ import {useTheme} from '../../contexts/ThemeContext';
 import Card from '../../components/common/Card/Card';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
+import { BellIcon } from '../../assets/icons';
 
 const ClaimSubmittedScreen = ({navigation, route}) => {
   const {t, theme} = useTheme();
@@ -175,7 +176,7 @@ const ClaimSubmittedScreen = ({navigation, route}) => {
                   styles.timelineIconText,
                   {color: colors.textSecondary},
                 ]}>
-                🔔
+                <BellIcon width={18} height={18} fill={colors.warning} />
               </Text>
             </View>
             <View style={styles.timelineContent}>

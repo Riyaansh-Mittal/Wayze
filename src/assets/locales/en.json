@@ -34,18 +34,152 @@
     "never": "Never"
   },
 
+  "toast": {
+    "success": {
+      "general": "Success!",
+      "saved": "Saved successfully",
+      "updated": "Updated successfully",
+      "deleted": "Deleted successfully",
+      "created": "Created successfully",
+      "copied": "Copied to clipboard",
+      "sent": "Sent successfully"
+    },
+    "error": {
+      "general": "Something went wrong",
+      "network": "Network error. Please check your connection",
+      "timeout": "Request timeout. Please try again",
+      "unauthorized": "Unauthorized. Please login again",
+      "notFound": "Not found",
+      "serverError": "Server error. Please try again later",
+      "invalidInput": "Invalid input. Please check your data",
+      "permissionDenied": "Permission denied",
+      "loadFailed": "Failed to load data",
+      "updateFailed": "Failed to update",
+      "deleteFailed": "Failed to delete",
+      "insufficientBalance": "Insufficient balance"
+    },
+    "warning": {
+      "general": "Warning",
+      "unsavedChanges": "You have unsaved changes",
+      "limitReached": "Limit reached",
+      "lowBalance": "Low balance",
+      "expiringSoon": "Expiring soon"
+    },
+    "info": {
+      "general": "Information",
+      "processing": "Processing...",
+      "loading": "Loading...",
+      "noData": "No data available",
+      "comingSoon": "Coming soon",
+      "offline": "You are offline",
+      "online": "You are back online"
+    },
+    "auth": {
+      "loginSuccess": "Welcome to QR Parking!",
+      "loginSuccessShort": "Welcome!",
+      "logoutSuccess": "Logged out successfully",
+      "signupSuccess": "Account created successfully",
+      "passwordChanged": "Password changed successfully",
+      "emailVerified": "Email verified successfully",
+      "loginRequired": "Please login to continue",
+      "loginFailed": "Login failed. Please try again."
+    },
+    "vehicle": {
+      "added": "Vehicle added successfully",
+      "updated": "Vehicle updated successfully",
+      "deleted": "Vehicle deleted successfully",
+      "qrGenerated": "QR code generated successfully",
+      "qrDownloaded": "QR code downloaded",
+      "searched": "Vehicle found",
+      "notFound": "Vehicle not found",
+      "addFailed": "Failed to add vehicle",
+      "updateFailed": "Failed to update vehicle",
+      "deleteFailed": "Failed to delete vehicle",
+      "loadFailed": "Failed to load vehicles"
+    },
+    "notification": {
+      "acknowledged": "Alert acknowledged",
+      "markedAsRead": "Marked as read",
+      "allRead": "All notifications marked as read",
+      "deleted": "Notification deleted",
+      "markReadFailed": "Failed to mark as read"
+    },
+    "call": {
+      "initiated": "Call initiated",
+      "ended": "Call ended",
+      "missed": "Missed call",
+      "declined": "Call declined",
+      "failed": "Call failed",
+      "noBalance": "Insufficient call balance"
+    },
+    "alert": {
+      "sent": "Alert sent successfully",
+      "failed": "Failed to send alert",
+      "noBalance": "Insufficient alert balance"
+    },
+    "profile": {
+      "updated": "Profile updated successfully",
+      "photoUpdated": "Photo updated successfully",
+      "photoDeleted": "Photo deleted"
+    },
+    "settings": {
+      "updated": "Settings updated successfully",
+      "updateFailed": "Failed to update settings",
+      "loadFailed": "Failed to load settings",
+      "languageChanged": "Language changed successfully",
+      "themeChanged": "Theme changed successfully",
+      "darkModeEnabled": "Dark mode enabled",
+      "lightModeEnabled": "Light mode enabled",
+      "themeChangeFailed": "Failed to change theme"
+    },
+    "search": {
+      "removed": "Search removed",
+      "cleared": "Recent searches cleared",
+      "clearFailed": "Failed to clear searches"
+    },
+    "balance": {
+      "added": "credits added to your balance!",
+      "deducted": "Balance deducted successfully",
+      "deductFailed": "Failed to deduct balance",
+      "insufficientBalance": "Insufficient balance"
+    },
+    "referral": {
+      "applied": "free calls added to your account!",
+      "invalid": "Invalid referral code",
+      "applyFailed": "Failed to apply referral code"
+    },
+    "qr": {
+      "scanned": "QR code scanned successfully",
+      "scanFailed": "Failed to scan QR code",
+      "invalid": "Invalid QR code",
+      "generated": "QR code generated",
+      "downloaded": "QR code downloaded"
+    },
+    "dataExport": {
+      "preparing": "Preparing your data...",
+      "checkEmail": "Check your email for download link"
+    }
+  },
+
   "auth": {
     "welcome": {
-      "title": "Welcome to QR Parking",
       "subtitle": "Sign in to save your vehicles and be reachable when needed",
       "googleButton": "Continue with Google",
       "legalText": "By continuing, you agree to our",
       "terms": "Terms",
       "and": "and",
-      "privacy": "Privacy Policy",
-      "signingIn": "Signing in...",
-      "signinFailed": "Sign in failed. Try again."
+      "privacy": "Privacy Policy"
     },
+    "bottomSheet": {
+      "title": "Sign in to QR Parking",
+      "description": "By continuing, Google will share your name, email address and profile picture with QR Parking.",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "accountInfo": "You can manage Sign in with Google in your Google Account.",
+      "continueButton": "Continue with Google"
+    },
+    "signingIn": "Signing in...",
+    "settingUp": "Setting up your account...",
     "splash": {
       "appName": "QR Parking"
     },
@@ -90,6 +224,63 @@
       "vehicleSearches": "Vehicle Searches",
       "peopleContacted": "People Contacted",
       "memberSince": "Member Since"
+    }
+  },
+
+  "notifications": {
+    "title": "Notifications",
+    "tabs": {
+      "all": "All",
+      "unread": "Unread"
+    },
+    "empty": {
+      "all": "No notifications yet",
+      "unread": "No unread notifications"
+    },
+    "today": "TODAY",
+    "yesterday": "YESTERDAY",
+    "older": "OLDER",
+    "types": {
+      "vehicleSearched": {
+        "title": "Your vehicle was searched",
+        "body": "Someone searched your vehicle. They may try to contact you."
+      },
+      "alertHigh": {
+        "title": "High Priority Alert",
+        "body": "You have received a high priority alert regarding your vehicle.",
+        "action": "Acknowledge"
+      },
+      "alertLow": {
+        "title": "Low Priority Alert",
+        "body": "You have received a low priority alert regarding your vehicle."
+      },
+      "call": {
+        "title": "Missed Call",
+        "body": "You missed a call. Caller details are not available for privacy reasons."
+      },
+      "alertAcknowledged": {
+        "title": "Alert Acknowledged",
+        "body": "Your alert has been acknowledged by the vehicle owner."
+      }
+    },
+    "actions": {
+      "markAsRead": "Mark as read",
+      "markAllAsRead": "Mark all as read",
+      "delete": "Delete",
+      "acknowledge": "Acknowledge"
+    },
+    "messages": {
+      "acknowledged": "Alert acknowledged",
+      "markedAsRead": "Marked as read",
+      "allMarkedAsRead": "All notifications marked as read",
+      "deleted": "Notification deleted",
+      "loadingMore": "Loading more...",
+      "noMore": "No more notifications"
+    },
+    "errors": {
+      "loadFailed": "Failed to load notifications",
+      "markReadFailed": "Failed to mark as read",
+      "deleteFailed": "Failed to delete notification"
     }
   },
 
@@ -173,6 +364,44 @@
         "success": "Vehicle deleted"
       }
     },
+    "verifyOwnership": "Verify Ownership",
+    "alreadyRegistered": "Vehicle already\nregistered",
+    "verifyExplanation": "We need to verify you own this vehicle to prevent fraud",
+    "howToVerify": "How to verify",
+    "step1Title": "Email your RC photo",
+    "step1Subtitle": "Gmail will open automatically",
+    "step2Title": "Our team will review",
+    "step2Subtitle": "We'll contact you if needed",
+    "whatToInclude": "What to include in email",
+    "rcRequirement1": "Clear RC photo (all 4 corners visible)",
+    "rcRequirement2": "Your name must match RC name",
+    "rcRequirement3": "Plate number must be readable",
+    "rcDeletion": "Your RC is deleted after verification",
+    "openGmail": "📧 Open Email & Send",
+    "verificationSent": "Verification Sent",
+    "emailSent": "Email sent!",
+    "reviewRequest": "We'll take it from here",
+    "reviewTitle": "Our team reviews your RC",
+    "contactTitle": "We contact you if needed",
+    "contactSubtitle": "No action required from you",
+    "addedTitle": "Vehicle added to account",
+    "addedSubtitle": "You'll get a notification",
+    "relaxTitle": "Relax! We've got your request",
+    "relaxSubtitle": "Check notifications for updates",
+    "needHelpVerification": "Need help with verification?",
+    "noActionTitle": "No action needed",
+    "noActionSubtitle": "Just wait for our team to review",
+    "notifyTitle": "We'll notify you",
+    "notifySubtitle": "Check notifications for updates",
+    "needHelp": "Need help?",
+    "goHome": "Go to Home",
+    "viewVehicles": "View My Vehicles",
+    "emailApp": {
+      "notFound": "No Email App",
+      "manual": "Please send an email manually to:",
+      "includeDetails": "Include your vehicle number",
+      "andRC": "and RC photo."
+    },
     "ownership": {
       "conflict": {
         "title": "Verify Ownership",
@@ -235,25 +464,29 @@
     "recentEmpty": "No recent searches",
     "searching": "Searching...",
     "searchFailed": "Search failed. Try again.",
-    "clearRecent":{
+    "clearRecent": {
       "title": "Clear Recent Searches?",
       "message": "This will remove all your recent search history."
     },
     "results": {
       "title": "Search Result",
       "found": {
-        "vehicleTitle": "Vehicle Found",
-        "registered": "Registered",
+        "vehicleTitle": "Vehicle Found!",
+        "subtitle": "We found the owner of {{plate}}",
+        "registered": "Registered Vehicle",
         "ownerTitle": "Owner Information",
         "contactTitle": "Contact Owner",
         "alertTitle": "Send Alert",
-        "alertDescription": "Notify owner for free. They'll see your message.",
-        "alertButton": "Send Alert",
+        "alertDescription": "Notify owner instantly. They'll see your message.",
+        "alertButton": "Send Alert to Owner",
+        "callTitle": "Call Owner",
+        "callDescription": "Instantly call owner and deduct 1 credit.",
         "callButton": "Call Owner",
+        "buyCredits": "Buy Credits to Call",
         "whatsappButton": "WhatsApp Owner",
         "emailButton": "Email Owner",
-        "respectMessage": "Please be respectful. Abuse will be reported.",
-        "reportLink": "Report an issue"
+        "respectMessage": "Please be respectful when contacting the owner. This service helps connect people in need.",
+        "reportLink": "Report an issue with this vehicle"
       },
       "notFound": {
         "title": "Vehicle Not Found",
@@ -268,37 +501,50 @@
     },
     "alert": {
       "title": "Send Alert",
-      "heading": "Notify Owner",
-      "subtitle": "Send a free alert to the owner of {{plate}}",
-      "freeTitle": "100% Free",
-      "freeDescription": "No credits deducted for sending alerts",
-      "messageLabel": "Your Message",
-      "messagePlaceholder": "e.g., Your vehicle is blocking my car. Please move it.",
-      "charCount": "{{count}}/200",
-      "infoTitle": "What Happens Next?",
-      "infoPoint1": "Owner gets a notification",
-      "infoPoint2": "Your message is delivered",
-      "infoPoint3": "Contact details remain private",
-      "infoPoint4": "This action is logged for safety",
+      "heading": "Notify Vehicle Owner",
+      "subtitle": "Send alert for vehicle: {{plate}}",
+      "freeTitle": "Free Service",
+      "freeDescription": "No credits required to send alerts",
+
+      "selectPriority": "Select Alert Priority",
+
+      "highPriorityTitle": "High Priority - Urgent",
+      "highPriorityDesc": "Owner must come immediately. Blocking access or emergency.",
+
+      "lowPriorityTitle": "Low Priority - Warning",
+      "lowPriorityDesc": "Friendly reminder to move vehicle soon. Not urgent.",
+
+      "priorityRequired": "Priority Required",
+      "priorityRequiredDesc": "Please select an alert priority level",
+
       "sendButton": "Send Alert",
       "sending": "Sending...",
       "cancelButton": "Cancel",
-      "messageRequired": "Message Required",
-      "messageRequiredDesc": "Please enter a message for the owner.",
-      "successTitle": "Alert Sent!",
-      "successMessage": "The vehicle owner has been notified.",
-      "errorTitle": "Error",
-      "errorMessage": "Failed to send alert. Please try again."
+
+      "successTitle": "Alert Sent",
+      "successMessageHigh": "High priority alert sent successfully. Owner will be notified immediately.",
+      "successMessageLow": "Warning sent successfully. Owner will be notified to move vehicle soon.",
+
+      "errorTitle": "Failed to Send",
+      "errorMessage": "Unable to send alert. Please try again.",
+      "userNotFound": "Vehicle owner not found. They may have deactivated their account.",
+
+      "infoTitle": "How Alerts Work",
+      "infoPoint1": "High Priority: Immediate notification with sound",
+      "infoPoint2": "Low Priority: Standard notification",
+      "infoPoint3": "Owner receives push notification instantly",
+      "infoPoint4": "Completely free - no credits required"
     },
     "contact": {
-      "title": "Contact Owner?",
-      "message": "You're about to contact {{name}} regarding vehicle {{plate}}.",
+      "title": "Call Owner",
+      "confirmMessage": "This will deduct 1 credit and call {{name}}. Continue?",
       "logInfo": "This action will be logged for safety and transparency.",
-      "confirmCall": "Yes, Call Now",
+      "confirmCall": "Call Now",
       "confirmWhatsApp": "Yes, Open WhatsApp",
       "confirmEmail": "Yes, Send Email",
       "logged": "Contact logged",
-      "failed": "Failed to contact owner. Try again."
+      "failed": "Failed to initiate call",
+      "cannotCall": "Cannot make phone calls on this device"
     },
     "registrationGate": {
       "title": "Register Your Vehicle First",

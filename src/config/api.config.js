@@ -21,7 +21,7 @@ export const ENDPOINTS = {
   // Authentication
   auth: {
     socialLogin: 'api/auth/socialLogin', // ✅ CHANGED: Matches your old system
-    logout: 'auth/logout/',
+    logout: 'api/user/logout',
   },
 
   // User
@@ -46,9 +46,15 @@ export const ENDPOINTS = {
   },
 
   // Contact
-  contact: {
-    log: 'api/contacts/log',
-    history: 'api/contacts/history',
+  contacts: {
+    initiateCall: 'api/user/initiate-call',
+    initiateAlert: 'api/user/initiate-alert',
+  },
+
+  // Notifications
+  notifications: {
+    list: 'api/user/notifications',
+    markRead: 'api/user/notifications',
   },
 
   // Ownership Claims

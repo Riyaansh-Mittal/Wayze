@@ -1,7 +1,7 @@
 /**
  * Activity History Screen
  * Timeline of user's vehicle and search activity
- * UPDATED: Integrated with UserContext API
+ * UPDATED: Integrated with UserContext API + All Activity & Notification Types
  */
 
 import React, {useState, useEffect, useCallback} from 'react';
@@ -26,15 +26,16 @@ import {
   CarIcon,
   SearchIcon,
   TrashIcon,
+  BellIcon,
+  WarningIcon,
 } from '../../assets/icons';
 
-// ✅ Activity type mapping (matches API)
-
+// ✅ Activity type mapping (matches backend API exactly)
 const FILTER_TYPES = {
   ALL: 'ALL',
-  VEHICLES: 'VEHICLE_ADDED',
+  CALLS: 'CALL', // CALL, RECEIVED_CALL, FAILED_CALL
   SEARCHES: 'VEHICLE_SEARCHED',
-  CONTACTS: 'CALL',
+  ALERTS: 'ALERT', // Currently empty
 };
 
 const ActivityHistoryScreen = ({navigation}) => {
@@ -47,6 +48,7 @@ const ActivityHistoryScreen = ({navigation}) => {
     isLoading,
   } = useUser();
   const {colors, spacing, layout} = theme;
+  console.log(activities);
 
   const [activeFilter, setActiveFilter] = useState(FILTER_TYPES.ALL);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -85,7 +87,7 @@ const ActivityHistoryScreen = ({navigation}) => {
       style={[styles.container, {backgroundColor: colors.neutralLight}]}
       edges={['top']}>
       <AppBar
-        title={t('profile.activity.title')}
+        title={t('profile.activity.title') || 'Activity'}
         showBack
         onBackPress={() => navigation.goBack()}
       />
@@ -104,27 +106,27 @@ const ActivityHistoryScreen = ({navigation}) => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filtersContent}>
           <FilterChip
-            label={t('profile.activity.filters.all')}
+            label={t('profile.activity.filters.all') || 'All'}
             active={activeFilter === FILTER_TYPES.ALL}
             onPress={() => handleFilterChange(FILTER_TYPES.ALL)}
             theme={theme}
           />
           <FilterChip
-            label={t('profile.activity.filters.vehicles')}
-            active={activeFilter === FILTER_TYPES.VEHICLES}
-            onPress={() => handleFilterChange(FILTER_TYPES.VEHICLES)}
+            label={t('profile.activity.filters.vehicles') || 'Vehicles'}
+            active={activeFilter === FILTER_TYPES.CALLS}
+            onPress={() => handleFilterChange(FILTER_TYPES.CALLS)}
             theme={theme}
           />
           <FilterChip
-            label={t('profile.activity.filters.searches')}
+            label={t('profile.activity.filters.searches') || 'Searches'}
             active={activeFilter === FILTER_TYPES.SEARCHES}
             onPress={() => handleFilterChange(FILTER_TYPES.SEARCHES)}
             theme={theme}
           />
           <FilterChip
-            label={t('profile.activity.filters.contacts')}
-            active={activeFilter === FILTER_TYPES.CONTACTS}
-            onPress={() => handleFilterChange(FILTER_TYPES.CONTACTS)}
+            label={t('profile.activity.filters.contacts') || 'Contacts'}
+            active={activeFilter === FILTER_TYPES.ALERTS}
+            onPress={() => handleFilterChange(FILTER_TYPES.ALERTS)}
             theme={theme}
           />
         </ScrollView>
@@ -135,7 +137,7 @@ const ActivityHistoryScreen = ({navigation}) => {
         <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
           <Spinner size="large" color={colors.primary} />
           <Text style={{color: colors.textSecondary, marginTop: spacing.md}}>
-            {t('common.loading')}
+            {t('common.loading') || 'Loading...'}
           </Text>
         </View>
       ) : (
@@ -154,8 +156,11 @@ const ActivityHistoryScreen = ({navigation}) => {
             <View style={{paddingHorizontal: layout.screenPadding}}>
               <EmptyState
                 icon="📜"
-                title={t('profile.activity.empty')}
-                message="Your search and vehicle activity will appear here"
+                title={t('profile.activity.empty') || 'No Activity Yet'}
+                message={
+                  t('profile.activity.emptyMessage') ||
+                  'Your search and vehicle activity will appear here'
+                }
               />
             </View>
           ) : (
@@ -194,7 +199,7 @@ const ActivityHistoryScreen = ({navigation}) => {
               {activityPagination.hasNext && (
                 <View style={styles.loadMoreContainer}>
                   <SecondaryButton
-                    title={t('profile.activity.loadMore')}
+                    title={t('profile.activity.loadMore') || 'Load More'}
                     onPress={handleLoadMore}
                     loading={isLoading}
                   />
@@ -238,9 +243,10 @@ const FilterChip = ({label, active, onPress, theme}) => {
 const TimelineItem = ({item, isLast, t, theme}) => {
   const {colors, spacing} = theme;
 
-  // ✅ Get icon based on API activity type
+  // ✅ Get icon based on ALL backend types (Activity + Notification)
   const getActivityIcon = type => {
     switch (type) {
+      // ═══ ACTIVITY TYPES (userActivityModel) ═══
       case 'VEHICLE_ADDED':
         return <CarIcon width={30} height={30} fill={colors.success} />;
       case 'VEHICLE_REMOVED':
@@ -248,41 +254,99 @@ const TimelineItem = ({item, isLast, t, theme}) => {
       case 'VEHICLE_SEARCHED':
         return <SearchIcon width={30} height={30} fill={colors.primary} />;
       case 'CALL':
+        return <CallIcon width={30} height={30} fill={colors.success} />;
+      case 'RECEIVED_CALL':
         return <CallIcon width={30} height={30} fill={colors.primary} />;
-      case 'ALERT':
-        return <Text style={{fontSize: 30}}>🔔</Text>;
+      case 'FAILED_CALL':
+        return <CallIcon width={30} height={30} fill={colors.error} />;
+
+      // ═══ NOTIFICATION TYPES (NotificationModel) ═══
+      case 'VEHICLE_SEARCHED': // Notification: Your vehicle was searched
+        return <SearchIcon width={30} height={30} fill={colors.info} />;
+      case 'ALERT_HIGH':
+        return <WarningIcon width={30} height={30} fill={colors.error} />;
+      case 'ALERT_LOW':
+        return <BellIcon width={30} height={30} fill={colors.warning} />;
+      case 'ALERT_ACKNOWLEDGED':
+        return <Text style={{fontSize: 30}}>✅</Text>;
+      case 'CALL': // Notification: Missed call
+        return <CallIcon width={30} height={30} fill={colors.warning} />;
+
+      // ═══ FUTURE TYPES ═══
       case 'LOGIN':
         return <Text style={{fontSize: 30}}>🔐</Text>;
       case 'LOGOUT':
         return <Text style={{fontSize: 30}}>👋</Text>;
       case 'DELETE_ACCOUNT':
-        return <Text style={{fontSize: 30}}>⚠️</Text>;
+        return <WarningIcon width={30} height={30} fill={colors.error} />;
+
       default:
         return <Text style={{fontSize: 30}}>•</Text>;
     }
   };
 
-  // ✅ Get activity text from API title or fallback
+  // ✅ Get icon background color based on type
+  const getIconBackgroundColor = type => {
+    switch (type) {
+      // Success states
+      case 'VEHICLE_ADDED':
+      case 'CALL':
+      case 'ALERT_ACKNOWLEDGED':
+        return colors.successLight;
+
+      // Error states
+      case 'VEHICLE_REMOVED':
+      case 'FAILED_CALL':
+      case 'ALERT_HIGH':
+      case 'DELETE_ACCOUNT':
+        return colors.errorLight;
+
+      // Primary/Info states
+      case 'VEHICLE_SEARCHED':
+      case 'RECEIVED_CALL':
+        return colors.primaryLight;
+
+      // Warning states
+      case 'ALERT_LOW':
+        return colors.warningLight;
+
+      // Neutral
+      default:
+        return colors.neutralLight;
+    }
+  };
+
+  // ✅ Get activity text - prioritize API title
   const getActivityText = item => {
-    // Use title from API if available
+    // Use title from API (always present)
     if (item.title) {
       return item.title;
     }
 
-    // Fallback translations
+    // Fallback translations (should rarely be used)
     switch (item.type) {
-      case 'VEHICLE_SEARCHED':
-        return t('profile.activity.types.searched', {
-          plate: item.registrationNumber || 'vehicle',
-        });
+      // Activity types
       case 'VEHICLE_ADDED':
-        return t('profile.activity.types.added', {plate: 'vehicle'});
+        return 'You have added a new vehicle';
       case 'VEHICLE_REMOVED':
-        return t('profile.activity.types.removed', {plate: 'vehicle'});
-      case 'LOGIN':
-        return 'Logged in';
-      case 'LOGOUT':
-        return 'Logged out';
+        return 'You have removed a vehicle';
+      case 'VEHICLE_SEARCHED':
+        return `You have searched ${item.registrationNumber || 'a vehicle'}`;
+      case 'CALL':
+        return 'Calling activity recorded';
+      case 'RECEIVED_CALL':
+        return 'Incoming call received';
+      case 'FAILED_CALL':
+        return 'Missed call';
+
+      // Notification types
+      case 'ALERT_HIGH':
+        return 'High Priority Alert';
+      case 'ALERT_LOW':
+        return 'Low Priority Alert';
+      case 'ALERT_ACKNOWLEDGED':
+        return 'Your alert has been acknowledged';
+
       default:
         return 'Activity';
     }
@@ -313,7 +377,7 @@ const TimelineItem = ({item, isLast, t, theme}) => {
           <View
             style={[
               styles.iconContainer,
-              {backgroundColor: colors.primaryLight},
+              {backgroundColor: getIconBackgroundColor(item.type)},
             ]}>
             <Text style={styles.activityIcon}>
               {getActivityIcon(item.type)}
@@ -366,10 +430,14 @@ const groupByDate = activities => {
 
   activities.forEach(activity => {
     const timestamp = activity.createdAt;
-    if (!timestamp) {return;}
+    if (!timestamp) {
+      return;
+    }
 
     const date = new Date(timestamp);
-    if (isNaN(date.getTime())) {return;}
+    if (isNaN(date.getTime())) {
+      return;
+    }
 
     date.setHours(0, 0, 0, 0);
 

@@ -9,12 +9,14 @@ import React, {
 import {BalanceService, ReferralService} from '../services/api';
 import {useToast} from '../components/common/Toast/ToastProvider';
 import {useAuth} from './AuthContext';
+import { useTheme } from './ThemeContext';
 
 const BalanceContext = createContext();
 
 export const BalanceProvider = ({children}) => {
   const {user, isAuthenticated, updateUserData} = useAuth();
   const {showSuccess, showError} = useToast();
+  const {t} = useTheme();
 
   const [balance, setBalance] = useState(0);
   const [balanceHistory, setBalanceHistory] = useState([]);
@@ -32,15 +34,19 @@ export const BalanceProvider = ({children}) => {
    */
   useEffect(() => {
     if (isAuthenticated && user) {
-      const userBalance = user.callBalance || 0;
-      setBalance(userBalance);
-      console.log('💰 Balance initialized from user:', userBalance);
-
       if (currentUserIdRef.current !== user._id) {
         console.log('🔄 User changed, resetting load flags');
         hasLoadedBalanceRef.current = false;
         hasLoadedReferralRef.current = false;
         currentUserIdRef.current = user._id;
+
+        // ✅ AUTO-LOAD balance from API/mock on user change
+        loadBalance();
+      } else {
+        // ✅ Initialize from user data
+        const userBalance = user.callBalance || 0;
+        setBalance(userBalance);
+        console.log('💰 Balance initialized from user:', userBalance);
       }
     } else {
       console.log('🧹 Clearing balance data (logged out)');
@@ -51,7 +57,7 @@ export const BalanceProvider = ({children}) => {
       hasLoadedReferralRef.current = false;
       currentUserIdRef.current = null;
     }
-  }, [isAuthenticated, user?._id, user?.callBalance, loadBalance, user]);
+  }, [isAuthenticated, user?._id, loadBalance, user]);
 
   /**
    * Get current balance
@@ -70,9 +76,8 @@ export const BalanceProvider = ({children}) => {
 
       if (response.success) {
         const newBalance =
-          response.data.balance || response.data.callBalance || 0;
+          (response.data.balance || response.data.callBalance || 0) + 10;
         console.log('✅ Balance loaded from API:', newBalance);
-
         setBalance(newBalance);
         hasLoadedBalanceRef.current = true;
 
@@ -127,24 +132,43 @@ export const BalanceProvider = ({children}) => {
    * Deduct balance (for calls/contacts)
    */
   const deductBalance = useCallback(
-    async amount => {
+    async (amount, reason = 'Contact call') => {
       if (balance < amount) {
-        showError('Insufficient balance');
+        showError(
+          t('toast.balance.insufficientBalance') || 'Insufficient balance',
+        );
         return {success: false, error: 'Insufficient balance'};
       }
 
-      const newBalance = balance - amount;
-      console.log(`💸 Deducting ${amount} credits. New balance: ${newBalance}`);
+      try {
+        console.log(`💸 Deducting ${amount} credits...`);
 
-      setBalance(newBalance);
+        // ✅ Call API/mock service
+        const response = await BalanceService.deduct(amount, reason);
 
-      if (updateUserData) {
-        await updateUserData({callBalance: newBalance});
+        if (response.success) {
+          const newBalance = response.data.newBalance;
+          console.log(`✅ Balance deducted. New balance: ${newBalance}`);
+
+          setBalance(newBalance);
+
+          if (updateUserData) {
+            await updateUserData({callBalance: newBalance});
+          }
+
+          return {success: true, balance: newBalance};
+        }
+
+        return {success: false};
+      } catch (error) {
+        console.error('❌ Failed to deduct balance:', error);
+        showError(
+          t('toast.balance.deductFailed') || 'Failed to deduct balance',
+        );
+        return {success: false, error: error.message};
       }
-
-      return {success: true, balance: newBalance};
     },
-    [balance, updateUserData, showError],
+    [balance, updateUserData, showError, t],
   );
 
   /**
@@ -161,11 +185,11 @@ export const BalanceProvider = ({children}) => {
         await updateUserData({callBalance: newBalance});
       }
 
-      showSuccess(`+${amount} calls added to your balance!`);
+      showSuccess(`+${amount} ${t('toast.balance.added')}`);
 
       return {success: true, balance: newBalance};
     },
-    [balance, updateUserData, showSuccess],
+    [balance, updateUserData, showSuccess, t],
   );
 
   /**
@@ -188,11 +212,11 @@ export const BalanceProvider = ({children}) => {
         throw new Error('Invalid referral code');
       } catch (error) {
         console.error('❌ Invalid referral code:', error);
-        showError(error.message || 'Invalid referral code');
+        showError(t('toast.referral.invalid') || 'Invalid referral code');
         return {success: false, error: error.message};
       }
     },
-    [showError],
+    [showError, t],
   );
 
   /**
@@ -223,7 +247,7 @@ export const BalanceProvider = ({children}) => {
             });
           }
 
-          showSuccess(`🎉 ${reward} free calls added to your account!`);
+          showSuccess(`${reward} ${t('toast.referral.applied')}`);
 
           return {success: true, data: response.data};
         }
@@ -231,13 +255,13 @@ export const BalanceProvider = ({children}) => {
         return {success: false};
       } catch (error) {
         console.error('❌ Failed to apply referral:', error);
-        showError(error.message || 'Failed to apply referral code');
+        showError(t('toast.referral.applyFailed') || 'Failed to apply referral code');
         return {success: false, error: error.message};
       } finally {
         setIsLoading(false);
       }
     },
-    [user, updateUserData, showSuccess, showError],
+    [user, updateUserData, showSuccess, showError, t],
   );
 
   /**

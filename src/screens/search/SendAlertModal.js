@@ -1,6 +1,6 @@
 /**
  * Send Alert Modal
- * Free action to notify vehicle owner
+ * Two-tier alert system: High Priority (Urgent) or Low Priority (Warning)
  * FULLY THEME-AWARE WITH TRANSLATIONS
  */
 
@@ -9,9 +9,9 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ContactService} from '../../services/api';
@@ -19,7 +19,13 @@ import AppBar from '../../components/navigation/AppBar';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
 import SecondaryButton from '../../components/common/Button/SecondaryButton';
 import Card from '../../components/common/Card/Card';
-import {InfoIcon} from '../../assets/icons';
+import {
+  InfoIcon,
+  WarningIcon,
+  AlertIcon,
+  FreeIcon,
+  BellIcon,
+} from '../../assets/icons';
 import {useTheme} from '../../contexts/ThemeContext';
 
 const SendAlertModal = ({navigation, route}) => {
@@ -27,31 +33,40 @@ const SendAlertModal = ({navigation, route}) => {
   const {t, theme} = useTheme();
   const {colors, spacing, layout} = theme;
 
-  const [message, setMessage] = useState('');
+  const [selectedPriority, setSelectedPriority] = useState(null); // 'high' or 'low'
   const [isSending, setIsSending] = useState(false);
 
   const handleSendAlert = async () => {
-    if (!message.trim()) {
+    // 1. Validation
+    if (!selectedPriority) {
       Alert.alert(
-        t('search.alert.messageRequired'),
-        t('search.alert.messageRequiredDesc'),
+        t('search.alert.priorityRequired'),
+        t('search.alert.priorityRequiredDesc'),
       );
       return;
     }
 
+    // 2. Direct Send (Confirmation removed as requested)
+    sendAlert();
+  };
+
+  const sendAlert = async () => {
     setIsSending(true);
 
     try {
-      const response = await ContactService.sendAlert({
-        vehicleId: vehicle._id,
-        searchQuery,
-        message: message.trim(),
+      // API Call
+      const response = await ContactService.initiateAlert({
+        receiverId: vehicle?.owner?.userId || vehicle?.userId, // Defensive check
+        priorityHigh: selectedPriority === 'high',
       });
 
+      // 3. Handle Success
       if (response.success) {
         Alert.alert(
           t('search.alert.successTitle'),
-          t('search.alert.successMessage'),
+          selectedPriority === 'high'
+            ? t('search.alert.successMessageHigh')
+            : t('search.alert.successMessageLow'),
           [
             {
               text: t('common.ok'),
@@ -60,16 +75,103 @@ const SendAlertModal = ({navigation, route}) => {
           ],
         );
       } else {
-        Alert.alert(
-          t('search.alert.errorTitle'),
-          t('search.alert.errorMessage'),
-        );
+        // 4. Handle Logic Failure (e.g., 400 Bad Request returned by service wrapper)
+        handleApiError(response.message);
       }
     } catch (error) {
-      Alert.alert(t('search.alert.errorTitle'), t('search.alert.errorMessage'));
+      // 5. Handle Network/Server Failure (Incomplete call, Network Error, etc.)
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        t('search.alert.errorMessage');
+
+      handleApiError(errorMessage);
     } finally {
       setIsSending(false);
     }
+  };
+
+  /**
+   * Centralized Error Handler
+   * checks for specific backend messages
+   */
+  const handleApiError = message => {
+    const errorMsg = message || '';
+
+    // Check specifically for "Receiver not found" from your backend controller
+    if (errorMsg.includes('Receiver not found')) {
+      Alert.alert(
+        t('search.alert.errorTitle'),
+        t('search.alert.userNotFound', {
+          defaultValue:
+            'Vehicle owner ID not found. They may have deactivated their account.',
+        }),
+      );
+      return;
+    }
+
+    // Generic Fallback
+    Alert.alert(
+      t('search.alert.errorTitle'),
+      errorMsg ||
+        t('search.alert.errorMessage', {
+          defaultValue: 'Something went wrong. Please try again.',
+        }),
+    );
+  };
+
+  const renderPriorityCard = (priority, icon, title, description, color) => {
+    const isSelected = selectedPriority === priority;
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => setSelectedPriority(priority)}
+        style={[
+          styles.priorityCard,
+          {
+            backgroundColor: isSelected ? color + '15' : colors.surface,
+            borderWidth: 2,
+            borderColor: isSelected ? color : colors.border,
+            borderRadius: 12,
+            marginBottom: spacing.md,
+          },
+        ]}>
+        <View style={styles.priorityHeader}>
+          <Text style={styles.priorityIcon}>{icon}</Text>
+          <View style={styles.priorityTextContainer}>
+            <Text
+              style={[
+                styles.priorityTitle,
+                {
+                  color: isSelected ? color : colors.textPrimary,
+                  fontWeight: isSelected ? '700' : '600',
+                },
+              ]}>
+              {title}
+            </Text>
+            <Text
+              style={[
+                styles.priorityDescription,
+                {color: colors.textSecondary},
+              ]}>
+              {description}
+            </Text>
+          </View>
+          {isSelected && (
+            <View
+              style={[
+                styles.checkmark,
+                {
+                  backgroundColor: color,
+                },
+              ]}>
+              <Text style={styles.checkmarkIcon}>✓</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -94,7 +196,9 @@ const SendAlertModal = ({navigation, route}) => {
         showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={[styles.header, {marginBottom: spacing.xl}]}>
-          <Text style={[styles.icon, {marginBottom: spacing.md}]}>🔔</Text>
+          <Text style={[styles.icon, {marginBottom: spacing.md}]}>
+            <BellIcon width={60} height={60} fill={colors.warning} />
+          </Text>
           <Text
             style={[
               styles.title,
@@ -125,11 +229,13 @@ const SendAlertModal = ({navigation, route}) => {
               backgroundColor: colors.successLight,
               borderColor: colors.success,
               borderWidth: 1,
-              marginBottom: spacing.lg,
+              marginBottom: spacing.xl,
             },
           ]}>
           <View style={styles.freeRow}>
-            <Text style={[styles.freeIcon, {marginRight: spacing.md}]}>✨</Text>
+            <Text style={[styles.freeIcon, {marginRight: spacing.md}]}>
+              <FreeIcon width={40} height={40} fill={colors.success} />
+            </Text>
             <View style={styles.freeInfo}>
               <Text
                 style={[
@@ -149,49 +255,36 @@ const SendAlertModal = ({navigation, route}) => {
           </View>
         </Card>
 
-        {/* Message Input */}
-        <View style={[styles.inputSection, {marginBottom: spacing.lg}]}>
+        {/* Priority Selection */}
+        <View style={[styles.prioritySection, {marginBottom: spacing.lg}]}>
           <Text
             style={[
-              styles.label,
+              styles.sectionLabel,
               {
                 color: colors.textPrimary,
-                marginBottom: spacing.sm,
+                marginBottom: spacing.md,
               },
             ]}>
-            {t('search.alert.messageLabel')}
+            {t('search.alert.selectPriority')}
           </Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: colors.surface,
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 8,
-                padding: spacing.md,
-                color: colors.textPrimary,
-              },
-            ]}
-            placeholder={t('search.alert.messagePlaceholder')}
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            numberOfLines={4}
-            maxLength={200}
-            value={message}
-            onChangeText={setMessage}
-            textAlignVertical="top"
-          />
-          <Text
-            style={[
-              styles.charCount,
-              {
-                color: colors.textSecondary,
-                marginTop: spacing.xs,
-              },
-            ]}>
-            {t('search.alert.charCount', {count: message.length})}
-          </Text>
+
+          {/* High Priority */}
+          {renderPriorityCard(
+            'high',
+            <AlertIcon width={40} height={40} fill={colors.error} />,
+            t('search.alert.highPriorityTitle'),
+            t('search.alert.highPriorityDesc'),
+            colors.error,
+          )}
+
+          {/* Low Priority */}
+          {renderPriorityCard(
+            'low',
+            <WarningIcon width={40} height={40} fill={colors.warning} />,
+            t('search.alert.lowPriorityTitle'),
+            t('search.alert.lowPriorityDesc'),
+            colors.warning,
+          )}
         </View>
 
         {/* Info Box */}
@@ -246,7 +339,7 @@ const SendAlertModal = ({navigation, route}) => {
             onPress={handleSendAlert}
             loading={isSending}
             fullWidth
-            disabled={!message.trim()}
+            disabled={!selectedPriority || isSending}
             style={{marginBottom: spacing.md}}
           />
 
@@ -254,6 +347,7 @@ const SendAlertModal = ({navigation, route}) => {
             title={t('search.alert.cancelButton')}
             onPress={() => navigation.goBack()}
             fullWidth
+            disabled={isSending}
           />
         </View>
       </ScrollView>
@@ -301,18 +395,44 @@ const styles = StyleSheet.create({
   freeDescription: {
     fontSize: 13,
   },
-  inputSection: {},
-  label: {
+  prioritySection: {},
+  sectionLabel: {
     fontSize: 16,
     fontWeight: '600',
   },
-  textInput: {
-    fontSize: 15,
-    minHeight: 100,
+  priorityCard: {
+    padding: 16,
   },
-  charCount: {
-    fontSize: 13,
-    textAlign: 'right',
+  priorityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  priorityIcon: {
+    fontSize: 40,
+    marginRight: 12,
+  },
+  priorityTextContainer: {
+    flex: 1,
+  },
+  priorityTitle: {
+    fontSize: 17,
+    marginBottom: 4,
+  },
+  priorityDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  checkmark: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkmarkIcon: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
   },
   infoCard: {},
   infoRow: {

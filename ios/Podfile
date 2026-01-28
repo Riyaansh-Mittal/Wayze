@@ -23,6 +23,9 @@ target 'QRParkingAppBare' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # ✅ Ensure Google Sign-In is up to date
+  pod 'GoogleSignIn', '~> 7.0'
+
   target 'QRParkingAppBareTests' do
     inherit! :complete
     # Pods for testing

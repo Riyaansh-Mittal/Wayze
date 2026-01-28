@@ -1,10 +1,4 @@
-/**
- * Search Result Found Screen
- * Shows vehicle owner details when found
- * FULLY THEME-AWARE WITH SVG ICONS
- */
-
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -12,31 +6,49 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTheme} from '../../contexts/ThemeContext';
+import {useAuth} from '../../contexts/AuthContext';
+import {useBalance} from '../../contexts/BalanceContext';
+import {useCall} from '../../contexts/CallContext';
 import AppBar from '../../components/navigation/AppBar';
 import PrimaryButton from '../../components/common/Button/PrimaryButton';
+import SecondaryButton from '../../components/common/Button/SecondaryButton';
+import ZegoCallButton from '../../components/common/Button/ZegoCallButton';
 import Card from '../../components/common/Card/Card';
 import VehicleIcon from '../../components/common/Icon/VehicleIcon';
-import {InfoIcon} from '../../assets/icons';
+import {InfoIcon, BellIcon, CreditsIcon} from '../../assets/icons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const SearchResultFoundScreen = ({navigation, route}) => {
   const {t, theme} = useTheme();
   const {colors, spacing, layout} = theme;
+  const {user} = useAuth();
   const {vehicle, searchQuery} = route.params;
 
-  // ✅ API returns: { plateNumber, owner: { name, photo } }
+  const {balance, canMakeContact} = useBalance();
+  const {initiateCall} = useCall();
+
+  const hasEnoughCredits = canMakeContact();
+  const [callId, setCallId] = useState(null);
+  const [isInitiatingCall, setIsInitiatingCall] = useState(false);
+
+  // Extract vehicle data
   const ownerName = vehicle.owner?.name || 'Vehicle Owner';
   const ownerPhoto = vehicle.owner?.photo;
+  const ownerId = vehicle.owner?.userId || vehicle.owner?.id;
   const plateNumber = vehicle.plateNumber || searchQuery;
 
-  // Get first letter for avatar fallback
+  useEffect(() => {
+    console.log('✅ Vehicle found - Owner:', ownerName, '(ID:', ownerId, ')');
+  }, [ownerId, ownerName]);
+
   const getInitial = name => {
     return name?.charAt(0).toUpperCase() || 'V';
   };
 
-  // Handle send alert
   const handleSendAlert = () => {
     navigation.navigate('SendAlertModal', {
       vehicle,
@@ -44,7 +56,44 @@ const SearchResultFoundScreen = ({navigation, route}) => {
     });
   };
 
-  // Handle report issue
+  /**
+   * ✅ Handle call initiation - called BEFORE Zego button is pressed
+   */
+  const handleInitiateCall = async () => {
+    if (!ownerId) {
+      Alert.alert('Error', 'Owner information is missing.');
+      return false;
+    }
+
+    if (callId) {
+      // Already have callId, allow call
+      console.log('✅ Using existing callId:', callId);
+      return true;
+    }
+
+    try {
+      setIsInitiatingCall(true);
+      console.log('📞 Initiating call with backend...');
+
+      const callResult = await initiateCall(ownerId);
+
+      if (!callResult.success) {
+        Alert.alert('Error', 'Failed to initiate call');
+        return false;
+      }
+
+      console.log('✅ Call initiated - callId:', callResult.data?.callId);
+      setCallId(callResult.data?.callId);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to initiate call:', error);
+      Alert.alert('Error', 'Failed to prepare call');
+      return false;
+    } finally {
+      setIsInitiatingCall(false);
+    }
+  };
+
   const handleReportIssue = () => {
     navigation.navigate('ReportIssueModal', {
       vehicle,
@@ -91,7 +140,7 @@ const SearchResultFoundScreen = ({navigation, route}) => {
                 marginBottom: spacing.md,
               },
             ]}>
-            <Text style={{fontSize: 32}}>✓</Text>
+            <Icon name="check" size={48} color={colors.success} />
           </View>
           <Text
             style={[
@@ -103,15 +152,6 @@ const SearchResultFoundScreen = ({navigation, route}) => {
               },
             ]}>
             {t('search.results.found.vehicleTitle') || 'Vehicle Found!'}
-          </Text>
-          <Text
-            style={[
-              styles.subtitle,
-              {
-                color: colors.textSecondary,
-                textAlign: 'center',
-              },
-            ]}>
           </Text>
         </View>
 
@@ -156,7 +196,6 @@ const SearchResultFoundScreen = ({navigation, route}) => {
           </Text>
 
           <View style={styles.ownerRow}>
-            {/* Owner Avatar */}
             {ownerPhoto ? (
               <Image
                 source={{uri: ownerPhoto}}
@@ -225,7 +264,7 @@ const SearchResultFoundScreen = ({navigation, route}) => {
             ]}>
             <View style={styles.optionRow}>
               <Text style={[styles.optionIcon, {marginRight: spacing.md}]}>
-                🔔
+                <BellIcon width={32} height={32} fill={colors.warning} />
               </Text>
               <View style={styles.optionInfo}>
                 <Text
@@ -270,10 +309,150 @@ const SearchResultFoundScreen = ({navigation, route}) => {
             }
             onPress={handleSendAlert}
             fullWidth
-            icon={<Text style={{color: colors.white, fontSize: 18}}>🔔</Text>}
-            style={{marginBottom: spacing.lg}}
+            icon={
+              <Text style={{color: colors.white, fontSize: 18}}>
+                <BellIcon width={24} height={24} fill={colors.white} />
+              </Text>
+            }
+            style={{marginBottom: spacing.md}}
           />
+
+          {/* PAID CALL OPTION */}
+          <Card
+            style={[
+              styles.paidCard,
+              {
+                backgroundColor: colors.warningLight,
+                borderColor: colors.warning,
+                borderWidth: 1,
+                marginBottom: spacing.sm,
+              },
+              !hasEnoughCredits && {
+                backgroundColor: colors.neutralLight,
+                borderColor: colors.neutralBorder,
+                opacity: 0.6,
+              },
+            ]}>
+            <View style={styles.optionRow}>
+              <Text style={[styles.optionIcon, {marginRight: spacing.md}]}>
+                📞
+              </Text>
+              <View style={styles.optionInfo}>
+                <Text
+                  style={[
+                    styles.optionTitle,
+                    {
+                      color: colors.textPrimary,
+                      marginBottom: spacing.xs,
+                    },
+                  ]}>
+                  {t('search.results.found.callTitle') || 'Call Owner'}
+                </Text>
+                <Text
+                  style={[
+                    styles.optionDescription,
+                    {color: colors.textSecondary},
+                  ]}>
+                  {t('search.results.found.callDescription') ||
+                    'Instantly call owner and deduct 1 credit.'}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.costBadge,
+                  {
+                    backgroundColor: colors.warning,
+                    paddingHorizontal: spacing.sm,
+                    paddingVertical: spacing.xs,
+                    borderRadius: 4,
+                  },
+                ]}>
+                <Text style={[styles.costText, {color: colors.white}]}>
+                  1 Credit
+                </Text>
+              </View>
+            </View>
+          </Card>
+
+          {/* ✅ SIMPLIFIED: Call button logic - NO BALANCE DEDUCTION */}
+          {!hasEnoughCredits ? (
+            // No credits - show buy button
+            <SecondaryButton
+              title={
+                t('search.results.found.buyCredits') || 'Buy Credits to Call'
+              }
+              onPress={() =>
+                navigation.navigate('Profile', {screen: 'PurchaseCredits'})
+              }
+              fullWidth
+              icon={
+                <Text style={{color: colors.primary, fontSize: 18}}>💳</Text>
+              }
+              style={{marginBottom: spacing.lg}}
+            />
+          ) : (
+            // Has credits - show Zego button directly
+            <View style={{marginBottom: spacing.lg}}>
+              {console.log('🔵 Rendering ZegoCallButton for:', {
+                userID: ownerId,
+                userName: ownerName,
+                callId,
+              })}
+              <ZegoCallButton
+                receiverId={ownerId}
+                invitees={[{userID: ownerId, userName: ownerName}]}
+                callId={callId}
+                title={t('search.results.found.callButton') || 'Call Owner Now'}
+                fullWidth
+                disabled={isInitiatingCall}
+                onWillPressed={async () => {
+                  console.log('📞 About to call - initiating backend call...');
+                  const success = await handleInitiateCall();
+                  return success; // Allow/deny Zego call based on backend response
+                }}
+                onPressed={() => {
+                  console.log('📞 ✅ Call started with callId:', callId);
+                }}
+                onError={error => {
+                  console.error('❌ Call error:', error);
+                  Alert.alert('Call Error', error?.message || 'Failed to call');
+                }}
+              />
+            </View>
+          )}
         </View>
+
+        {/* Balance Info Card */}
+        <Card
+          style={[
+            styles.balanceCard,
+            {
+              backgroundColor: colors.primaryLight,
+              marginBottom: spacing.md,
+            },
+          ]}>
+          <View style={styles.balanceRow}>
+            <Text style={[styles.balanceIcon, {marginRight: spacing.md}]}>
+              <CreditsIcon width={55} height={55} />
+            </Text>
+            <View style={styles.balanceInfo}>
+              <Text
+                style={[
+                  styles.balanceLabel,
+                  {
+                    color: colors.textSecondary,
+                    marginBottom: spacing.xs,
+                  },
+                ]}>
+                {t('search.results.found.yourCredits') ||
+                  'Your Contact Credits'}
+              </Text>
+              <Text style={[styles.balanceValue, {color: colors.textPrimary}]}>
+                {balance} {balance === 1 ? 'credit' : 'credits'} remaining
+              </Text>
+            </View>
+          </View>
+        </Card>
 
         {/* Respect Message */}
         <Card
@@ -297,7 +476,7 @@ const SearchResultFoundScreen = ({navigation, route}) => {
                 },
               ]}>
               {t('search.results.found.respectMessage') ||
-                'Please be respectful when contacting the owner. This service helps connect people in need.'}
+                'Please be respectful when contacting the owner.'}
             </Text>
           </View>
         </Card>
@@ -307,8 +486,7 @@ const SearchResultFoundScreen = ({navigation, route}) => {
           onPress={handleReportIssue}
           style={[styles.reportButton, {paddingVertical: spacing.sm}]}>
           <Text style={[styles.reportLink, {color: colors.primary}]}>
-            {t('search.results.found.reportLink') ||
-              'Report an issue with this vehicle'}
+            {t('search.results.found.reportLink') || 'Report an issue'}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -378,14 +556,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  verifiedBadge: {
-    fontSize: 18,
-  },
-  ownerMeta: {
-    fontSize: 14,
-  },
   section: {},
   freeCard: {},
+  paidCard: {},
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -408,6 +581,29 @@ const styles = StyleSheet.create({
   freeText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  costBadge: {},
+  costText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  balanceCard: {},
+  balanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  balanceIcon: {
+    fontSize: 32,
+  },
+  balanceInfo: {
+    flex: 1,
+  },
+  balanceLabel: {
+    fontSize: 13,
+  },
+  balanceValue: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   infoCard: {},
   infoRow: {
