@@ -8,9 +8,6 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, '14.0'
 prepare_react_native_project!
 
-# Add this line to fix Firebase Swift module issue
-use_modular_headers!
-
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
@@ -39,6 +36,18 @@ target 'QRParkingAppBare' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    # Fix Firebase Swift pods by enabling modular headers for specific dependencies
+    installer.pods_project.targets.each do |target|
+      if ['FirebaseAuth', 'FirebaseCore', 'FirebaseCoreExtension', 
+          'FirebaseInstallations', 'GoogleUtilities', 'FirebaseAppCheckInterop',
+          'FirebaseAuthInterop', 'FirebaseFirestore', 'FirebaseFirestoreInternal',
+          'FirebaseRemoteConfig', 'FirebaseABTesting', 'RecaptchaInterop'].include?(target.name)
+        target.build_configurations.each do |config|
+          config.build_settings['DEFINES_MODULE'] = 'YES'
+        end
+      end
+    end
   end
 end
 
