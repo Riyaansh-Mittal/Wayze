@@ -56,6 +56,7 @@
     "react-native-svg": "^15.15.1",
     "react-native-svg-transformer": "^1.5.2",
     "react-native-toast-message": "^2.3.0",
+    "react-native-uuid": "^2.0.3",
     "react-native-vector-icons": "^10.2.0",
     "react-native-vision-camera": "^4.6.4",
     "zego-callkit-react-native": "^1.0.6",
