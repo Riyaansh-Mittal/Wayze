@@ -1,0 +1,51 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch: # Allows you to manually click "Run" button
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Yarn Dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build iOS Archive
+        run: |
+          cd ios
+          xcodebuild -workspace QRParkingAppBare.xcworkspace \
+            -scheme QRParkingAppBare \
+            -configuration Debug \
+            -sdk iphoneos \
+            -archivePath QRParkingAppBare.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: Export IPA
+        run: |
+          cd ios
+          xcodebuild -exportArchive \
+            -archivePath QRParkingAppBare.xcarchive \
+            -exportPath output \
+            -exportOptionsPlist ExportOptions.plist
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-v1
+          path: ios/output/*.ipa
