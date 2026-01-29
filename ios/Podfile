@@ -23,6 +23,17 @@ target 'QRParkingAppBare' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # Explicitly declare Firebase pods with modular headers
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'FirebaseInstallations', :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'FirebaseAppCheckInterop', :modular_headers => true
+  pod 'FirebaseAuthInterop', :modular_headers => true
+  pod 'FirebaseFirestoreInternal', :modular_headers => true
+  pod 'FirebaseABTesting', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
+
   target 'QRParkingAppBareTests' do
     inherit! :complete
     # Pods for testing
@@ -36,18 +47,6 @@ target 'QRParkingAppBare' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
-    
-    # Fix Firebase Swift pods by enabling modular headers for specific dependencies
-    installer.pods_project.targets.each do |target|
-      if ['FirebaseAuth', 'FirebaseCore', 'FirebaseCoreExtension', 
-          'FirebaseInstallations', 'GoogleUtilities', 'FirebaseAppCheckInterop',
-          'FirebaseAuthInterop', 'FirebaseFirestore', 'FirebaseFirestoreInternal',
-          'FirebaseRemoteConfig', 'FirebaseABTesting', 'RecaptchaInterop'].include?(target.name)
-        target.build_configurations.each do |config|
-          config.build_settings['DEFINES_MODULE'] = 'YES'
-        end
-      end
-    end
   end
 end
 
