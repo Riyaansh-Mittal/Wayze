@@ -9,7 +9,7 @@ import React, {
 import {NotificationService} from '../services/api';
 import {useToast} from '../components/common/Toast/ToastProvider';
 import {useAuth} from './AuthContext';
-import { useTheme } from './ThemeContext';
+import {useTheme} from './ThemeContext';
 
 const NotificationContext = createContext();
 
@@ -25,6 +25,14 @@ export const NotificationProvider = ({children}) => {
     hasNext: false,
     hasPrevious: false,
   });
+
+  // ✅ Add separate state for total counts from API
+  const [totalCounts, setTotalCounts] = useState({
+    total: 0, // Total notifications (read + unread)
+    unread: 0, // Unread notifications
+    read: 0, // Read notifications
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -34,10 +42,8 @@ export const NotificationProvider = ({children}) => {
   const hasLoadedRef = useRef(false);
   const pollingIntervalRef = useRef(null);
 
-  /**
-   * Calculate unread count from notifications list
-   */
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  // ✅ DEPRECATED: Keep for backward compatibility but prefer totalCounts.unread
+  const unreadCount = totalCounts.unread;
 
   /**
    * Load notifications (with pagination)
@@ -65,11 +71,26 @@ export const NotificationProvider = ({children}) => {
           const {
             notifications: newNotifs,
             totalData,
+            unreadNotifications,
+            readNotification,
             hasNext,
             hasPrevious,
           } = response.data;
 
-          console.log('✅ Notifications loaded:', newNotifs.length);
+          console.log('✅ Notifications loaded:', {
+            page,
+            count: newNotifs.length,
+            total: totalData,
+            unread: unreadNotifications,
+            read: readNotification,
+          });
+
+          // ✅ Update total counts from API
+          setTotalCounts({
+            total: totalData,
+            unread: unreadNotifications,
+            read: readNotification,
+          });
 
           // Append or replace notifications
           if (append) {
@@ -168,6 +189,12 @@ export const NotificationProvider = ({children}) => {
         hasNext: false,
         hasPrevious: false,
       });
+      // ✅ Reset counts
+      setTotalCounts({
+        total: 0,
+        unread: 0,
+        read: 0,
+      });
       stopPolling();
       hasLoadedRef.current = false;
     }
@@ -212,6 +239,13 @@ export const NotificationProvider = ({children}) => {
             ),
           );
 
+          // ✅ Update counts locally (optimistic update)
+          setTotalCounts(prev => ({
+            ...prev,
+            unread: Math.max(0, prev.unread - 1),
+            read: prev.read + 1,
+          }));
+
           // Check if this was an alert that got acknowledged
           const notification = notifications.find(
             n => n._id === notificationId,
@@ -220,14 +254,19 @@ export const NotificationProvider = ({children}) => {
             notification?.type === 'ALERT_HIGH' ||
             notification?.type === 'ALERT_LOW'
           ) {
-            showSuccess(t('toast.notification.acknowledged') || 'Alert acknowledged');
+            showSuccess(
+              t('toast.notification.acknowledged') || 'Alert acknowledged',
+            );
           }
         }
 
         return result;
       } catch (error) {
         console.error('❌ Error marking as read:', error);
-        showError(t('toast.notification.markReadFailed') || 'Failed to mark notification as read');
+        showError(
+          t('toast.notification.markReadFailed') ||
+            'Failed to mark notification as read',
+        );
         return {success: false, error: error.message};
       }
     },
@@ -235,7 +274,7 @@ export const NotificationProvider = ({children}) => {
   );
 
   /**
-   * Get unread notifications
+   * Get unread notifications (from loaded notifications)
    */
   const getUnreadNotifications = useCallback(() => {
     return notifications.filter(n => !n.isRead);
@@ -289,7 +328,8 @@ export const NotificationProvider = ({children}) => {
   const value = {
     // State
     notifications,
-    unreadCount, // ✅ Calculated from notifications, not from API
+    unreadCount, // ✅ For backward compatibility
+    totalCounts, // ✅ NEW: Total counts from API
     pagination,
     isLoading,
     isRefreshing,

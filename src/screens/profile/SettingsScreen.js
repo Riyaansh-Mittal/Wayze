@@ -104,25 +104,43 @@ const SettingsScreen = ({navigation}) => {
     }
   }, [toggleTheme, showSuccess, showError, t]);
 
-  // ✅ Handle language change (local preference, not API)
   const handleLanguageChange = useCallback(
     async languageCode => {
       console.log('🌐 Changing language to:', languageCode);
-      const result = await changeLanguage(languageCode);
-      setShowLanguagePicker(false);
 
-      if (result.success) {
+      try {
+        // Step 1: Update ThemeContext (for UI translations)
+        const themeResult = await changeLanguage(languageCode);
+
+        if (!themeResult.success) {
+          throw new Error('Failed to update UI language');
+        }
+
+        // Step 2: Update Backend Settings (for push notifications)
+        const backendResult = await updateUserSettings({
+          preferredLanguage: languageCode,
+        });
+
+        if (!backendResult.success) {
+          throw new Error('Failed to update notification language');
+        }
+
+        setShowLanguagePicker(false);
+
         showSuccess(
           t('toast.settings.languageChanged') ||
             'Language changed successfully',
         );
-      } else {
+
+        console.log('✅ Language updated in both UI and notifications');
+      } catch (error) {
+        console.error('❌ Failed to change language:', error);
         showError(
           t('toast.settings.updateFailed') || 'Failed to change language',
         );
       }
     },
-    [changeLanguage, showSuccess, showError, t],
+    [changeLanguage, updateUserSettings, showSuccess, showError, t],
   );
 
   // ✅ Handle data download request
@@ -138,8 +156,7 @@ const SettingsScreen = ({navigation}) => {
           onPress: async () => {
             console.log('📦 Requesting data export...');
             showSuccess(
-              t('toast.dataExport.preparing') ||
-                'Preparing your data...',
+              t('toast.dataExport.preparing') || 'Preparing your data...',
             );
             setTimeout(() => {
               showSuccess(
@@ -446,7 +463,7 @@ const SettingsScreen = ({navigation}) => {
               )}
             </TouchableOpacity>
 
-            {/* Marathi */}
+            {/* Marathi
             <TouchableOpacity
               style={[
                 styles.languageOption,
@@ -472,7 +489,7 @@ const SettingsScreen = ({navigation}) => {
               {currentLanguage === LANGUAGES.MR && (
                 <Text style={{color: colors.primary, fontSize: 20}}>✓</Text>
               )}
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity
               style={[

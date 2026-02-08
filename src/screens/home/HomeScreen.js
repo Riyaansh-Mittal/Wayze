@@ -1,11 +1,10 @@
 import React, {useState, useCallback, useRef, useEffect} from 'react';
 import {View, Text, StyleSheet, ScrollView, RefreshControl} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useFocusEffect} from '@react-navigation/native'; // ✅ Import this
+import {useFocusEffect} from '@react-navigation/native';
 import {useAuth} from '../../contexts/AuthContext';
 import {useUser} from '../../contexts/UserContext';
 import {useVehicles} from '../../contexts/VehicleContext';
-import {useNotifications} from '../../contexts/NotificationContext';
 import {useTheme} from '../../contexts/ThemeContext';
 import AppBar from '../../components/navigation/AppBar';
 import Card from '../../components/common/Card/Card';
@@ -23,6 +22,9 @@ const HomeScreen = ({navigation}) => {
 
   const callBalance = userStats?.callBalance ?? user?.callBalance ?? 0;
   const isBalanceLow = callBalance < 5;
+
+  // ✅ Get unread notification count
+  const unreadCount = userStats?.unreadNotifications ?? 0;
 
   const lastRefreshRef = useRef(0);
   const MIN_REFRESH_INTERVAL = 3000;
@@ -70,24 +72,36 @@ const HomeScreen = ({navigation}) => {
     await getUserHome(true);
   }, [getUserHome]);
 
-  // ✅ FIXED: Show loading skeleton only on FIRST load with no data at all
   const hasAnyData = userStats || user?.vehicleRegistered !== undefined;
   const showLoadingSkeleton = isLoading && !hasAnyData;
 
-  // ✅ FIXED: If first load is taking too long, still show UI with defaults
   const [showDefaultUI, setShowDefaultUI] = useState(false);
 
   useEffect(() => {
-    // ✅ After 2 seconds of loading, show UI anyway
     if (isLoading && !hasAnyData) {
       const timeout = setTimeout(() => {
         console.log('⏱️ Loading timeout - showing default UI');
         setShowDefaultUI(true);
-      }, 2000); // Show UI after 2 seconds even if API hasn't responded
+      }, 2000);
 
       return () => clearTimeout(timeout);
     }
   }, [isLoading, hasAnyData]);
+
+  // ✅ Render notification icon with badge
+  const renderNotificationIcon = () => (
+    <View>
+      <Icon name="notifications-none" size={26} color={colors.textPrimary} />
+      {unreadCount > 0 && (
+        <View
+          style={[styles.notificationBadge, {backgroundColor: colors.error}]}>
+          <Text style={[styles.badgeText, {color: colors.white}]}>
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView
@@ -95,13 +109,7 @@ const HomeScreen = ({navigation}) => {
       edges={['top']}>
       <AppBar
         title={t('common.appName') || 'QR Parking'}
-        rightIcon={
-          <Icon
-            name="notifications-none"
-            size={26}
-            color={colors.textPrimary}
-          />
-        }
+        rightIcon={renderNotificationIcon()}
         onRightPress={() => navigation.navigate('Notifications')}
       />
 
@@ -179,7 +187,6 @@ const HomeScreen = ({navigation}) => {
             {t('home.activity.title') || 'Your Activity'}
           </Text>
 
-          {/* ✅ FIXED: Show loading only if no data AND timeout hasn't occurred */}
           {showLoadingSkeleton && !showDefaultUI ? (
             <View style={{padding: spacing.xl, alignItems: 'center'}}>
               <Spinner size="large" color={colors.primary} />
@@ -309,6 +316,22 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
+    fontWeight: '700',
+  },
+  // ✅ Add notification badge styles
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    fontSize: 10,
     fontWeight: '700',
   },
 });

@@ -169,13 +169,6 @@ class FetchAPIClient {
         responseData = {message: responseText};
       }
 
-      console.log('✅ API Response:', {
-        status: response.status,
-        ok: response.ok,
-        url,
-        data: responseData,
-      });
-
       // Handle non-2xx responses
       if (!response.ok) {
         // Handle 401 separately for token refresh
@@ -442,6 +435,63 @@ export const AuthService = {
 
       // Return success anyway - local logout still works
       return {success: true, message: 'Logged out locally'};
+    }
+  },
+  /**
+   * Get Legal Documents (Terms & Privacy Policy)
+   * GET /api/auth/legal-documents
+   */
+  getLegalDocuments: async () => {
+    try {
+      console.log('📄 Fetching legal documents...');
+
+      const response = await request(
+        HTTP_METHODS.GET,
+        ENDPOINTS.auth.legalDocuments, // Add this endpoint
+      );
+
+      if (response.success) {
+        console.log('✅ Legal documents fetched');
+        return response.data;
+      }
+
+      throw new Error('Failed to fetch legal documents');
+    } catch (error) {
+      console.error('❌ Failed to fetch legal documents:', error);
+      logError(error, {
+        service: 'AuthService',
+        method: 'getLegalDocuments',
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Delete User Account
+   * DELETE /api/auth/delete-account
+   */
+  deleteAccount: async () => {
+    try {
+      console.log('🗑️ Deleting user account...');
+
+      const response = await request(
+        HTTP_METHODS.DELETE,
+        ENDPOINTS.auth.deleteAccount, // Add this endpoint
+      );
+
+      if (response.success) {
+        console.log('✅ Account deleted successfully');
+        return {success: true};
+      }
+
+      throw new Error(response.message || 'Failed to delete account');
+    } catch (error) {
+      console.error('❌ Failed to delete account:', error);
+      logError(error, {
+        service: 'AuthService',
+        method: 'deleteAccount',
+      });
+      throw error;
     }
   },
 };

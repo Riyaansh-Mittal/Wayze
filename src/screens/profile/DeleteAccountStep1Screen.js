@@ -162,7 +162,7 @@ const DeleteAccountStep1Screen = ({navigation}) => {
             },
           ]}>
           <View style={styles.warningRow}>
-            <WarningIcon width={15} height={15} fill={colors.warning}/>
+            <WarningIcon width={40} height={40} fill={colors.warning}/>
             <Text
               style={[
                 styles.finalWarningText,
@@ -240,6 +240,7 @@ const styles = StyleSheet.create({
   warningRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    gap: 12,
   },
   warningIconLarge: {
     fontSize: 24,

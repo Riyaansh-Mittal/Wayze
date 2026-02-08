@@ -7,13 +7,13 @@
 const getBaseURL = () => {
   if (__DEV__) {
     // Development - Your actual backend
-    return 'https://parking-backbone.onrender.com/'; // ✅ REMOVE /api/ from base
+    return 'https://parking-backbone-5og5.onrender.com/'; // ✅ REMOVE /api/ from base
   } else {
     // Production
-    return 'https://parking-backbone.onrender.com/';
+    return 'https://parking-backbone-5og5.onrender.com/';
   }
 };
-
+//https://parking-backbone.onrender.com/
 export const BASE_URL = getBaseURL();
 
 // API Endpoints
@@ -22,6 +22,8 @@ export const ENDPOINTS = {
   auth: {
     socialLogin: 'api/auth/socialLogin', // ✅ CHANGED: Matches your old system
     logout: 'api/user/logout',
+    legalDocuments: 'api/auth/policies',
+    deleteAccount: 'api/user/delete-account',
   },
 
   // User

@@ -714,7 +714,10 @@
           "message": "Proceed with account deletion?",
           "confirm": "Yes, Delete"
         },
-        "success": "Account deleted successfully",
+        "success": {
+          "title": "Account Deleted",
+          "message": "Your account has been deleted. We're sorry to see you go."
+        },
         "failed": "Failed to delete account. Contact support."
       }
     }

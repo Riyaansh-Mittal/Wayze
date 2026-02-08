@@ -3,13 +3,14 @@ import {StatusBar, AppState, Platform, Linking} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {ZegoCallInvitationDialog} from '@zegocloud/zego-uikit-prebuilt-call-rn';
+import SplashScreen from 'react-native-splash-screen'; // ✅ Add this import
 import {ThemeProvider} from './src/contexts/ThemeContext';
 import {AuthProvider, useAuth} from './src/contexts/AuthContext';
 import {UserProvider} from './src/contexts/UserContext';
 import {BalanceProvider} from './src/contexts/BalanceContext';
 import {VehicleProvider} from './src/contexts/VehicleContext';
 import {SearchProvider} from './src/contexts/SearchContext';
-import {CallProvider, useCall} from './src/contexts/CallContext'; // ✅ ADD THIS
+import {CallProvider, useCall} from './src/contexts/CallContext';
 import {ToastProvider} from './src/components/common/Toast/ToastProvider';
 import {NotificationProvider} from './src/contexts/NotificationContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -19,13 +20,23 @@ import {
   notificationListener,
 } from './src/services/firebase/NotificationService';
 import {ZegoTokenManager} from './src/services/zego/ZegoTokenManager';
-import {ZegoService} from './src/services/zego/ZegoService'; // ✅ ADD THIS
+import {ZegoService} from './src/services/zego/ZegoService';
 import messaging from '@react-native-firebase/messaging';
 
 const AppContent = () => {
-  const {isAuthenticated} = useAuth();
-  const callContext = useCall(); // ✅ ADD THIS
+  const {isAuthenticated} = useAuth(); // ✅ Add isLoading
+  const callContext = useCall();
   const notificationHandled = useRef(false);
+
+  // ✅ Hide splash screen when auth is loaded
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      SplashScreen.hide();
+      console.log('✅ Native splash screen hidden');
+    }, 1000); // Show splash for exactly 1.5 seconds
+
+    return () => clearTimeout(timer);
+  }, []); // ✅ Run only once on mount
 
   useEffect(() => {
     requestUserPermission();
@@ -57,7 +68,6 @@ const AppContent = () => {
       }
     });
 
-    // ✅ CRITICAL: Handle notification that launched the app
     const handleInitialNotification = async () => {
       if (notificationHandled.current) return;
 
@@ -67,7 +77,6 @@ const AppContent = () => {
           console.log('📩 App launched by notification:', initialNotification);
           notificationHandled.current = true;
 
-          // Give navigation time to be ready
           setTimeout(() => {
             console.log('✅ Navigation ready after notification launch');
           }, 1000);
@@ -84,7 +93,6 @@ const AppContent = () => {
     };
   }, [isAuthenticated]);
 
-  // ✅ Connect CallContext to ZegoService
   useEffect(() => {
     if (callContext) {
       console.log('✅ Setting CallContext in ZegoService');
@@ -107,7 +115,8 @@ const AppContent = () => {
 const App = () => {
   return (
     <GestureHandlerRootView style={{flex: 1}}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#1490EE" />
+      {/* ✅ Match splash color */}
       <ThemeProvider>
         <ToastProvider>
           <NavigationContainer
@@ -121,7 +130,6 @@ const App = () => {
                   <VehicleProvider>
                     <SearchProvider>
                       <NotificationProvider>
-                        {/* ✅ ADD CallProvider HERE */}
                         <CallProvider>
                           <AppContent />
                         </CallProvider>

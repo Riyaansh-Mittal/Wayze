@@ -473,6 +473,7 @@ export const AuthProvider = ({children}) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [legalDocs, setLegalDocs] = useState(null);
   const [authToken, setAuthToken] = useState(null);
   const {showSuccess, showError} = useToast();
   const {t} = useTheme();
@@ -510,7 +511,7 @@ export const AuthProvider = ({children}) => {
     try {
       setIsLoading(true);
 
-      // ✅ Configure native Google Sign-In
+      // ✅ Configure native Google Sign-In (fast, synchronous)
       GoogleSignInService.configure();
 
       const tokens = await SecureStorage.getTokens();
@@ -523,29 +524,36 @@ export const AuthProvider = ({children}) => {
         setUser(storedUser);
         setIsAuthenticated(true);
 
-        // Initialize Zego for already-logged-in user
-        try {
-          console.log('🔧 Initializing Zego for existing session...');
+        // ✅ NEW: Initialize Zego in BACKGROUND (don't await, don't block)
+        setTimeout(() => {
+          console.log('🔧 Starting Zego initialization in background...');
 
-          const needsRefresh = await ZegoTokenManager.needsRefresh();
-          if (needsRefresh) {
-            console.log('🔄 Zego token expired, fetching new token...');
-            await ZegoTokenManager.fetchAndStore();
-          } else {
-            console.log('✅ Zego token still valid');
-          }
-
-          await ZegoService.init(
-            storedUser.id,
-            storedUser.name || storedUser.phoneNumber,
-          );
-          console.log('✅ Zego initialized for existing session');
-        } catch (zegoError) {
-          console.error(
-            '❌ Failed to initialize Zego on app start:',
-            zegoError,
-          );
-        }
+          ZegoTokenManager.needsRefresh()
+            .then(needsRefresh => {
+              if (needsRefresh) {
+                console.log('🔄 Zego token expired, fetching new token...');
+                return ZegoTokenManager.fetchAndStore();
+              } else {
+                console.log('✅ Zego token still valid');
+                return Promise.resolve();
+              }
+            })
+            .then(() => {
+              return ZegoService.init(
+                storedUser.id,
+                storedUser.name || storedUser.phoneNumber,
+              );
+            })
+            .then(() => {
+              console.log('✅ Zego initialized for existing session');
+            })
+            .catch(zegoError => {
+              console.error(
+                '❌ Failed to initialize Zego (non-blocking):',
+                zegoError,
+              );
+            });
+        }, 100); // Start after 100ms, don't block the UI
       } else {
         console.log('⏭️ No stored user - showing login screen');
       }
@@ -553,6 +561,7 @@ export const AuthProvider = ({children}) => {
       console.error('Failed to initialize auth:', error);
       await SecureStorage.clearAllData();
     } finally {
+      // ✅ This now happens IMMEDIATELY (within ~200-300ms)
       setIsLoading(false);
     }
   }, []);
@@ -662,17 +671,45 @@ export const AuthProvider = ({children}) => {
           return {
             success: true,
             user: userData,
-            isFirstTime: backendData.isFirstTime || false,
           };
         }
 
         throw new Error('Backend login failed');
       } catch (error) {
         console.error('❌ Google login error:', error);
+
+        // ✅ Handle deleted account errors
+        const errorMessage = error.message || error.toString();
+
+        if (errorMessage.includes('Your account has been deleted')) {
+          showError(
+            t('toast.auth.accountDeleted') ||
+              'Your account has been permanently deleted and cannot be restored.',
+          );
+          return {
+            success: false,
+            error: 'ACCOUNT_DELETED',
+            message: errorMessage,
+          };
+        }
+
+        if (errorMessage.includes('Your account has been blocked')) {
+          showError(
+            t('toast.auth.accountBlocked') ||
+              'Your account has been blocked. Please contact support.',
+          );
+          return {
+            success: false,
+            error: 'ACCOUNT_BLOCKED',
+            message: errorMessage,
+          };
+        }
+
+        // Generic error
         showError(
           t('toast.auth.loginFailed') || 'Login failed. Please try again.',
         );
-        return {success: false, error: error.message};
+        return {success: false, error: errorMessage};
       } finally {
         setIsLoading(false);
       }
@@ -749,9 +786,7 @@ export const AuthProvider = ({children}) => {
             console.error('❌ Failed to initialize Zego:', error);
           }
 
-          showSuccess(
-            t('toast.auth.loginSuccessShort') || 'Login successful!',
-          );
+          showSuccess(t('toast.auth.loginSuccessShort') || 'Login successful!');
 
           return {
             success: true,
@@ -866,6 +901,70 @@ export const AuthProvider = ({children}) => {
     }
   }, []);
 
+  /**
+   * Fetch legal documents
+   */
+  const getLegalDocuments = useCallback(async () => {
+    try {
+      const docs = await AuthService.getLegalDocuments();
+      setLegalDocs(docs);
+      return docs;
+    } catch (error) {
+      console.error('Failed to fetch legal documents:', error);
+      return null;
+    }
+  }, []);
+
+  /**
+   * Delete user account
+   */
+  const deleteAccount = useCallback(async () => {
+    try {
+      console.log('🗑️ Starting account deletion process...');
+
+      // Call delete account API
+      await AuthService.deleteAccount();
+
+      console.log('✅ Account deleted from backend');
+
+      // Clear local state
+      setUser(null);
+      setIsAuthenticated(false);
+
+      // Clear tokens
+      await ZegoTokenManager.clearToken();
+      console.log('🧹 Tokens cleared');
+
+      // Clear FCM token (optional - account is already deleted)
+      try {
+        const fcmToken = await messaging().getToken();
+        if (fcmToken) {
+          await messaging().deleteToken();
+        }
+      } catch (fcmError) {
+        console.warn('⚠️ Failed to clear FCM token:', fcmError);
+      }
+
+      // Clear Zego connection
+      try {
+        await ZegoService.cleanup();
+        console.log('🧹 Zego cleaned up');
+      } catch (zegoError) {
+        console.warn('⚠️ Failed to cleanup Zego:', zegoError);
+      }
+
+      console.log('✅ Account deletion complete - user logged out');
+
+      return {success: true};
+    } catch (error) {
+      console.error('❌ Account deletion failed:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to delete account',
+      };
+    }
+  }, []);
+
   const value = {
     // State
     user,
@@ -874,11 +973,14 @@ export const AuthProvider = ({children}) => {
     authToken,
 
     // Methods
+    legalDocs,
     googleLogin,
     socialLogin,
     logout,
+    deleteAccount,
     syncUserData,
     getFCMToken, // ✅ Export for use elsewhere
+    getLegalDocuments,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

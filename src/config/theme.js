@@ -10,7 +10,7 @@
 
 export const COLORS = {
   // Brand Colors
-  primary: '#1565C0',
+  primary: '#1490EE',
   success: '#2E7D32',
   warning: '#F57C00',
   error: '#C62828',
@@ -111,7 +111,7 @@ export const LINE_HEIGHTS = {
 };
 
 // Typography factory - creates typography styles with dynamic colors
-const createTypography = (colors) => ({
+const createTypography = colors => ({
   h1: {
     fontSize: FONT_SIZES.h1,
     lineHeight: LINE_HEIGHTS.h1,
@@ -227,28 +227,28 @@ export const RADIUS = {
 export const SHADOWS = {
   card: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
   modal: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 8,
   },
   bottomSheet: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: {width: 0, height: -2},
     shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 16,
   },
   none: {
     shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: {width: 0, height: 0},
     shadowOpacity: 0,
     shadowRadius: 0,
     elevation: 0,
@@ -259,7 +259,7 @@ export const SHADOWS = {
 // COMPONENT STYLES
 // ═══════════════════════════════════════════════════════════════
 
-const createComponents = (colors) => ({
+const createComponents = colors => ({
   primaryButton: {
     height: 56,
     borderRadius: RADIUS.medium,

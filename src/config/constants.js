@@ -237,9 +237,7 @@ export const DEEP_LINK_PREFIXES = {
 
 // External URLs
 export const EXTERNAL_URLS = {
-  WEBSITE: 'https://qrparking.com',
-  TERMS: 'https://qrparking.com/terms',
-  PRIVACY: 'https://qrparking.com/privacy',
+  WEBSITE: 'https://wayze.in',
   SUPPORT_EMAIL: 'support@qrparking.com',
   HELLO_EMAIL: 'hello@qrparking.com',
   TWITTER: 'https://twitter.com/qrparking',

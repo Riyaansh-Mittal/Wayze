@@ -255,7 +255,7 @@
  * Google Sign-In entry point
  */
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -263,47 +263,121 @@ import {
   TouchableOpacity,
   Linking,
   ActivityIndicator,
+  Image,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {useAuth} from '../../hooks';
 import {useTheme} from '../../contexts/ThemeContext';
-import {EXTERNAL_URLS} from '../../config/constants';
 import {GoogleIcon} from '../../assets/icons';
 
 const WelcomeScreen = () => {
   const {t, theme} = useTheme();
   const {colors, spacing} = theme;
-  const {googleLogin, isLoading: authLoading} = useAuth();
+  const {
+    googleLogin,
+    isLoading: authLoading,
+    legalDocs,
+    getLegalDocuments,
+  } = useAuth();
   const navigation = useNavigation();
   const [buttonLoading, setButtonLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
     try {
-      setButtonLoading(true); // ✅ Button shows loader
-
+      setButtonLoading(true);
       const result = await googleLogin(navigation);
 
       if (result.success) {
-        if (result.isFirstTime) {
-          navigation.replace('ReferralEntry');
-        }
+        // ✅ Login successful - AuthContext handles navigation
+        console.log('✅ Login successful');
       } else if (result.cancelled) {
-        console.log('User cancelled Google Sign-In');
+        console.log('⏭️ User cancelled Google Sign-In');
+      } else if (result.error === 'ACCOUNT_DELETED') {
+        // ✅ Show specific alert for deleted accounts
+        Alert.alert(
+          t('auth.accountDeleted.title') || 'Account Deleted',
+          t('auth.accountDeleted.message') ||
+            'Your account was permanently deleted and cannot be restored. You can create a new account by signing in again.',
+          [
+            {
+              text: t('common.ok') || 'OK',
+              style: 'default',
+            },
+          ],
+        );
+      } else if (result.error === 'ACCOUNT_BLOCKED') {
+        // ✅ Show specific alert for blocked accounts
+        Alert.alert(
+          t('auth.accountBlocked.title') || 'Account Blocked',
+          t('auth.accountBlocked.message') ||
+            'Your account has been blocked due to policy violations. Please contact support for assistance.',
+          [
+            {
+              text: t('common.contactSupport') || 'Contact Support',
+              onPress: () => {
+                // TODO: Open support email or screen
+                console.log('Open support');
+              },
+            },
+            {
+              text: t('common.ok') || 'OK',
+              style: 'cancel',
+            },
+          ],
+        );
+      } else {
+        // ✅ Generic error - toast already shown by AuthContext
+        console.log('❌ Login failed:', result.error);
       }
     } catch (error) {
-      console.error('Sign in failed:', error);
+      console.error('❌ Sign in error:', error);
     } finally {
-      setButtonLoading(false); // ✅ Button returns to normal
+      setButtonLoading(false);
     }
   };
 
   const openTerms = () => {
-    Linking.openURL(EXTERNAL_URLS.TERMS);
+    if (legalDocs?.termsAndConditions) {
+      // Already loaded
+      navigation.navigate('LegalDocument', {
+        title: 'Terms of Service',
+        htmlContent: legalDocs.termsAndConditions,
+      });
+    } else {
+      // Load on-demand
+      console.log('📄 Loading Terms on demand...');
+      getLegalDocuments().then(docs => {
+        if (docs?.termsAndConditions) {
+          navigation.navigate('LegalDocument', {
+            title: 'Terms of Service',
+            htmlContent: docs.termsAndConditions,
+          });
+        }
+      });
+    }
   };
 
   const openPrivacy = () => {
-    Linking.openURL(EXTERNAL_URLS.PRIVACY);
+    if (legalDocs?.privacyPolicy) {
+      // Already loaded
+      navigation.navigate('LegalDocument', {
+        title: 'Privacy Policy',
+        htmlContent: legalDocs.privacyPolicy,
+      });
+    } else {
+      // Load on-demand
+      console.log('📄 Loading Privacy Policy on demand...');
+      getLegalDocuments().then(docs => {
+        if (docs?.privacyPolicy) {
+          navigation.navigate('LegalDocument', {
+            title: 'Privacy Policy',
+            htmlContent: docs.privacyPolicy,
+          });
+        }
+      });
+    }
   };
 
   return (
@@ -311,13 +385,17 @@ const WelcomeScreen = () => {
       style={[styles.container, {backgroundColor: colors.background}]}
       edges={['top', 'bottom']}>
       <View style={styles.content}>
-        {/* Logo Section - same as before */}
+        {/* Logo Section */}
         <View style={styles.logoSection}>
+          {/* ✅ Use actual logo image */}
           <View style={[styles.logoCircle, {backgroundColor: colors.primary}]}>
-            <Text style={[styles.logoIcon, {color: colors.white}]}>
-              {t?.('common.appIcon') || '🚗'}
-            </Text>
+            <Image
+              source={require('../../assets/images/app-icon.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
+
           <Text
             style={[
               styles.appName,
@@ -325,6 +403,7 @@ const WelcomeScreen = () => {
             ]}>
             {t?.('common.appName') || 'QR Parking'}
           </Text>
+
           <Text
             style={[
               styles.subtitle,
@@ -389,7 +468,7 @@ const WelcomeScreen = () => {
             </View>
           </TouchableOpacity>
 
-          {/* Legal Text - same as before */}
+          {/* Legal Text */}
           <View style={[styles.legalContainer, {marginTop: spacing.md}]}>
             <Text style={[styles.legalText, {color: colors.textSecondary}]}>
               {t?.('auth.welcome.legalText') ||
@@ -428,9 +507,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
+    width: 105,
+    height: 105,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -439,8 +518,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-  logoIcon: {
-    fontSize: 40,
+  logoImage: {
+    width: 90,
+    height: 90,
   },
   appName: {
     fontSize: 28,

@@ -1,4 +1,4 @@
 export default {
-  appID: 2016227005, // Replace with your Zego App ID
-  appSign: '2f438b9d2d4abed33d4e35f957143585b89285845b9174200f72008638de630f', // Replace with your Zego App Sign
+  appID: 1395744450, // Replace with your Zego App ID
+  appSign: 'c59bf7358e5a0d11e20b34cb693a8cfec9126e72afe921311bfcf14a5649a591', // Replace with your Zego App Sign
 };

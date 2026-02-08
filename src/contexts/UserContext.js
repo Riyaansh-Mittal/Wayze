@@ -13,7 +13,7 @@ import React, {
 import {UserService} from '../services/api';
 import {useToast} from '../components/common/Toast/ToastProvider';
 import {useAuth} from './AuthContext';
-import { useTheme } from './ThemeContext';
+import {useTheme} from './ThemeContext';
 
 const UserContext = createContext();
 
@@ -98,10 +98,10 @@ export const UserProvider = ({children}) => {
             callBalance: homeData.callBalance,
             vehicleSearched: homeData.vehicleSearched,
             vehicleRegistered: homeData.vehicleRegistered,
+            unreadNotifications: homeData.unreadNotifications, // ✅ Log it
           });
 
-          // ✅ DON'T call syncUserData - causes infinite loop
-          // Just store stats locally
+          // ✅ Store stats including unreadNotifications
           setUserStats({
             vehicleSearched: homeData.vehicleSearched,
             timesContacted: homeData.timesContacted,
@@ -109,6 +109,7 @@ export const UserProvider = ({children}) => {
             memberSince: homeData.memberSince,
             callBalance: homeData.callBalance,
             alertBalance: homeData.alertBalance,
+            unreadNotifications: homeData.unreadNotifications, // ✅ Add this
           });
 
           hasLoadedHomeRef.current = true;
@@ -126,7 +127,7 @@ export const UserProvider = ({children}) => {
       }
     },
     [user],
-  ); // ✅ Only depend on user (which is stable from AuthContext)
+  );
 
   /**
    * Get User Activity History
@@ -250,6 +251,14 @@ export const UserProvider = ({children}) => {
         setIsLoading(true);
         console.log('⚙️ Updating settings:', updates);
 
+        // ✅ Validate preferredLanguage if provided
+        if (updates.preferredLanguage) {
+          const validLanguages = ['en', 'hi', 'mr'];
+          if (!validLanguages.includes(updates.preferredLanguage)) {
+            throw new Error('Invalid language code');
+          }
+        }
+
         const response = await UserService.updateSettings(updates);
 
         if (response.success) {
@@ -262,7 +271,9 @@ export const UserProvider = ({children}) => {
         return {success: false};
       } catch (error) {
         console.error('❌ Failed to update settings:', error);
-        showError(t('toast.settings.updateFailed') || 'Failed to update settings');
+        showError(
+          t('toast.settings.updateFailed') || 'Failed to update settings',
+        );
         return {success: false, error: error.message};
       } finally {
         setIsLoading(false);

@@ -11,6 +11,7 @@ import ActivityHistoryScreen from '../screens/profile/ActivityHistoryScreen';
 import SettingsScreen from '../screens/profile/SettingsScreen';
 import HelpSupportScreen from '../screens/profile/HelpSupportScreen';
 import AboutScreen from '../screens/profile/AboutScreen';
+import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
 import DeleteAccountStep1Screen from '../screens/profile/DeleteAccountStep1Screen';
 import DeleteAccountStep2Screen from '../screens/profile/DeleteAccountStep2Screen';
 
@@ -30,6 +31,14 @@ const ProfileNavigator = () => {
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
       <Stack.Screen name="About" component={AboutScreen} />
+      <Stack.Screen
+        name="LegalDocument"
+        component={LegalDocumentScreen}
+        options={{
+          animation: 'slide_from_bottom',
+          presentation: 'modal',
+        }}
+      />
       <Stack.Screen
         name="DeleteAccountStep1"
         component={DeleteAccountStep1Screen}

@@ -23,7 +23,7 @@ import SecondaryButton from '../../components/common/Button/SecondaryButton';
 import {TrashIcon} from '../../assets/icons';
 
 const DeleteAccountStep2Screen = ({navigation}) => {
-  const {logout} = useAuth();
+  const {deleteAccount} = useAuth();
   const {t, theme} = useTheme();
   const {colors, typography, spacing, layout, components} = theme;
 
@@ -51,23 +51,48 @@ const DeleteAccountStep2Screen = ({navigation}) => {
     setIsDeleting(true);
 
     try {
-      // TODO: Call delete account API
-      // await AuthService.deleteAccount();
+      console.log('🗑️ Performing account deletion...');
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // ✅ Call deleteAccount from AuthContext
+      const result = await deleteAccount();
 
-      // Logout user
-      await logout();
+      if (result.success) {
+        console.log('✅ Account deleted successfully');
 
-      // Show success message
-      Alert.alert('Account Deleted', t('profile.deleteAccount.step2.success'), [
-        {text: t('common.ok')},
-      ]);
+        // ✅ Show success alert (NO TOAST as requested)
+        Alert.alert(
+          t('profile.deleteAccount.step2.success.title') || 'Account Deleted',
+          t('profile.deleteAccount.step2.success.message') ||
+            'Your account has been permanently deleted. We are sorry to see you go.',
+          [
+            {
+              text: t('common.ok') || 'OK',
+              onPress: () => {
+                // User is already logged out by deleteAccount()
+                // AuthNavigator will automatically show Welcome screen
+              },
+            },
+          ],
+          {cancelable: false}, // Prevent dismissing by tapping outside
+        );
+      } else {
+        // Show error
+        Alert.alert(
+          t('common.error') || 'Error',
+          result.error ||
+            t('profile.deleteAccount.step2.failed') ||
+            'Failed to delete account. Please try again.',
+          [{text: t('common.ok') || 'OK'}],
+        );
+      }
     } catch (error) {
-      Alert.alert(t('common.error'), t('profile.deleteAccount.step2.failed'), [
-        {text: t('common.ok')},
-      ]);
+      console.error('❌ Delete account error:', error);
+      Alert.alert(
+        t('common.error') || 'Error',
+        t('profile.deleteAccount.step2.failed') ||
+          'An unexpected error occurred. Please try again.',
+        [{text: t('common.ok') || 'OK'}],
+      );
     } finally {
       setIsDeleting(false);
     }

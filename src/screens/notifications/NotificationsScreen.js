@@ -134,7 +134,7 @@ const NotificationsScreen = ({navigation}) => {
   const {colors, typography, spacing, layout} = theme;
   const {
     notifications,
-    unreadCount,
+    totalCounts, // ✅ Use this instead of unreadCount
     pagination,
     isLoading,
     isRefreshing,
@@ -157,7 +157,6 @@ const NotificationsScreen = ({navigation}) => {
     if (!notification.isRead) {
       await markAsRead(notification._id);
     }
-    // TODO: Navigate based on notification type
     console.log('Notification pressed:', notification);
   };
 
@@ -259,7 +258,7 @@ const NotificationsScreen = ({navigation}) => {
         onBackPress={() => navigation.goBack()}
       />
 
-      {/* Tabs */}
+      {/* ✅ Tabs with TOTAL counts from API */}
       <View style={[styles.tabContainer, {backgroundColor: colors.white}]}>
         <TouchableOpacity
           style={[
@@ -279,7 +278,7 @@ const NotificationsScreen = ({navigation}) => {
                 {color: colors.primary},
               ],
             ]}>
-            {t('notifications.tabs.all') || 'All'} ({notifications.length})
+            {t('notifications.tabs.all') || 'All'} ({totalCounts.total})
           </Text>
         </TouchableOpacity>
 
@@ -301,7 +300,7 @@ const NotificationsScreen = ({navigation}) => {
                 {color: colors.primary},
               ],
             ]}>
-            {t('notifications.tabs.unread') || 'Unread'} ({unreadCount})
+            {t('notifications.tabs.unread') || 'Unread'} ({totalCounts.unread})
           </Text>
         </TouchableOpacity>
       </View>
@@ -489,6 +488,23 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 20,
     alignItems: 'center',
+  },
+  // Add badge styles:
+  badge: {
+    position: 'absolute',
+    top: -8,
+    right: -12,
+    backgroundColor: '#F44336',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
 

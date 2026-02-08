@@ -16,35 +16,43 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
   return Promise.resolve();
 });
 
-// ✅ Create notification channel
-if (Platform.OS === 'android') {
-  PushNotification.createChannel(
-    {
-      channelId: 'zego_audio_call',
-      channelName: 'Zego Audio Call',
-      importance: 4,
-      vibrate: true,
-      soundName: 'zego_incoming',
-      playSound: true,
+// ✅ DEFER: Move heavy setup to after app renders
+const initializeServices = () => {
+  // Create notification channel
+  if (Platform.OS === 'android') {
+    PushNotification.createChannel(
+      {
+        channelId: 'zego_audio_call',
+        channelName: 'Zego Audio Call',
+        importance: 4,
+        vibrate: true,
+        soundName: 'zego_incoming',
+        playSound: true,
+      },
+      created => console.log(`Channel ${created ? 'created' : 'exists'}`),
+    );
+  }
+
+  // Configure push notifications
+  PushNotification.configure({
+    onNotification: function (notification) {
+      console.log('🔔 Notification tapped:', notification);
     },
-    created => console.log(`Channel ${created ? 'created' : 'exists'}`),
-  );
-}
+    requestPermissions: Platform.OS === 'ios',
+    popInitialNotification: true,
+  });
 
-// ✅ Configure push notifications
-PushNotification.configure({
-  onNotification: function (notification) {
-    console.log('🔔 Notification tapped:', notification);
-  },
-  requestPermissions: Platform.OS === 'ios',
-  popInitialNotification: true,
-});
+  // Enable ZPNs
+  ZPNs.ZPNs.enableDebug(true);
+  ZPNs.ZPNs.setPushConfig({enableFCMPush: true});
 
-// ✅ Enable ZPNs
-ZPNs.ZPNs.enableDebug(true);
-ZPNs.ZPNs.setPushConfig({enableFCMPush: true});
+  // Store FCM token
+  storeFcmToken();
 
-// ✅ Store FCM token
+  ZegoUIKitPrebuiltCallService.useSystemCallingUI([ZIM, ZPNs]);
+};
+
+// ✅ Store FCM token (unchanged)
 const storeFcmToken = async () => {
   try {
     const fcmToken = await messaging().getToken();
@@ -64,11 +72,7 @@ const storeFcmToken = async () => {
   }
 };
 
-storeFcmToken();
-
-ZegoUIKitPrebuiltCallService.useSystemCallingUI([ZIM, ZPNs]);
-
-// ✅ Token provider for Zego
+// ✅ Token provider for Zego (unchanged)
 ZegoUIKit.onTokenProvide(async () => {
   try {
     console.log('🔑 Zego requesting token...');
@@ -84,5 +88,11 @@ ZegoUIKit.onTokenProvide(async () => {
     return '';
   }
 });
+
+// ✅ NEW: Initialize services after a delay
+setTimeout(() => {
+  initializeServices();
+  console.log('✅ Services initialized in background');
+}, 3000); // Start after 3 seconds (after splash is hidden)
 
 AppRegistry.registerComponent(appName, () => App);

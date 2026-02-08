@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Background color -->
+    <item android:drawable="@color/splash_background"/>
+    
+    <!-- Logo - Increase size here -->
+    <item
+        android:width="250dp"   
+        android:height="250dp"
+        android:gravity="center">
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_logo"/> <!-- Make sure this image exists -->
+    </item>
+</layer-list>
