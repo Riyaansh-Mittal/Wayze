@@ -4,7 +4,7 @@
  * FULLY THEME-AWARE WITH CORRECT TRANSLATION KEYS
  */
 
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -33,8 +33,15 @@ const FindVehicleScreen = ({navigation}) => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
+  const searchTimeout = useRef(null);
 
   const handleSearch = async () => {
+    // ✅ Prevent rapid double-press
+    if (searchTimeout.current) {
+      console.log('⏭️ Search already triggered, ignoring');
+      return;
+    }
+
     setError('');
 
     // Validate plate number
@@ -44,14 +51,18 @@ const FindVehicleScreen = ({navigation}) => {
       return;
     }
 
+    // ✅ Set timeout lock
+    searchTimeout.current = setTimeout(() => {
+      searchTimeout.current = null;
+    }, 1000); // Prevent double-press within 1 second
+
     // Perform search
     const result = await searchVehicle(searchQuery);
 
     if (result.success) {
       if (result.data?.found) {
-        // ✅ vehicle now contains owner.userId
         navigation.navigate('SearchResultFound', {
-          vehicle: result.data.vehicle, // Contains { plateNumber, owner: { name, photo, userId } }
+          vehicle: result.data.vehicle,
           searchQuery,
         });
       } else {

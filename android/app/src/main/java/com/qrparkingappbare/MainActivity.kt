@@ -1,11 +1,11 @@
 package com.qrparkingappbare
 
-import android.os.Bundle // ✅ Required
+import android.os.Bundle
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen // ✅ NEW: Android 12+ API
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
-import org.devio.rn.splashscreen.SplashScreen // ✅ Required import
 
 class MainActivity : ReactActivity() {
 
@@ -15,10 +15,13 @@ class MainActivity : ReactActivity() {
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    // ✅ Use the simple show() method. 
-    // If the library version is standard, this is all you need.
-    SplashScreen.show(this)
+    // ✅ CRITICAL: Install Android 12+ splash BEFORE super.onCreate()
+    // This uses the native system splash (fastest possible)
+    installSplashScreen()
     
     super.onCreate(savedInstanceState)
+    
+    // ✅ REMOVED: Old react-native-splash-screen (no longer needed)
+    // The Android 12+ API handles everything automatically
   }
 }

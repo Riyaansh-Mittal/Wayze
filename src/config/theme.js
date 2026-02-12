@@ -10,7 +10,7 @@
 
 export const COLORS = {
   // Brand Colors
-  primary: '#1490EE',
+  primary: '#0779FF',
   success: '#2E7D32',
   warning: '#F57C00',
   error: '#C62828',

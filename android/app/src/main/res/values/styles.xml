@@ -4,20 +4,23 @@
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 
-    <!-- ✅ FIXED SPLASH THEME -->
-    <style name="SplashTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- 1. Background color for the entire window -->
+    <!-- ✅ FIXED: Use splash_logo instead of logo -->
+    <style name="SplashTheme" parent="Theme.SplashScreen">
+        <!-- Background color -->
         <item name="android:windowBackground">@color/splash_background</item>
         
-        <!-- 2. Status bar color to match -->
+        <!-- Android 12+ Splash Screen API -->
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item> <!-- ✅ CHANGED -->
+        <item name="windowSplashScreenAnimationDuration">200</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+        
+        <!-- Status bar -->
         <item name="android:statusBarColor">@color/splash_background</item>
         
-        <!-- 3. Critical for Android 12+: Force the "icon" to be transparent/empty -->
-        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
-        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-        
-        <!-- 4. Legacy flags -->
+        <!-- Window flags -->
         <item name="android:windowNoTitle">true</item>
-        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 </resources>

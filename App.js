@@ -1,9 +1,10 @@
 import {useEffect, useRef} from 'react';
-import {StatusBar, AppState, Platform, Linking} from 'react-native';
+import {StatusBar, AppState} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {ZegoCallInvitationDialog} from '@zegocloud/zego-uikit-prebuilt-call-rn';
-import SplashScreen from 'react-native-splash-screen'; // ✅ Add this import
+import messaging from '@react-native-firebase/messaging';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ThemeProvider} from './src/contexts/ThemeContext';
 import {AuthProvider, useAuth} from './src/contexts/AuthContext';
 import {UserProvider} from './src/contexts/UserContext';
@@ -21,27 +22,71 @@ import {
 } from './src/services/firebase/NotificationService';
 import {ZegoTokenManager} from './src/services/zego/ZegoTokenManager';
 import {ZegoService} from './src/services/zego/ZegoService';
-import messaging from '@react-native-firebase/messaging';
 
 const AppContent = () => {
-  const {isAuthenticated} = useAuth(); // ✅ Add isLoading
+  const {isAuthenticated, isLoading} = useAuth();
   const callContext = useCall();
   const notificationHandled = useRef(false);
 
-  // ✅ Hide splash screen when auth is loaded
+
+  // ✅ NEW: Setup FCM (moved from index.js for non-blocking startup)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      SplashScreen.hide();
-      console.log('✅ Native splash screen hidden');
-    }, 1000); // Show splash for exactly 1.5 seconds
+    const setupFCM = async () => {
+      try {
+        const fcmToken = await messaging().getToken();
+        console.log('📱 FCM Token:', fcmToken);
+        await AsyncStorage.setItem('FCM_TOKEN', fcmToken);
+      } catch (err) {
+        console.error('🔥 FCM Token Error:', err);
+      }
+    };
 
-    return () => clearTimeout(timer);
-  }, []); // ✅ Run only once on mount
+    // Start FCM setup in background
+    setupFCM();
 
+    // Setup token refresh listener
+    const unsubscribeTokenRefresh = messaging().onTokenRefresh(token => {
+      console.log('🔑 FCM Token refreshed:', token);
+      AsyncStorage.setItem('FCM_TOKEN', token);
+    });
+
+    return () => unsubscribeTokenRefresh();
+  }, []);
+
+  // ✅ NEW: Setup foreground message handler
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('📨 Foreground FCM:', remoteMessage);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // ✅ Setup notification permissions and listeners
   useEffect(() => {
     requestUserPermission();
     notificationListener();
 
+    // Handle initial notification (app opened from notification)
+    const handleInitialNotification = async () => {
+      if (notificationHandled.current) return;
+
+      try {
+        const initialNotification = await messaging().getInitialNotification();
+        if (initialNotification && isAuthenticated) {
+          console.log('📩 App launched by notification:', initialNotification);
+          notificationHandled.current = true;
+        }
+      } catch (error) {
+        console.warn('⚠️ Error handling initial notification:', error);
+      }
+    };
+
+    handleInitialNotification();
+  }, [isAuthenticated]);
+
+  // ✅ Zego token refresh on app state change
+  useEffect(() => {
     const checkToken = async () => {
       if (!isAuthenticated) {
         console.log('⏭️ Skipping token check - user not logged in');
@@ -51,15 +96,13 @@ const AppContent = () => {
       try {
         const needsRefresh = await ZegoTokenManager.needsRefresh();
         if (needsRefresh) {
-          console.log('🔄 Refreshing Zego token on app start...');
+          console.log('🔄 Refreshing Zego token...');
           await ZegoTokenManager.fetchAndStore();
         }
       } catch (error) {
-        console.warn('⚠️ Failed to refresh token on app start:', error);
+        console.warn('⚠️ Failed to refresh token:', error);
       }
     };
-
-    checkToken();
 
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'active' && isAuthenticated) {
@@ -68,31 +111,10 @@ const AppContent = () => {
       }
     });
 
-    const handleInitialNotification = async () => {
-      if (notificationHandled.current) return;
-
-      try {
-        const initialNotification = await messaging().getInitialNotification();
-        if (initialNotification && isAuthenticated) {
-          console.log('📩 App launched by notification:', initialNotification);
-          notificationHandled.current = true;
-
-          setTimeout(() => {
-            console.log('✅ Navigation ready after notification launch');
-          }, 1000);
-        }
-      } catch (error) {
-        console.warn('⚠️ Error handling initial notification:', error);
-      }
-    };
-
-    handleInitialNotification();
-
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, [isAuthenticated]);
 
+  // ✅ Setup CallContext in ZegoService
   useEffect(() => {
     if (callContext) {
       console.log('✅ Setting CallContext in ZegoService');
@@ -115,8 +137,7 @@ const AppContent = () => {
 const App = () => {
   return (
     <GestureHandlerRootView style={{flex: 1}}>
-      <StatusBar barStyle="light-content" backgroundColor="#1490EE" />
-      {/* ✅ Match splash color */}
+      <StatusBar barStyle="light-content" backgroundColor="#0779FF" />
       <ThemeProvider>
         <ToastProvider>
           <NavigationContainer

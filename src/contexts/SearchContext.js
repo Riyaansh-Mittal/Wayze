@@ -1,7 +1,5 @@
 /**
- * Search Context
- * Manages search history and results cache
- * UPDATED: Uses API v1.1.0 search endpoint
+ * Search Context - OPTIMIZED
  */
 
 import React, {
@@ -10,13 +8,14 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from 'react';
 import {SearchService} from '../services/api';
 import {useToast} from '../components/common/Toast/ToastProvider';
 import {useAuth} from './AuthContext';
 import AsyncStorage from '../services/storage/AsyncStorage';
 import {STORAGE_KEYS} from '../config/constants';
-import { useTheme } from './ThemeContext';
+import {useTheme} from './ThemeContext';
 
 const SearchContext = createContext();
 
@@ -25,35 +24,34 @@ const MAX_RECENT_SEARCHES = 10;
 export const SearchProvider = ({children}) => {
   const {user} = useAuth();
   const {showSuccess, showError} = useToast();
+  const {t} = useTheme();
 
   const [searchHistory, setSearchHistory] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
   const [searchResult, setSearchResult] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  const {t} = useTheme();
+  // ✅ NEW: Prevent duplicate calls
+  const searchInProgress = useRef(null);
 
   /**
    * Load recent searches from storage on mount
    */
   useEffect(() => {
     if (user) {
-      // ✅ Only load if user is logged in
       loadRecentSearches();
     }
-  }, [user]); // ✅ Re-run when user changes
+  }, [user]);
 
   /**
-   * ✅ NEW: Clear search history when user logs out
+   * Clear search history when user logs out
    */
   useEffect(() => {
     if (!user) {
-      // User logged out - clear everything
       console.log('🚪 User logged out - clearing search history');
       setRecentSearches([]);
       setSearchHistory([]);
       setSearchResult(null);
-      // Storage will be cleared by AuthContext.logout()
     }
   }, [user]);
 
@@ -64,7 +62,6 @@ export const SearchProvider = ({children}) => {
     try {
       const stored = await AsyncStorage.get(STORAGE_KEYS.RECENT_SEARCHES);
       if (stored && Array.isArray(stored)) {
-        // ✅ Validate and clean each item
         const cleaned = stored
           .filter(
             item =>
@@ -86,7 +83,6 @@ export const SearchProvider = ({children}) => {
       }
     } catch (error) {
       console.error('Failed to load recent searches:', error);
-      // Clear corrupt data
       await AsyncStorage.remove(STORAGE_KEYS.RECENT_SEARCHES);
     }
   };
@@ -104,115 +100,115 @@ export const SearchProvider = ({children}) => {
 
   /**
    * Add plate to recent searches
+   * ✅ FIXED: Remove from useCallback dependencies
    */
-  const addToRecentSearches = useCallback((plateNumber, found) => {
+  const addToRecentSearches = (plateNumber, found) => {
     setRecentSearches(prev => {
-      // Remove if already exists
       const filtered = prev.filter(item => item.plateNumber !== plateNumber);
 
-      // ✅ Create clean object with primitives only
       const newSearch = {
-        plateNumber: String(plateNumber).toUpperCase(), // ✅ Ensure string
-        found: Boolean(found), // ✅ Ensure boolean
-        timestamp: new Date().toISOString(), // ✅ Ensure string (not Date object)
+        plateNumber: String(plateNumber).toUpperCase(),
+        found: Boolean(found),
+        timestamp: new Date().toISOString(),
       };
 
-      // Add to beginning
       const updated = [newSearch, ...filtered].slice(0, MAX_RECENT_SEARCHES);
-
-      // Save to storage
       saveRecentSearches(updated);
 
       return updated;
     });
-  }, []);
+  };
 
   /**
    * Search for vehicle by plate number
-   * POST /api/user/search-vehicle
+   * ✅ FIXED: Remove dependencies, use ref to prevent duplicates
    */
-  const searchVehicle = useCallback(
-    async plateNumber => {
-      if (!plateNumber || plateNumber.length < 8) {
-        return {success: false, error: 'Invalid plate number'};
-      }
+  const searchVehicle = useCallback(async plateNumber => {
+    if (!plateNumber || plateNumber.length < 8) {
+      return {success: false, error: 'Invalid plate number'};
+    }
 
-      try {
-        setIsSearching(true);
-        console.log('🔍 Searching vehicle:', plateNumber);
+    const normalizedPlate = plateNumber.toUpperCase();
 
-        const response = await SearchService.searchVehicle(plateNumber);
+    // ✅ NEW: Prevent duplicate calls for same plate
+    if (searchInProgress.current === normalizedPlate) {
+      console.log('⏭️ Search already in progress for', normalizedPlate);
+      return {success: false, error: 'Search already in progress'};
+    }
 
-        console.log('📦 Search response:', response);
+    try {
+      searchInProgress.current = normalizedPlate;
+      setIsSearching(true);
+      console.log('🔍 Searching vehicle:', normalizedPlate);
 
-        // ✅ UPDATED: Check if vehicle data exists and extract userId
-        if (response.success) {
-          const hasVehicleData =
-            response.data &&
-            (response.data.fullName ||
-              response.data.firstName ||
-              response.data.ownerName);
+      const response = await SearchService.searchVehicle(normalizedPlate);
 
-          const found = Boolean(hasVehicleData);
+      console.log('📦 Search response:', response);
 
-          // Add to recent searches
-          addToRecentSearches(plateNumber.toUpperCase(), found);
+      if (response.success) {
+        const hasVehicleData =
+          response.data &&
+          (response.data.fullName ||
+            response.data.firstName ||
+            response.data.ownerName);
 
-          console.log(
-            found
-              ? '✅ Vehicle found - Owner: ' +
-                  response.data.fullName +
-                  ' (ID: ' +
-                  response.data.userId +
-                  ')'
-              : 'ℹ️ Vehicle not found (no owner data)',
-          );
+        const found = Boolean(hasVehicleData);
 
-          // ✅ UPDATED: Include userId in vehicle data
-          return {
-            success: true,
-            data: {
-              found: found,
-              vehicle: found
-                ? {
-                    plateNumber: plateNumber.toUpperCase(),
-                    owner: {
-                      name: response.data.fullName,
-                      photo: response.data.image,
-                      userId: response.data.userId, // ✅ ADD THIS
-                    },
-                  }
-                : null,
-            },
-          };
-        }
+        // Add to recent searches
+        addToRecentSearches(normalizedPlate, found);
 
-        // Handle "Vehicle not found"
-        if (response.message?.includes('Vehicle not found')) {
-          addToRecentSearches(plateNumber.toUpperCase(), false);
+        console.log(
+          found
+            ? '✅ Vehicle found - Owner: ' +
+                response.data.fullName +
+                ' (ID: ' +
+                response.data.userId +
+                ')'
+            : 'ℹ️ Vehicle not found (no owner data)',
+        );
 
-          return {
-            success: true,
-            data: {
-              found: false,
-              vehicle: null,
-            },
-          };
-        }
-
-        return {success: false, error: response.message};
-      } catch (error) {
-        console.error('❌ Search failed:', error);
         return {
-          success: false,
-          error: error.message || 'Failed to search vehicle',
+          success: true,
+          data: {
+            found: found,
+            vehicle: found
+              ? {
+                  plateNumber: normalizedPlate,
+                  owner: {
+                    name: response.data.fullName,
+                    photo: response.data.image,
+                    userId: response.data.userId,
+                  },
+                }
+              : null,
+          },
         };
-      } finally {
-        setIsSearching(false);
       }
-    },
-    [addToRecentSearches],
-  );
+
+      if (response.message?.includes('Vehicle not found')) {
+        addToRecentSearches(normalizedPlate, false);
+
+        return {
+          success: true,
+          data: {
+            found: false,
+            vehicle: null,
+          },
+        };
+      }
+
+      return {success: false, error: response.message};
+    } catch (error) {
+      console.error('❌ Search failed:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to search vehicle',
+      };
+    } finally {
+      setIsSearching(false);
+      searchInProgress.current = null; // ✅ Clear the lock
+    }
+  }, []); // ✅ Empty deps - function never recreated
 
   /**
    * Remove single search from recent
@@ -239,15 +235,15 @@ export const SearchProvider = ({children}) => {
       showSuccess(t('toast.search.cleared') || 'Recent searches cleared');
       return {success: true};
     } catch (error) {
-      showError(t('toast.search.clearFailed') || 'Failed to clear recent searches');
+      showError(
+        t('toast.search.clearFailed') || 'Failed to clear recent searches',
+      );
       return {success: false, error: error.message};
     }
   }, [showSuccess, showError, t]);
 
   /**
    * Get search history from API
-   * NOTE: This endpoint doesn't exist yet in the API
-   * Keeping for future implementation
    */
   const getSearchHistory = useCallback(
     async (limit = 20) => {
@@ -280,13 +276,10 @@ export const SearchProvider = ({children}) => {
   }, []);
 
   const value = {
-    // State
     searchHistory,
     recentSearches,
     searchResult,
     isSearching,
-
-    // Methods
     searchVehicle,
     clearRecentSearches,
     removeRecentSearch,

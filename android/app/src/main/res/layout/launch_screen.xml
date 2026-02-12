@@ -4,13 +4,17 @@
     android:layout_height="match_parent"
     android:background="@color/splash_background">
 
-    <!-- Logo: 300dp is roughly 3/4th width on most phones -->
+    <!-- ✅ FIXED: Larger logo with proper constraints -->
     <ImageView
         android:id="@+id/splash_logo"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:layout_centerInParent="true"
+        android:layout_marginStart="48dp"
+        android:layout_marginEnd="48dp"
+        android:adjustViewBounds="true"
         android:src="@drawable/splash_logo"
-        android:scaleType="fitCenter" />
+        android:scaleType="fitCenter"
+        android:contentDescription="@string/app_name" />
 
 </RelativeLayout>

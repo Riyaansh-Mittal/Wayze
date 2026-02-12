@@ -1,11 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.FLASHLIGHT" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
-
-    <!-- Permissions required by the SDK -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -13,18 +12,12 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-
-    <!-- Permissions required by the Notification -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-
-    <!-- Permissions required by the Notification with custom view -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS"/>
-
-    <!-- Permissions required by the Notification with call style -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.GET_TASKS" />
@@ -41,7 +34,9 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true"
-      android:networkSecurityConfig="@xml/network_security_config">
+      android:largeHeap="false" 
+      android:networkSecurityConfig="@xml/network_security_config"
+      android:hardwareAccelerated="true"> <!-- ✅ NEW: Enable hardware acceleration -->
 
       <meta-data
           android:name="com.google.android.gms.version"
@@ -56,7 +51,9 @@
         android:windowSoftInputMode="adjustResize"
         android:exported="true"
         android:showWhenLocked="true"
-        android:turnScreenOn="true">
+        android:turnScreenOn="true"
+        android:hardwareAccelerated="true"> <!-- ✅ NEW: Per-activity hardware acceleration -->
+        
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -67,22 +64,18 @@
             <category android:name="android.intent.category.DEFAULT" />
         </intent-filter>
 
-        <!-- Custom URL Scheme -->
         <intent-filter>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="myapp" android:host="referral" />
         </intent-filter>
-
       </activity>
 
-      <!-- ✅ Remove OAuth redirect activity if library added it -->
       <activity
         android:name="net.openid.appauth.RedirectUriReceiverActivity"
         tools:node="remove" />
 
-      <!-- ✅ Firebase Messaging Service -->
       <service
         android:name=".MyFirebaseMessagingService"
         android:exported="false">
@@ -91,8 +84,6 @@
         </intent-filter>
       </service>
 
-
-      <!-- ✅ FIXED: Added tools:replace to override Firebase defaults -->
       <meta-data
         android:name="com.google.firebase.messaging.default_notification_channel_id"
         android:value="default-channel-id"
@@ -111,6 +102,11 @@
       <meta-data
         android:name="com.google.android.gms.ads.APPLICATION_ID"
         android:value="ca-app-pub-4807931196810855~2604013388"/>
+        
+      <!-- ✅ NEW: Startup optimization metadata -->
+      <meta-data
+        android:name="android.max_aspect"
+        android:value="2.4" />
         
     </application>
 </manifest>

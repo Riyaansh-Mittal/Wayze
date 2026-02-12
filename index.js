@@ -10,49 +10,45 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ZegoTokenManager} from './src/services/zego/ZegoTokenManager';
 import ZegoUIKitPrebuiltCallService from '@zegocloud/zego-uikit-prebuilt-call-rn';
 
-// ✅ Background message handler - Keep simple
+// ✅ CRITICAL: Background message handler MUST be registered FIRST
+// This is the OFFICIAL pattern from React Native Firebase docs [web:388]
 messaging().setBackgroundMessageHandler(async remoteMessage => {
   console.log('📩 Background FCM Message:', remoteMessage);
-  return Promise.resolve();
+  // ✅ Don't return Promise.resolve() - just let async function complete naturally
 });
 
-// ✅ DEFER: Move heavy setup to after app renders
-const initializeServices = () => {
-  // Create notification channel
-  if (Platform.OS === 'android') {
-    PushNotification.createChannel(
-      {
-        channelId: 'zego_audio_call',
-        channelName: 'Zego Audio Call',
-        importance: 4,
-        vibrate: true,
-        soundName: 'zego_incoming',
-        playSound: true,
-      },
-      created => console.log(`Channel ${created ? 'created' : 'exists'}`),
-    );
-  }
-
-  // Configure push notifications
-  PushNotification.configure({
-    onNotification: function (notification) {
-      console.log('🔔 Notification tapped:', notification);
+// ✅ CRITICAL: Create notification channel IMMEDIATELY
+if (Platform.OS === 'android') {
+  PushNotification.createChannel(
+    {
+      channelId: 'zego_audio_call',
+      channelName: 'Zego Audio Call',
+      importance: 4,
+      vibrate: true,
+      soundName: 'zego_incoming',
+      playSound: true,
     },
-    requestPermissions: Platform.OS === 'ios',
-    popInitialNotification: true,
-  });
+    created => console.log(`✅ Channel ${created ? 'created' : 'exists'}`),
+  );
+}
 
-  // Enable ZPNs
-  ZPNs.ZPNs.enableDebug(true);
-  ZPNs.ZPNs.setPushConfig({enableFCMPush: true});
+// ✅ Configure push notifications synchronously
+PushNotification.configure({
+  onNotification: function (notification) {
+    console.log('🔔 Notification tapped:', notification);
+  },
+  requestPermissions: Platform.OS === 'ios',
+  popInitialNotification: true,
+});
 
-  // Store FCM token
-  storeFcmToken();
+// ✅ CRITICAL: Enable ZPNs IMMEDIATELY (required for background calls)
+// ZPNs.ZPNs.enableDebug(true);
+// ZPNs.ZPNs.setPushConfig({enableFCMPush: true});
 
-  ZegoUIKitPrebuiltCallService.useSystemCallingUI([ZIM, ZPNs]);
-};
+// ✅ CRITICAL: Register Zego system calling UI IMMEDIATELY
+ZegoUIKitPrebuiltCallService.useSystemCallingUI([ZIM, ZPNs]);
 
-// ✅ Store FCM token (unchanged)
+// ✅ Store FCM token IMMEDIATELY (async but non-blocking)
 const storeFcmToken = async () => {
   try {
     const fcmToken = await messaging().getToken();
@@ -72,7 +68,10 @@ const storeFcmToken = async () => {
   }
 };
 
-// ✅ Token provider for Zego (unchanged)
+// Start fetching token immediately (runs in background)
+storeFcmToken();
+
+// ✅ CRITICAL: Token provider MUST be registered immediately
 ZegoUIKit.onTokenProvide(async () => {
   try {
     console.log('🔑 Zego requesting token...');
@@ -88,11 +87,5 @@ ZegoUIKit.onTokenProvide(async () => {
     return '';
   }
 });
-
-// ✅ NEW: Initialize services after a delay
-setTimeout(() => {
-  initializeServices();
-  console.log('✅ Services initialized in background');
-}, 3000); // Start after 3 seconds (after splash is hidden)
 
 AppRegistry.registerComponent(appName, () => App);
