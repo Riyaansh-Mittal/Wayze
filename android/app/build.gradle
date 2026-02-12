@@ -43,14 +43,16 @@ android {
     }
     
     buildTypes {
-        debug {
-            signingConfig signingConfigs.debug
-        }
         release {
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
-            shrinkResources true // ✅ NEW: Remove unused resources
+            shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            
+            // ✅ NEW: Keep debugging symbols for crash analysis
+            ndk {
+                debugSymbolLevel 'FULL'
+            }
         }
     }
     
@@ -70,6 +72,15 @@ android {
         pickFirst 'lib/x86_64/libc++_shared.so'
         pickFirst 'lib/armeabi-v7a/libc++_shared.so'
         pickFirst 'lib/arm64-v8a/libc++_shared.so'
+        
+        // ✅ NEW: Keep Zego native libraries
+        pickFirst 'lib/*/libZegoExpressEngine.so'
+        pickFirst 'lib/*/libZegoScreenCapture.so'
+        
+        // ✅ Don't compress Zego assets
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 }
 

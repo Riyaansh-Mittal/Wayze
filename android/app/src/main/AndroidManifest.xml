@@ -34,14 +34,15 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true"
-      android:largeHeap="false" 
+      android:largeHeap="false"
       android:networkSecurityConfig="@xml/network_security_config"
-      android:hardwareAccelerated="true"> <!-- ✅ NEW: Enable hardware acceleration -->
+      android:hardwareAccelerated="true">
 
       <meta-data
           android:name="com.google.android.gms.version"
           android:value="@integer/google_play_services_version" />
       
+      <!-- ✅ UPDATED: MainActivity with all intent filters -->
       <activity
         android:name=".MainActivity"
         android:theme="@style/SplashTheme"
@@ -52,18 +53,35 @@
         android:exported="true"
         android:showWhenLocked="true"
         android:turnScreenOn="true"
-        android:hardwareAccelerated="true"> <!-- ✅ NEW: Per-activity hardware acceleration -->
+        android:taskAffinity=""
+        android:excludeFromRecents="false"
+        android:hardwareAccelerated="true">
         
+        <!-- Main launcher -->
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
 
+        <!-- ✅ NEW: Handle notification actions -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+
+        <!-- Notification tap -->
         <intent-filter>
             <action android:name="OPEN_NOTIFICATION" />
             <category android:name="android.intent.category.DEFAULT" />
         </intent-filter>
 
+        <!-- ✅ NEW: Zego call notification -->
+        <intent-filter>
+            <action android:name="com.zegocloud.uikit.call.OPEN_CALL" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+
+        <!-- Custom URL scheme -->
         <intent-filter>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
@@ -72,21 +90,26 @@
         </intent-filter>
       </activity>
 
+      <!-- Remove OAuth activity -->
       <activity
         android:name="net.openid.appauth.RedirectUriReceiverActivity"
         tools:node="remove" />
 
+      <!-- ✅ UPDATED: Firebase Messaging Service -->
       <service
         android:name=".MyFirebaseMessagingService"
-        android:exported="false">
+        android:exported="false"
+        android:enabled="true"
+        android:directBootAware="true">
         <intent-filter>
           <action android:name="com.google.firebase.MESSAGING_EVENT" />
         </intent-filter>
       </service>
 
+      <!-- Firebase metadata -->
       <meta-data
         android:name="com.google.firebase.messaging.default_notification_channel_id"
-        android:value="default-channel-id"
+        android:value="zego_audio_call"
         tools:replace="android:value" />
         
       <meta-data
@@ -103,7 +126,6 @@
         android:name="com.google.android.gms.ads.APPLICATION_ID"
         android:value="ca-app-pub-4807931196810855~2604013388"/>
         
-      <!-- ✅ NEW: Startup optimization metadata -->
       <meta-data
         android:name="android.max_aspect"
         android:value="2.4" />
