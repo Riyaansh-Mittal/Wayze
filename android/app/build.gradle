@@ -13,7 +13,7 @@ react {
 }
 
 // ✅ CHANGED: Enable ProGuard for release (big optimization)
-def enableProguardInReleaseBuilds = true
+def enableProguardInReleaseBuilds = false
 
 def jscFlavor = 'org.webkit:android-jsc:+'
 
@@ -46,7 +46,7 @@ android {
         release {
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
-            shrinkResources true
+            shrinkResources false
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             
             // ✅ NEW: Keep debugging symbols for crash analysis

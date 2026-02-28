@@ -71,7 +71,7 @@ export class ZegoService {
           androidNotificationConfig: {
             channelID: 'zego_audio_call',
             channelName: 'zego_audio_call',
-            sound: 'zego_incoming',
+            // sound: 'zego_incoming',
           },
           notifyWhenAppRunningInBackgroundOrQuit: true,
           zimConfig: {

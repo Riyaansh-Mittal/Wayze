@@ -25,8 +25,8 @@ if (Platform.OS === 'android') {
       channelName: 'Zego Audio Call',
       importance: 4,
       vibrate: true,
-      soundName: 'zego_incoming',
-      playSound: true,
+      playSound: false, // ✅ Disable system sound (Zego plays it manually)
+      soundName: null, // ✅ No sound file
     },
     created => console.log(`✅ Channel ${created ? 'created' : 'exists'}`),
   );
@@ -43,7 +43,7 @@ PushNotification.configure({
 
 // ✅ CRITICAL: Enable ZPNs IMMEDIATELY (required for background calls)
 // ZPNs.ZPNs.enableDebug(true);
-// ZPNs.ZPNs.setPushConfig({enableFCMPush: true});
+ZPNs.ZPNs.setPushConfig({enableFCMPush: true});
 
 // ✅ CRITICAL: Register Zego system calling UI IMMEDIATELY
 ZegoUIKitPrebuiltCallService.useSystemCallingUI([ZIM, ZPNs]);

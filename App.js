@@ -22,12 +22,12 @@ import {
 } from './src/services/firebase/NotificationService';
 import {ZegoTokenManager} from './src/services/zego/ZegoTokenManager';
 import {ZegoService} from './src/services/zego/ZegoService';
+import {NativeModules, Platform} from 'react-native';
 
 const AppContent = () => {
   const {isAuthenticated, isLoading} = useAuth();
   const callContext = useCall();
   const notificationHandled = useRef(false);
-
 
   // ✅ NEW: Setup FCM (moved from index.js for non-blocking startup)
   useEffect(() => {
@@ -43,6 +43,13 @@ const AppContent = () => {
 
     // Start FCM setup in background
     setupFCM();
+
+    if (Platform.OS === 'android') {
+      // Small timeout to ensure the first frame is painted
+      setTimeout(() => {
+        NativeModules.SplashModule?.hide();
+      }, 100);
+    }
 
     // Setup token refresh listener
     const unsubscribeTokenRefresh = messaging().onTokenRefresh(token => {

@@ -7,7 +7,7 @@
 const getBaseURL = () => {
   if (__DEV__) {
     // Development - Your actual backend
-    return 'https://c1a2-2405-201-6810-915c-79b2-303-8b78-260d.ngrok-free.app/'; // ✅ REMOVE /api/ from base
+    return 'https://parking-backbone-5og5.onrender.com/'; // ✅ REMOVE /api/ from base
   } else {
     // Production
     return 'https://parking-backbone-5og5.onrender.com/';
