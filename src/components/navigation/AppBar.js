@@ -13,7 +13,6 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
 import { useTheme } from '../../contexts/ThemeContext';
 import { LeftArrowIcon } from '../../assets/icons';
@@ -32,7 +31,6 @@ const AppBar = ({
 }) => {
   const { theme, isDarkMode } = useTheme();
   const { colors, components, spacing } = theme;
-  const insets = useSafeAreaInsets();
 
   const bgColor = backgroundColor || colors.white;
   const statusBarStyle = isDarkMode() ? 'light-content' : 'dark-content';
@@ -49,7 +47,6 @@ const AppBar = ({
           backgroundColor: bgColor,
           borderBottomWidth: components.appBar.borderBottomWidth,
           borderBottomColor: colors.neutralBorder,
-          paddingTop: Platform.OS === 'android' ? 0 : insets.top,
         },
         style,
       ]}
