@@ -40,11 +40,17 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+        storeFile file('release.keystore')
+        storePassword 'Wayze@Park1'
+        keyAlias 'qrparking'
+        keyPassword 'Wayze@Park1'
+        }
     }
     
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             shrinkResources false
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"

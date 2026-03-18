@@ -17,6 +17,10 @@ export class ZegoService {
   static callAnswered = false; // ✅ Track if call was answered
   static callEndHandled = false; // ✅ Prevent duplicate end calls
   static isCaller = false; // ✅ Track if current user is the caller
+  static callerName = null;
+
+  static pendingOfflineCall = null;
+  static onRoomJoined = null; // ✅ ADD THIS
 
   static setCallContext(context) {
     this.callContext = context;
@@ -69,8 +73,8 @@ export class ZegoService {
           },
           certificateIndex: ZegoMultiCertificate.first,
           androidNotificationConfig: {
-            channelID: 'zego_audio_call',
-            channelName: 'zego_audio_call',
+            channelID: 'zego_audio_call_v3', // ✅ Match new channel ID
+            channelName: 'Zego Audio Call',
             // sound: 'zego_incoming',
           },
           notifyWhenAppRunningInBackgroundOrQuit: true,
@@ -78,6 +82,38 @@ export class ZegoService {
             isMultiplePlatformOnline: true,
           },
           isIOSSandboxEnvironment: false,
+          onIncomingCallReceived: (
+            callID,
+            inviter,
+            type,
+            invitees,
+            customData,
+          ) => {
+            console.log('📞++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Incoming call received:', callID, inviter);
+            ZegoService.pendingOfflineCall = {callID, inviter};
+            ZegoService.setCurrentCallId(callID, false); // false = callee, not caller
+            ZegoService.callerName = inviter?.userName || inviter?.name || null; // ✅ Add this
+          },
+
+          onIncomingCallCanceled: (callID, inviter) => {
+            console.log('❌ Incoming call canceled:', callID);
+            ZegoService.clearCallState();
+          },
+
+          onIncomingCallTimeout: (callID, inviter) => {
+            console.log('⏱️ Incoming call timed out:', callID);
+            ZegoService.clearCallState();
+          },
+
+          onIncomingCallAcceptButtonPressed: () => {
+            console.log('✅ User accepted incoming call');
+            ZegoService.pendingOfflineCall = null; // ✅ ADD THIS - clear on manual in-app accept
+          },
+
+          onIncomingCallDeclineButtonPressed: () => {
+            console.log('❌ User declined incoming call');
+            ZegoService.clearCallState();
+          },
           onRequireNewToken: async () => {
             console.log('🔑 Zego SDK requesting new token...');
             return await ZegoTokenManager.getToken();
@@ -195,6 +231,17 @@ export class ZegoService {
               onHangUp: duration => {
                 console.log('📞 User hung up manually, duration:', duration);
                 this.handleCallEnded('manual_hang_up');
+              },
+
+              // ✅ ADD THIS — fires when room is successfully joined
+              // Matches log: [ZegoUIKitPrebuiltCallInCallScreen] onJoinRoom at 00:05:37.009
+              onJoinRoom: () => {
+                console.log('✅ onJoinRoom fired — call room connected');
+                ZegoService.pendingOfflineCall = null; // clear pending flag
+                if (ZegoService.onRoomJoined) {
+                  ZegoService.onRoomJoined(); // notify AppNavigator to hide CallConnecting
+                  ZegoService.onRoomJoined = null;
+                }
               },
             };
           },
@@ -344,7 +391,8 @@ export class ZegoService {
         const currentRoute = routes[routes.length - 1];
         const isOnZegoScreen =
           currentRoute.name === 'ZegoUIKitPrebuiltCallInCallScreen' ||
-          currentRoute.name === 'ZegoUIKitPrebuiltCallWaitingScreen';
+          currentRoute.name === 'ZegoUIKitPrebuiltCallWaitingScreen' ||
+          currentRoute.name === 'CallConnecting'; // ✅ ADD THIS
 
         if (isOnZegoScreen) {
           console.log('🔙 Navigating to Main screen...');

@@ -21,12 +21,11 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
 if (Platform.OS === 'android') {
   PushNotification.createChannel(
     {
-      channelId: 'zego_audio_call',
+      channelId: 'zego_audio_call_v3', // ✅ New ID to force channel reset
       channelName: 'Zego Audio Call',
       importance: 4,
-      vibrate: true,
-      playSound: false, // ✅ Disable system sound (Zego plays it manually)
-      soundName: null, // ✅ No sound file
+      vibrate: false, // ✅ Let Zego handle vibration, not the channel
+      playSound: false, // ✅ Let Zego handle sound
     },
     created => console.log(`✅ Channel ${created ? 'created' : 'exists'}`),
   );

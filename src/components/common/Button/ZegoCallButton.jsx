@@ -165,6 +165,18 @@ const ZegoCallButton = ({
     console.warn('⚠️ ZegoCallButton requires invitees prop');
   }
 
+  const getInitials = fullName => {
+    if (!fullName) {
+      return '?';
+    }
+
+    const parts = fullName.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  };
+
   return (
     <View style={[styles.container, fullWidth && {width: '100%'}, style]}>
       {/* LAYER 1: Your Custom UI (Visuals) */}
@@ -204,7 +216,9 @@ const ZegoCallButton = ({
             isVideoCall={false}
             resourceID={resourceID}
             timeout={60}
-            customData={customData}
+            customData={JSON.stringify({
+              plateNumber: customData?.plateNumber || '',
+            })}
             onPressed={handlePressed}
             onWillPressed={handleWillPressed}
             onError={handleError}

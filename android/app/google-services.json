@@ -12,7 +12,28 @@
           "package_name": "com.qrparkingappbare"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "483312777993-b3qlhpd53acilsjnk0rbbvrk6p3rn63j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.qrparkingappbare",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "483312777993-jet6di3ahij5k0b1rljsrrp6st3j6s6t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.qrparkingappbare",
+            "certificate_hash": "e9ead59377ad5c025d6455bb37a3421bc9538892"
+          }
+        },
+        {
+          "client_id": "483312777993-cois2s5otk9bmpm9fa08titejqihidbj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB-V6DIUQv6tKN7RMqdAV6n8vpvLynJXRM"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "483312777993-cois2s5otk9bmpm9fa08titejqihidbj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -31,7 +57,12 @@
           "package_name": "com.zegovoicecall"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "483312777993-cois2s5otk9bmpm9fa08titejqihidbj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB-V6DIUQv6tKN7RMqdAV6n8vpvLynJXRM"
@@ -39,7 +70,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "483312777993-cois2s5otk9bmpm9fa08titejqihidbj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

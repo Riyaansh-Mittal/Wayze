@@ -405,6 +405,7 @@ const SearchResultFoundScreen = ({navigation, route}) => {
                 title={t('search.results.found.callButton') || 'Call Owner Now'}
                 fullWidth
                 disabled={isInitiatingCall}
+                customData={{ plateNumber: plateNumber }}
                 onWillPressed={async () => {
                   console.log('📞 About to call - initiating backend call...');
                   const success = await handleInitiateCall();

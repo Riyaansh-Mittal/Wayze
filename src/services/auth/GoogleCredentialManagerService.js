@@ -8,7 +8,7 @@ import {Platform} from 'react-native';
 
 // Your Google Web Client ID
 const WEB_CLIENT_ID =
-  '63738134619-9loqipgmkh84d3v35llvd1f22k4sfkr3.apps.googleusercontent.com';
+  '483312777993-cois2s5otk9bmpm9fa08titejqihidbj.apps.googleusercontent.com';
 
 class GoogleCredentialManagerServiceClass {
   /**

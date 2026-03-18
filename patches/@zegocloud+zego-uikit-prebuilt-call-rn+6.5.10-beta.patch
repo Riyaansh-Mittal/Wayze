@@ -1,0 +1,108 @@
+diff --git a/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/android/.project b/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/android/.project
+new file mode 100644
+index 0000000..8e052ee
+--- /dev/null
++++ b/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/android/.project
+@@ -0,0 +1,28 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<projectDescription>
++	<name>zegocloud_zego-uikit-prebuilt-call-rn</name>
++	<comment>Project zegocloud_zego-uikit-prebuilt-call-rn created by Buildship.</comment>
++	<projects>
++	</projects>
++	<buildSpec>
++		<buildCommand>
++			<name>org.eclipse.buildship.core.gradleprojectbuilder</name>
++			<arguments>
++			</arguments>
++		</buildCommand>
++	</buildSpec>
++	<natures>
++		<nature>org.eclipse.buildship.core.gradleprojectnature</nature>
++	</natures>
++	<filteredResources>
++		<filter>
++			<id>1770638030638</id>
++			<name></name>
++			<type>30</type>
++			<matcher>
++				<id>org.eclipse.core.resources.regexFilterMatcher</id>
++				<arguments>node_modules|\.git|__CREATED_BY_JAVA_LANGUAGE_SERVER__</arguments>
++			</matcher>
++		</filter>
++	</filteredResources>
++</projectDescription>
+diff --git a/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/android/src/main/java/com/zegouikitprebuiltcallrn/customview/CustomCallNotificationManager.java b/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/android/src/main/java/com/zegouikitprebuiltcallrn/customview/CustomCallNotificationManager.java
+index 92066c2..9530267 100644
+--- a/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/android/src/main/java/com/zegouikitprebuiltcallrn/customview/CustomCallNotificationManager.java
++++ b/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/android/src/main/java/com/zegouikitprebuiltcallrn/customview/CustomCallNotificationManager.java
+@@ -52,7 +52,7 @@ public class CustomCallNotificationManager {
+ 
+         HashMap<String, Object> androidParams = new HashMap<>(Map.of(
+             "isCustomNotification", true,
+-            "isShowFullLockedScreen", false,
++            "isShowFullLockedScreen", true,
+             "isShowLogo", false,
+             "isShowCallID", true,   // show message
+             "ringtonePath", this.soundName,
+diff --git a/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/lib/commonjs/call_invitation/services/notification_helper.android.js b/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/lib/commonjs/call_invitation/services/notification_helper.android.js
+index efbf2ce..0cd1906 100644
+--- a/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/lib/commonjs/call_invitation/services/notification_helper.android.js
++++ b/node_modules/@zegocloud/zego-uikit-prebuilt-call-rn/lib/commonjs/call_invitation/services/notification_helper.android.js
+@@ -100,11 +100,17 @@ class NotificationHelper {
+       type,
+       inviter,
+       invitees,
+-      isPureOfflinePush: true
++      isPureOfflinePush: true,
++      custom_data: callData.custom_data || ''
+     };
+     (0, _logger.zloginfo)(`[NotificationHelper][showOfflineNotification] _callData: ${JSON.stringify(this._callData)}`);
+-    const callerName = call_name ?? _inner_text_helper.default.instance().getIncomingCallDialogTitle(inviter.name, type, invitees.length);
+-    const message = _inner_text_helper.default.instance().getIncomingCallDialogMessage(type, invitees.length);
++    // const callerName = call_name ?? _inner_text_helper.default.instance().getIncomingCallDialogTitle(inviter.name, type, invitees.length);
++    // const message = _inner_text_helper.default.instance().getIncomingCallDialogMessage(type, invitees.length);
++    let _pn = '';
++    try { _pn = JSON.parse(callData.custom_data || '{}').plateNumber || ''; } catch(e) {}
++    const _initials = inviter.name.trim().split(' ').filter(Boolean).map(function(n){return n[0];}).join('').toUpperCase();
++    const callerName = _initials || (call_name ?? _inner_text_helper.default.instance().getIncomingCallDialogTitle(inviter.name, type, invitees.length));
++    const message = _pn || _inner_text_helper.default.instance().getIncomingCallDialogMessage(type, invitees.length);
+     (0, _logger.zloginfo)(`[NotificationHelper][showOfflineNotification], callerName: ${callerName}, message: ${message}`);
+     this._displayIncomingCall(callID, callerName, message, timeout ?? 60, 'restarted');
+   }
+@@ -130,8 +136,13 @@ class NotificationHelper {
+       timeout
+     } = callData;
+     (0, _logger.zloginfo)(`[NotificationHelper][showOnlineNotification] callID: ${callID}, roomID: ${roomID}, isVideoCall: ${type}, inviter: ${JSON.stringify(inviter)}, invitees: ${JSON.stringify(invitees)}, timeout: ${timeout}`);
+-    const callerName = _inner_text_helper.default.instance().getIncomingCallDialogTitle(inviter.name, type, invitees.length);
+-    const message = _inner_text_helper.default.instance().getIncomingCallDialogMessage(type, invitees.length);
++    // const callerName = _inner_text_helper.default.instance().getIncomingCallDialogTitle(inviter.name, type, invitees.length);
++    // const message = _inner_text_helper.default.instance().getIncomingCallDialogMessage(type, invitees.length);
++    let _pn2 = '';
++    try { _pn2 = JSON.parse(callData.custom_data || '{}').plateNumber || ''; } catch(e) {}
++    const _initials2 = inviter.name.trim().split(' ').filter(Boolean).map(function(n){return n[0];}).join('').toUpperCase();
++    const callerName = _initials2 || _inner_text_helper.default.instance().getIncomingCallDialogTitle(inviter.name, type, invitees.length);
++    const message = _pn2 || _inner_text_helper.default.instance().getIncomingCallDialogMessage(type, invitees.length);
+     (0, _logger.zloginfo)(`[NotificationHelper][showOnlineNotification], callerName: ${callerName}, message: ${message}`);
+     this._displayIncomingCall(callID, callerName, message, timeout ?? 60, _reactNative.AppState.currentState);
+     this._currentCallID = callID;
+@@ -313,7 +324,8 @@ class NotificationHelper {
+       type,
+       inviter,
+       invitees,
+-      isPureOfflinePush
++      isPureOfflinePush,
++      custom_data
+     } = this._callData;
+     this._callData = undefined;
+     let app_state = isPureOfflinePush ? "restarted" : _reactNative.AppState.currentState;
+@@ -322,7 +334,8 @@ class NotificationHelper {
+         call_id: roomID,
+         type,
+         inviter,
+-        invitees
++        invitees,
++        custom_data // ← add this
+       });
+     } else {
+       (0, _logger.zloginfo)(`[NotificationHelper][_onCallKitAnswerCall] will accept after signalingPlugin login succ, callbackID: ${this._callbackID}`);

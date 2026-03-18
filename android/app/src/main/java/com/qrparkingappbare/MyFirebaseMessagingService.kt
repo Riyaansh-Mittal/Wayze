@@ -36,13 +36,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                "zego_audio_call",
+                "zego_audio_call_v3",
                 "Zego Audio Call",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Incoming call notifications"
                 enableVibration(true)
                 setShowBadge(true)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC // ✅ Show on lock screen
             }
             
             val manager = getSystemService(NotificationManager::class.java)

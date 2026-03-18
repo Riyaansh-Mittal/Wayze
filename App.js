@@ -24,6 +24,7 @@ import {ZegoTokenManager} from './src/services/zego/ZegoTokenManager';
 import {ZegoService} from './src/services/zego/ZegoService';
 import {NativeModules, Platform} from 'react-native';
 
+
 const AppContent = () => {
   const {isAuthenticated, isLoading} = useAuth();
   const callContext = useCall();
@@ -135,7 +136,6 @@ const AppContent = () => {
 
   return (
     <>
-      <ZegoCallInvitationDialog />
       <AppNavigator />
     </>
   );
@@ -152,6 +152,9 @@ const App = () => {
             onReady={() => {
               console.log('✅ Navigation container ready');
             }}>
+            {/* ✅ ADD IT HERE - Direct child of NavigationContainer */}
+            <ZegoCallInvitationDialog />
+
             <AuthProvider>
               <UserProvider>
                 <BalanceProvider>

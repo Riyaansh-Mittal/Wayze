@@ -7,7 +7,7 @@ import {authorize, refresh, revoke} from 'react-native-app-auth';
 import {Platform} from 'react-native';
 
 const GOOGLE_WEB_CLIENT_ID =
-  '483312777993-d2i6gn1oees4ak5g8m02ea5ggob8u4d5.apps.googleusercontent.com';
+  '483312777993-cois2s5otk9bmpm9fa08titejqihidbj.apps.googleusercontent.com';
 // ✅ OAuth2 configuration
 const config = {
   issuer: 'https://accounts.google.com',
