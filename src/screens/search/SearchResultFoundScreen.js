@@ -21,6 +21,7 @@ import Card from '../../components/common/Card/Card';
 import VehicleIcon from '../../components/common/Icon/VehicleIcon';
 import {InfoIcon, BellIcon, CreditsIcon} from '../../assets/icons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import CenterModal from '../../components/common/Modal/CenterModal';
 
 const SearchResultFoundScreen = ({navigation, route}) => {
   const {t, theme} = useTheme();
@@ -34,12 +35,19 @@ const SearchResultFoundScreen = ({navigation, route}) => {
   const hasEnoughCredits = canMakeContact();
   const [callId, setCallId] = useState(null);
   const [isInitiatingCall, setIsInitiatingCall] = useState(false);
+  const [callLimitModal, setCallLimitModal] = useState({
+    visible: false,
+    resetAt: null,
+    limit: 2,
+  });
 
   // Extract vehicle data
   const ownerName = vehicle.owner?.name || 'Vehicle Owner';
   const ownerPhoto = vehicle.owner?.photo;
   const ownerId = vehicle.owner?.userId || vehicle.owner?.id;
   const plateNumber = vehicle.plateNumber || searchQuery;
+  const callLimit = vehicle.callLimit;
+  const isCallBlocked = callLimit?.exceeded === true;
 
   useEffect(() => {
     console.log('✅ Vehicle found - Owner:', ownerName, '(ID:', ownerId, ')');
@@ -376,7 +384,6 @@ const SearchResultFoundScreen = ({navigation, route}) => {
 
           {/* ✅ SIMPLIFIED: Call button logic - NO BALANCE DEDUCTION */}
           {!hasEnoughCredits ? (
-            // No credits - show buy button
             <SecondaryButton
               title={
                 t('search.results.found.buyCredits') || 'Buy Credits to Call'
@@ -390,14 +397,43 @@ const SearchResultFoundScreen = ({navigation, route}) => {
               }
               style={{marginBottom: spacing.lg}}
             />
+          ) : isCallBlocked ? (
+            // ✅ Call limit exceeded — tappable disabled button that shows modal
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={{marginBottom: spacing.lg}}
+              onPress={() =>
+                setCallLimitModal({
+                  visible: true,
+                  resetAt: callLimit?.resetAt,
+                  limit: callLimit?.limit || 2,
+                })
+              }>
+              <View
+                style={{
+                  height: theme.components.secondaryButton.height,
+                  width: '100%',
+                  borderRadius: theme.components.secondaryButton.borderRadius,
+                  borderWidth: theme.components.secondaryButton.borderWidth,
+                  borderColor: colors.neutralBorder,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: 0.6,
+                }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: colors.textDisabled,
+                  }}>
+                  {t('search.results.found.callButton') || 'Call Owner Now'}
+                </Text>
+              </View>
+            </TouchableOpacity>
           ) : (
-            // Has credits - show Zego button directly
+            // ✅ Normal flow — call not blocked
             <View style={{marginBottom: spacing.lg}}>
-              {console.log('🔵 Rendering ZegoCallButton for:', {
-                userID: ownerId,
-                userName: ownerName,
-                callId,
-              })}
               <ZegoCallButton
                 receiverId={ownerId}
                 invitees={[{userID: ownerId, userName: ownerName}]}
@@ -405,19 +441,15 @@ const SearchResultFoundScreen = ({navigation, route}) => {
                 title={t('search.results.found.callButton') || 'Call Owner Now'}
                 fullWidth
                 disabled={isInitiatingCall}
-                customData={{ plateNumber: plateNumber }}
+                customData={{plateNumber}}
                 onWillPressed={async () => {
-                  console.log('📞 About to call - initiating backend call...');
                   const success = await handleInitiateCall();
-                  return success; // Allow/deny Zego call based on backend response
+                  return success;
                 }}
-                onPressed={() => {
-                  console.log('📞 ✅ Call started with callId:', callId);
-                }}
-                onError={error => {
-                  console.error('❌ Call error:', error);
-                  Alert.alert('Call Error', error?.message || 'Failed to call');
-                }}
+                onPressed={() => console.log('📞 ✅ Call started')}
+                onError={error =>
+                  Alert.alert('Call Error', error?.message || 'Failed to call')
+                }
               />
             </View>
           )}
@@ -491,6 +523,116 @@ const SearchResultFoundScreen = ({navigation, route}) => {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      <CenterModal
+        visible={callLimitModal.visible}
+        onClose={() => setCallLimitModal(prev => ({...prev, visible: false}))}
+        title="Call Limit Reached"
+        closeOnBackdropPress={false}>
+        <View style={{alignItems: 'center', marginBottom: spacing.md}}>
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: '#FFF3F3',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+            <Text style={{fontSize: 30}}>📵</Text>
+          </View>
+        </View>
+
+        <Text
+          style={{
+            fontSize: 14,
+            color: colors.textSecondary,
+            textAlign: 'center',
+            lineHeight: 22,
+            marginBottom: spacing.md,
+          }}>
+          You can only call the same owner{' '}
+          <Text style={{fontWeight: '700', color: colors.textPrimary}}>
+            {callLimitModal.limit} times per day
+          </Text>{' '}
+          to prevent spam and ensure safety for all users.
+        </Text>
+
+        <View
+          style={{
+            backgroundColor: colors.neutralLight,
+            borderRadius: 12,
+            paddingVertical: spacing.md,
+            alignItems: 'center',
+            marginBottom: spacing.md,
+          }}>
+          <Text
+            style={{
+              fontSize: 12,
+              color: colors.textSecondary,
+              marginBottom: 2,
+            }}>
+            Calls reset at
+          </Text>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: colors.textPrimary,
+            }}>
+            {callLimitModal.resetAt
+              ? new Date(callLimitModal.resetAt).toLocaleTimeString('en-IN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true,
+                  timeZone: 'Asia/Kolkata',
+                })
+              : '1:00 AM'}{' '}
+            tonight
+          </Text>
+        </View>
+
+        <Text
+          style={{
+            fontSize: 13,
+            color: colors.textSecondary,
+            textAlign: 'center',
+            lineHeight: 20,
+            marginBottom: spacing.lg,
+          }}>
+          💡 You can still{' '}
+          <Text style={{fontWeight: '700', color: colors.textPrimary}}>
+            Send a Free Alert
+          </Text>{' '}
+          to notify the owner instantly.
+        </Text>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: colors.primary,
+            borderRadius: 12,
+            paddingVertical: 14,
+            alignItems: 'center',
+            marginBottom: spacing.sm,
+          }}
+          onPress={() => {
+            setCallLimitModal(prev => ({...prev, visible: false}));
+            handleSendAlert();
+          }}>
+          <Text style={{color: colors.white, fontSize: 15, fontWeight: '600'}}>
+            Send Alert Instead
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{paddingVertical: 12, alignItems: 'center'}}
+          onPress={() =>
+            setCallLimitModal(prev => ({...prev, visible: false}))
+          }>
+          <Text style={{color: colors.textSecondary, fontSize: 14}}>
+            Dismiss
+          </Text>
+        </TouchableOpacity>
+      </CenterModal>
     </SafeAreaView>
   );
 };

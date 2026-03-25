@@ -179,6 +179,7 @@ export const SearchProvider = ({children}) => {
                     photo: response.data.image,
                     userId: response.data.userId,
                   },
+                  callLimit: response.data.callLimit || null,
                 }
               : null,
           },
