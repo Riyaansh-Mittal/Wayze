@@ -3,10 +3,9 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  Image,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTheme} from '../../contexts/ThemeContext';
@@ -14,14 +13,32 @@ import {useAuth} from '../../contexts/AuthContext';
 import {useBalance} from '../../contexts/BalanceContext';
 import {useCall} from '../../contexts/CallContext';
 import AppBar from '../../components/navigation/AppBar';
-import PrimaryButton from '../../components/common/Button/PrimaryButton';
-import SecondaryButton from '../../components/common/Button/SecondaryButton';
 import ZegoCallButton from '../../components/common/Button/ZegoCallButton';
 import Card from '../../components/common/Card/Card';
 import VehicleIcon from '../../components/common/Icon/VehicleIcon';
 import {InfoIcon, BellIcon, CreditsIcon} from '../../assets/icons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CenterModal from '../../components/common/Modal/CenterModal';
+
+// ── Privacy helper ────────────────────────────────────────────────────────────
+// "John Doe"  → "J*** D***"
+// "Alice"     → "A***"
+const maskName = name => {
+  if (!name) return 'V***';
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(word => (word.length > 0 ? word.charAt(0).toUpperCase() + '***' : ''))
+    .join(' ');
+};
+
+// initials for avatar bubble: first + last initial
+const getInitials = name => {
+  if (!name) return 'V';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
 
 const SearchResultFoundScreen = ({navigation, route}) => {
   const {t, theme} = useTheme();
@@ -41,7 +58,6 @@ const SearchResultFoundScreen = ({navigation, route}) => {
     limit: 2,
   });
 
-  // Extract vehicle data
   const ownerName = vehicle.owner?.name || 'Vehicle Owner';
   const ownerPhoto = vehicle.owner?.photo;
   const ownerId = vehicle.owner?.userId || vehicle.owner?.id;
@@ -53,48 +69,26 @@ const SearchResultFoundScreen = ({navigation, route}) => {
     console.log('✅ Vehicle found - Owner:', ownerName, '(ID:', ownerId, ')');
   }, [ownerId, ownerName]);
 
-  const getInitial = name => {
-    return name?.charAt(0).toUpperCase() || 'V';
-  };
-
   const handleSendAlert = () => {
-    navigation.navigate('SendAlertModal', {
-      vehicle,
-      searchQuery,
-    });
+    navigation.navigate('SendAlertModal', {vehicle, searchQuery});
   };
 
-  /**
-   * ✅ Handle call initiation - called BEFORE Zego button is pressed
-   */
   const handleInitiateCall = async () => {
     if (!ownerId) {
       Alert.alert('Error', 'Owner information is missing.');
       return false;
     }
-
-    if (callId) {
-      // Already have callId, allow call
-      console.log('✅ Using existing callId:', callId);
-      return true;
-    }
-
+    if (callId) return true;
     try {
       setIsInitiatingCall(true);
-      console.log('📞 Initiating call with backend...');
-
       const callResult = await initiateCall(ownerId);
-
       if (!callResult.success) {
         Alert.alert('Error', 'Failed to initiate call');
         return false;
       }
-
-      console.log('✅ Call initiated - callId:', callResult.data?.callId);
       setCallId(callResult.data?.callId);
       return true;
     } catch (error) {
-      console.error('❌ Failed to initiate call:', error);
       Alert.alert('Error', 'Failed to prepare call');
       return false;
     } finally {
@@ -103,15 +97,81 @@ const SearchResultFoundScreen = ({navigation, route}) => {
   };
 
   const handleReportIssue = () => {
-    navigation.navigate('ReportIssueModal', {
-      vehicle,
-      searchQuery,
-    });
+    navigation.navigate('ReportIssueModal', {vehicle, searchQuery});
+  };
+
+  // ── Render call button ────────────────────────────────────────────────────
+  const renderCallButton = () => {
+    if (!hasEnoughCredits) {
+      return (
+        <TouchableOpacity
+          style={[styles.callBtn, {backgroundColor: colors.primary}]}
+          onPress={() =>
+            navigation.navigate('Profile', {screen: 'PurchaseCredits'})
+          }
+          activeOpacity={0.85}>
+          <Icon
+            name="credit-card"
+            size={20}
+            color="#fff"
+            style={styles.btnIcon}
+          />
+          <Text style={styles.callBtnText}>
+            {t('search.results.found.buyCredits') || 'Buy Credits to Call'}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    if (isCallBlocked) {
+      return (
+        <TouchableOpacity
+          style={[
+            styles.callBtn,
+            {backgroundColor: colors.neutralCard, opacity: 0.6},
+          ]}
+          onPress={() =>
+            setCallLimitModal({
+              visible: true,
+              resetAt: callLimit?.resetAt,
+              limit: callLimit?.limit || 2,
+            })
+          }
+          activeOpacity={0.7}>
+          <Icon
+            name="phone"
+            size={20}
+            color={colors.textDisabled}
+            style={styles.btnIcon}
+          />
+          <Text style={[styles.callBtnText, {color: colors.textDisabled}]}>
+            {t('search.results.found.callButton') || 'Call Owner'}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <ZegoCallButton
+        receiverId={ownerId}
+        invitees={[{userID: ownerId, userName: ownerName}]}
+        callId={callId}
+        title={t('search.results.found.callButton') || 'Call Owner • 1 Credit'}
+        fullWidth
+        disabled={isInitiatingCall}
+        customData={{plateNumber}}
+        onWillPressed={async () => await handleInitiateCall()}
+        onPressed={() => console.log('📞 ✅ Call started')}
+        onError={error =>
+          Alert.alert('Call Error', error?.message || 'Failed to call')
+        }
+      />
+    );
   };
 
   return (
     <SafeAreaView
-      style={[styles.container, {backgroundColor: colors.background}]}
+      style={[styles.container, {backgroundColor: colors.neutralLight}]}
       edges={['top']}>
       <AppBar
         title={t('search.results.title') || 'Search Result'}
@@ -119,415 +179,135 @@ const SearchResultFoundScreen = ({navigation, route}) => {
         onBackPress={() => navigation.goBack()}
       />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            padding: layout.screenPadding,
-            paddingBottom: spacing.xxxl,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}>
-        {/* Success Header */}
-        <View
-          style={[
-            styles.header,
-            {marginBottom: spacing.xl, alignItems: 'center'},
-          ]}>
-          <View
-            style={[
-              styles.successIcon,
-              {
-                backgroundColor: colors.successLight,
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: spacing.md,
-              },
-            ]}>
-            <Icon name="check" size={48} color={colors.success} />
+      {/* ── Body — no ScrollView, single View fills remaining space ── */}
+      <View style={[styles.body, {paddingHorizontal: layout.screenPadding}]}>
+        {/* ── Success header ── */}
+        <View style={styles.successHeader}>
+          <View style={[styles.checkCircle, {backgroundColor: '#E8F5E9'}]}>
+            <Icon name="check" size={22} color={colors.success} />
           </View>
-          <Text
-            style={[
-              styles.title,
-              {
-                color: colors.textPrimary,
-                marginBottom: spacing.xs,
-                textAlign: 'center',
-              },
-            ]}>
-            {t('search.results.found.vehicleTitle') || 'Vehicle Found!'}
-          </Text>
+          <View style={styles.successText}>
+            <Text style={[styles.successTitle, {color: colors.textPrimary}]}>
+              {t('search.results.found.vehicleTitle') || 'Vehicle Found'}
+            </Text>
+            <Text style={[styles.successSub, {color: colors.textSecondary}]}>
+              {t('search.results.found.registeredOwnerLocated') ||
+                'Registered owner located'}
+            </Text>
+          </View>
         </View>
 
-        {/* Vehicle Info Card */}
-        <Card style={{marginBottom: spacing.base}}>
-          <View style={styles.vehicleRow}>
-            <VehicleIcon
-              type="4-wheeler"
-              size={48}
-              color={colors.primary}
-              style={{marginRight: spacing.md}}
-            />
-            <View style={styles.vehicleInfo}>
-              <Text
-                style={[
-                  styles.plateNumber,
-                  {
-                    color: colors.textPrimary,
-                    marginBottom: spacing.xs,
-                  },
-                ]}>
-                {plateNumber}
-              </Text>
-              <Text style={[styles.vehicleMeta, {color: colors.textSecondary}]}>
-                {t('search.results.found.registered') || 'Registered Vehicle'}
-              </Text>
-            </View>
-          </View>
-        </Card>
-
-        {/* Owner Info Card */}
-        <Card style={{marginBottom: spacing.lg}}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: colors.textPrimary,
-                marginBottom: spacing.md,
-              },
-            ]}>
-            {t('search.results.found.ownerTitle') || 'Owner Information'}
-          </Text>
-
-          <View style={styles.ownerRow}>
-            {ownerPhoto ? (
-              <Image
-                source={{uri: ownerPhoto}}
-                style={[
-                  styles.avatar,
-                  {
-                    marginRight: spacing.md,
-                  },
-                ]}
+        {/* ── Combined vehicle + owner card ── */}
+        <Card style={styles.infoCard}>
+          {/* Plate row */}
+          <View style={styles.plateRow}>
+            <View style={styles.plateLeft}>
+              <VehicleIcon
+                type="4-wheeler"
+                size={28}
+                color={colors.primary}
+                style={{marginRight: 10}}
               />
-            ) : (
-              <View
-                style={[
-                  styles.avatar,
-                  {
-                    backgroundColor: colors.primary,
-                    marginRight: spacing.md,
-                  },
-                ]}>
-                <Text style={[styles.avatarText, {color: colors.white}]}>
-                  {getInitial(ownerName)}
+              <View>
+                <Text style={[styles.plateNumber, {color: colors.textPrimary}]}>
+                  {plateNumber}
+                </Text>
+                <Text style={[styles.plateMeta, {color: colors.textSecondary}]}>
+                  {t('search.results.found.registered') || 'Registered Vehicle'}
                 </Text>
               </View>
-            )}
-
-            <View style={styles.ownerInfo}>
-              <View style={[styles.ownerNameRow, {marginBottom: spacing.xs}]}>
-                <Text
-                  style={[
-                    styles.ownerName,
-                    {
-                      color: colors.textPrimary,
-                      marginRight: spacing.xs,
-                    },
-                  ]}>
-                  {ownerName}
-                </Text>
-              </View>
+            </View>
+            {/* Verified badge */}
+            <View style={[styles.verifiedBadge, {borderColor: colors.primary}]}>
+              <Icon name="check" size={12} color={colors.primary} />
+              <Text style={[styles.verifiedText, {color: colors.primary}]}>
+                {t('common.verified') || 'Verified'}
+              </Text>
             </View>
           </View>
-        </Card>
 
-        {/* Contact Section */}
-        <View style={[styles.section, {marginBottom: spacing.base}]}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: colors.textPrimary,
-                marginBottom: spacing.md,
-              },
-            ]}>
-            {t('search.results.found.contactTitle') || 'Contact Owner'}
-          </Text>
-
-          {/* FREE ALERT OPTION */}
-          <Card
-            style={[
-              styles.freeCard,
-              {
-                backgroundColor: colors.successLight,
-                borderColor: colors.success,
-                borderWidth: 1,
-                marginBottom: spacing.sm,
-              },
-            ]}>
-            <View style={styles.optionRow}>
-              <Text style={[styles.optionIcon, {marginRight: spacing.md}]}>
-                <BellIcon width={32} height={32} fill={colors.warning} />
-              </Text>
-              <View style={styles.optionInfo}>
-                <Text
-                  style={[
-                    styles.optionTitle,
-                    {
-                      color: colors.textPrimary,
-                      marginBottom: spacing.xs,
-                    },
-                  ]}>
-                  {t('search.results.found.alertTitle') || 'Send Alert'}
-                </Text>
-                <Text
-                  style={[
-                    styles.optionDescription,
-                    {color: colors.textSecondary},
-                  ]}>
-                  {t('search.results.found.alertDescription') ||
-                    "Notify owner instantly. They'll see your message."}
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.freeBadge,
-                  {
-                    backgroundColor: colors.success,
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: spacing.xs,
-                    borderRadius: 4,
-                  },
-                ]}>
-                <Text style={[styles.freeText, {color: colors.white}]}>
-                  {t('common.free') || 'FREE'}
-                </Text>
-              </View>
-            </View>
-          </Card>
-
-          <PrimaryButton
-            title={
-              t('search.results.found.alertButton') || 'Send Alert to Owner'
-            }
-            onPress={handleSendAlert}
-            fullWidth
-            icon={
-              <Text style={{color: colors.white, fontSize: 18}}>
-                <BellIcon width={24} height={24} fill={colors.white} />
-              </Text>
-            }
-            style={{marginBottom: spacing.md}}
+          {/* Divider */}
+          <View
+            style={[styles.divider, {backgroundColor: colors.neutralBorder}]}
           />
 
-          {/* PAID CALL OPTION */}
-          <Card
-            style={[
-              styles.paidCard,
-              {
-                backgroundColor: colors.warningLight,
-                borderColor: colors.warning,
-                borderWidth: 1,
-                marginBottom: spacing.sm,
-              },
-              !hasEnoughCredits && {
-                backgroundColor: colors.neutralLight,
-                borderColor: colors.neutralBorder,
-                opacity: 0.6,
-              },
-            ]}>
-            <View style={styles.optionRow}>
-              <Text style={[styles.optionIcon, {marginRight: spacing.md}]}>
-                📞
+          {/* Owner row */}
+          <View style={styles.ownerRow}>
+            {ownerPhoto ? (
+              <Image source={{uri: ownerPhoto}} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, {backgroundColor: colors.primary}]}>
+                <Text style={styles.avatarText}>{getInitials(ownerName)}</Text>
+              </View>
+            )}
+            <View style={styles.ownerInfo}>
+              <Text style={[styles.ownerName, {color: colors.textPrimary}]}>
+                {maskName(ownerName)}
               </Text>
-              <View style={styles.optionInfo}>
-                <Text
-                  style={[
-                    styles.optionTitle,
-                    {
-                      color: colors.textPrimary,
-                      marginBottom: spacing.xs,
-                    },
-                  ]}>
-                  {t('search.results.found.callTitle') || 'Call Owner'}
-                </Text>
-                <Text
-                  style={[
-                    styles.optionDescription,
-                    {color: colors.textSecondary},
-                  ]}>
-                  {t('search.results.found.callDescription') ||
-                    'Instantly call owner and deduct 1 credit.'}
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.costBadge,
-                  {
-                    backgroundColor: colors.warning,
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: spacing.xs,
-                    borderRadius: 4,
-                  },
-                ]}>
-                <Text style={[styles.costText, {color: colors.white}]}>
-                  1 Credit
-                </Text>
-              </View>
-            </View>
-          </Card>
-
-          {/* ✅ SIMPLIFIED: Call button logic - NO BALANCE DEDUCTION */}
-          {!hasEnoughCredits ? (
-            <SecondaryButton
-              title={
-                t('search.results.found.buyCredits') || 'Buy Credits to Call'
-              }
-              onPress={() =>
-                navigation.navigate('Profile', {screen: 'PurchaseCredits'})
-              }
-              fullWidth
-              icon={
-                <Text style={{color: colors.primary, fontSize: 18}}>💳</Text>
-              }
-              style={{marginBottom: spacing.lg}}
-            />
-          ) : isCallBlocked ? (
-            // ✅ Call limit exceeded — tappable disabled button that shows modal
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={{marginBottom: spacing.lg}}
-              onPress={() =>
-                setCallLimitModal({
-                  visible: true,
-                  resetAt: callLimit?.resetAt,
-                  limit: callLimit?.limit || 2,
-                })
-              }>
-              <View
-                style={{
-                  height: theme.components.secondaryButton.height,
-                  width: '100%',
-                  borderRadius: theme.components.secondaryButton.borderRadius,
-                  borderWidth: theme.components.secondaryButton.borderWidth,
-                  borderColor: colors.neutralBorder,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0.6,
-                }}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: '600',
-                    color: colors.textDisabled,
-                  }}>
-                  {t('search.results.found.callButton') || 'Call Owner Now'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ) : (
-            // ✅ Normal flow — call not blocked
-            <View style={{marginBottom: spacing.lg}}>
-              <ZegoCallButton
-                receiverId={ownerId}
-                invitees={[{userID: ownerId, userName: ownerName}]}
-                callId={callId}
-                title={t('search.results.found.callButton') || 'Call Owner Now'}
-                fullWidth
-                disabled={isInitiatingCall}
-                customData={{plateNumber}}
-                onWillPressed={async () => {
-                  const success = await handleInitiateCall();
-                  return success;
-                }}
-                onPressed={() => console.log('📞 ✅ Call started')}
-                onError={error =>
-                  Alert.alert('Call Error', error?.message || 'Failed to call')
-                }
-              />
-            </View>
-          )}
-        </View>
-
-        {/* Balance Info Card */}
-        <Card
-          style={[
-            styles.balanceCard,
-            {
-              backgroundColor: colors.primaryLight,
-              marginBottom: spacing.md,
-            },
-          ]}>
-          <View style={styles.balanceRow}>
-            <Text style={[styles.balanceIcon, {marginRight: spacing.md}]}>
-              <CreditsIcon width={55} height={55} />
-            </Text>
-            <View style={styles.balanceInfo}>
-              <Text
-                style={[
-                  styles.balanceLabel,
-                  {
-                    color: colors.textSecondary,
-                    marginBottom: spacing.xs,
-                  },
-                ]}>
-                {t('search.results.found.yourCredits') ||
-                  'Your Contact Credits'}
-              </Text>
-              <Text style={[styles.balanceValue, {color: colors.textPrimary}]}>
-                {balance} {balance === 1 ? 'credit' : 'credits'} remaining
+              <Text style={[styles.ownerRole, {color: colors.textSecondary}]}>
+                {t('search.results.found.vehicleOwner') || 'Vehicle Owner'}
               </Text>
             </View>
           </View>
         </Card>
 
-        {/* Respect Message */}
-        <Card
-          style={[
-            styles.infoCard,
-            {
-              backgroundColor: colors.neutralLight,
-              marginBottom: spacing.md,
-            },
-          ]}>
-          <View style={styles.infoRow}>
-            <View style={{marginRight: spacing.sm}}>
-              <InfoIcon width={20} height={20} fill={colors.primary} />
-            </View>
-            <Text
-              style={[
-                styles.infoText,
-                {
-                  color: colors.textSecondary,
-                  flex: 1,
-                },
-              ]}>
-              {t('search.results.found.respectMessage') ||
-                'Please be respectful when contacting the owner.'}
-            </Text>
-          </View>
-        </Card>
+        {/* ── Credits remaining ── */}
+        {/* <View style={styles.creditsRow}>
+          <Text style={styles.creditsEmoji}>🏷️</Text>
+          <Text style={[styles.creditsText, {color: colors.textSecondary}]}>
+            {balance}{' '}
+            {t('search.results.found.creditsRemaining') || 'credits remaining'}
+          </Text>
+        </View> */}
 
-        {/* Report Link */}
+        {/* ── Call button (primary) ── */}
+        {renderCallButton()}
+
+        {/* ── Send Alert button (outlined) ── */}
         <TouchableOpacity
-          onPress={handleReportIssue}
-          style={[styles.reportButton, {paddingVertical: spacing.sm}]}>
-          <Text style={[styles.reportLink, {color: colors.primary}]}>
-            {t('search.results.found.reportLink') || 'Report an issue'}
+          style={[
+            styles.alertBtn,
+            {borderColor: colors.neutralBorder, backgroundColor: '#FFFFFF'},
+          ]}
+          onPress={handleSendAlert}
+          activeOpacity={0.8}>
+          <Icon
+            name="notifications"
+            size={20}
+            color={colors.textPrimary}
+            style={styles.btnIcon}
+          />
+          <Text style={[styles.alertBtnText, {color: colors.textPrimary}]}>
+            {t('search.results.found.alertButton') || 'Send Alert • Free'}
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+
+        {/* ── Info note ── */}
+        <View style={styles.infoRow}>
+          <Icon name="info-outline" size={15} color={colors.textSecondary} />
+          <Text style={[styles.infoText, {color: colors.textSecondary}]}>
+            {t('search.results.found.respectMessage') ||
+              'Be respectful when contacting the owner'}
+          </Text>
+        </View>
+
+        {/* ── Report link ── */}
+        {/* <TouchableOpacity onPress={handleReportIssue} style={styles.reportBtn}>
+          <Text style={[styles.reportLink, {color: colors.error}]}>
+            {t('search.results.found.reportLink') || 'Report an issue'}
+          </Text>
+        </TouchableOpacity> */}
+      </View>
+
+      {/* ── Call Limit Modal (unchanged logic) ── */}
       <CenterModal
         visible={callLimitModal.visible}
         onClose={() => setCallLimitModal(prev => ({...prev, visible: false}))}
-        title="Call Limit Reached"
+        title={
+          t('search.results.found.callLimit.title') || 'Call Limit Reached'
+        }
         closeOnBackdropPress={false}>
+        {/* Icon */}
         <View style={{alignItems: 'center', marginBottom: spacing.md}}>
           <View
             style={{
@@ -542,6 +322,7 @@ const SearchResultFoundScreen = ({navigation, route}) => {
           </View>
         </View>
 
+        {/* Body — "X times per day" with bold limit number */}
         <Text
           style={{
             fontSize: 14,
@@ -550,13 +331,18 @@ const SearchResultFoundScreen = ({navigation, route}) => {
             lineHeight: 22,
             marginBottom: spacing.md,
           }}>
-          You can only call the same owner{' '}
+          {t('search.results.found.callLimit.bodyPrefix') ||
+            'You can only call the same owner'}{' '}
           <Text style={{fontWeight: '700', color: colors.textPrimary}}>
-            {callLimitModal.limit} times per day
+            {t('search.results.found.callLimit.bodyLimit', {
+              limit: callLimitModal.limit,
+            }) || `${callLimitModal.limit} times per day`}
           </Text>{' '}
-          to prevent spam and ensure safety for all users.
+          {t('search.results.found.callLimit.bodySuffix') ||
+            'to prevent spam and ensure safety for all users.'}
         </Text>
 
+        {/* Reset time box */}
         <View
           style={{
             backgroundColor: colors.neutralLight,
@@ -571,7 +357,7 @@ const SearchResultFoundScreen = ({navigation, route}) => {
               color: colors.textSecondary,
               marginBottom: 2,
             }}>
-            Calls reset at
+            {t('search.results.found.callLimit.resetLabel') || 'Calls reset at'}
           </Text>
           <Text
             style={{
@@ -586,11 +372,13 @@ const SearchResultFoundScreen = ({navigation, route}) => {
                   hour12: true,
                   timeZone: 'Asia/Kolkata',
                 })
-              : '1:00 AM'}{' '}
-            tonight
+              : t('search.results.found.callLimit.resetFallback') ||
+                '1:00 AM'}{' '}
+            {t('search.results.found.callLimit.resetSuffix') || 'tonight'}
           </Text>
         </View>
 
+        {/* Tip */}
         <Text
           style={{
             fontSize: 13,
@@ -599,13 +387,16 @@ const SearchResultFoundScreen = ({navigation, route}) => {
             lineHeight: 20,
             marginBottom: spacing.lg,
           }}>
-          💡 You can still{' '}
+          {t('search.results.found.callLimit.tipPrefix') || '💡 You can still'}{' '}
           <Text style={{fontWeight: '700', color: colors.textPrimary}}>
-            Send a Free Alert
+            {t('search.results.found.callLimit.tipAction') ||
+              'Send a Free Alert'}
           </Text>{' '}
-          to notify the owner instantly.
+          {t('search.results.found.callLimit.tipSuffix') ||
+            'to notify the owner instantly.'}
         </Text>
 
+        {/* Send Alert button */}
         <TouchableOpacity
           style={{
             backgroundColor: colors.primary,
@@ -619,17 +410,19 @@ const SearchResultFoundScreen = ({navigation, route}) => {
             handleSendAlert();
           }}>
           <Text style={{color: colors.white, fontSize: 15, fontWeight: '600'}}>
-            Send Alert Instead
+            {t('search.results.found.callLimit.sendAlert') ||
+              'Send Alert Instead'}
           </Text>
         </TouchableOpacity>
 
+        {/* Dismiss */}
         <TouchableOpacity
           style={{paddingVertical: 12, alignItems: 'center'}}
           onPress={() =>
             setCallLimitModal(prev => ({...prev, visible: false}))
           }>
           <Text style={{color: colors.textSecondary, fontSize: 14}}>
-            Dismiss
+            {t('search.results.found.callLimit.dismiss') || 'Dismiss'}
           </Text>
         </TouchableOpacity>
       </CenterModal>
@@ -638,131 +431,149 @@ const SearchResultFoundScreen = ({navigation, route}) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  container: {flex: 1},
+
+  body: {
     flex: 1,
+    paddingTop: 16,
+    paddingBottom: 24,
+    justifyContent: 'flex-start', // items stack from top, no scroll needed
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {},
-  header: {},
-  successIcon: {},
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 15,
-  },
-  vehicleRow: {
+
+  // Success header — horizontal, compact
+  successHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 14,
+    gap: 10,
   },
-  vehicleInfo: {
-    flex: 1,
+  checkCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successText: {gap: 1},
+  successTitle: {fontSize: 17, fontWeight: '700'},
+  successSub: {fontSize: 12},
+
+  // Combined info card
+  infoCard: {
+    marginBottom: 12,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    overflow: 'hidden',
+  },
+  plateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  plateLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   plateNumber: {
     fontSize: 20,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
-  vehicleMeta: {
-    fontSize: 14,
+  plateMeta: {fontSize: 14, marginTop: 1},
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    gap: 3,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
+  verifiedText: {fontSize: 12, fontWeight: '600'},
+  divider: {height: 1, marginHorizontal: 16},
   ownerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  ownerInfo: {
-    flex: 1,
-  },
-  ownerNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ownerName: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  section: {},
-  freeCard: {},
-  paidCard: {},
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  optionIcon: {
-    fontSize: 32,
-  },
-  optionInfo: {
-    flex: 1,
-  },
-  optionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-  },
-  optionDescription: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  freeBadge: {},
-  freeText: {
-    fontSize: 12,
     fontWeight: '700',
+    color: '#FFFFFF',
   },
-  costBadge: {},
-  costText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  balanceCard: {},
-  balanceRow: {
+  ownerInfo: {gap: 2},
+  ownerName: {fontSize: 17, fontWeight: '600'},
+  ownerRole: {fontSize: 14},
+
+  // Credits
+  creditsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 14,
   },
-  balanceIcon: {
-    fontSize: 32,
+  creditsEmoji: {fontSize: 15},
+  creditsText: {fontSize: 13, fontWeight: '500'},
+
+  // Call button (primary filled)
+  callBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: 12,
+    marginBottom: 10,
   },
-  balanceInfo: {
-    flex: 1,
-  },
-  balanceLabel: {
-    fontSize: 13,
-  },
-  balanceValue: {
+  callBtnText: {
     fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // Alert button (outlined)
+  alertBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    marginBottom: 16,
+    marginTop: 10,
+  },
+  alertBtnText: {
+    fontSize: 15,
     fontWeight: '600',
   },
-  infoCard: {},
+
+  btnIcon: {marginRight: 8},
+
+  // Info + Report
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  infoText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  reportButton: {
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginBottom: 10,
   },
+  infoText: {fontSize: 12},
+  reportBtn: {alignItems: 'center', paddingVertical: 4},
   reportLink: {
-    fontSize: 15,
+    fontSize: 13,
     textDecorationLine: 'underline',
+    fontWeight: '500',
   },
 });
 

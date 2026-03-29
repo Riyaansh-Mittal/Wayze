@@ -2,15 +2,17 @@
  * Profile Home Screen
  * Simplified profile with referral and settings menu only
  * FULLY THEME-AWARE
+ * UPDATED: Settings controls (notifications, email alerts, profile visibility, data policy) integrated
  */
 
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Switch,
   Share,
   Alert,
 } from 'react-native';
@@ -18,6 +20,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {useAuth} from '../../contexts/AuthContext';
 import {useBalance} from '../../contexts/BalanceContext';
+import {useUser} from '../../contexts/UserContext';
 import {useTheme} from '../../contexts/ThemeContext';
 import {useToast} from '../../components/common/Toast/ToastProvider';
 import AppBar from '../../components/navigation/AppBar';
@@ -32,16 +35,23 @@ import {
   SosIcon,
   LogoutIcon,
   TrashIcon,
+  BellIcon,
 } from '../../assets/icons';
 
 const ProfileHomeScreen = ({navigation}) => {
   const {user, logout} = useAuth();
   const {referralStats, getReferralStats, getReferralCode} = useBalance();
+  const {getSettings, updateSettings: updateUserSettings, settings} = useUser();
   const {t, theme} = useTheme();
   const {showSuccess, showError} = useToast();
 
   const {colors, typography, spacing, layout} = theme;
   const referralCode = getReferralCode();
+
+  // ── Settings local state ──────────────────────────────────────────────────
+  const [notifications, setNotifications] = useState(true);
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [profileVisibility, setProfileVisibility] = useState(true);
 
   // ✅ Track if we've already loaded stats
   const hasLoadedStatsRef = useRef(false);
@@ -55,56 +65,73 @@ const ProfileHomeScreen = ({navigation}) => {
         console.log('⏭️ Referral stats already loaded, skipping');
         return;
       }
-
       console.log('📊 Loading referral stats...');
       const result = await getReferralStats();
-
       if (result.success) {
         hasLoadedStatsRef.current = true;
       } else if (result.error && result.error !== 'Not authenticated') {
-        // Only show error if it's not an auth issue
         console.error('Failed to load referral stats:', result.error);
       }
     };
-
     loadStats();
-  }, [getReferralStats]); // ✅ Empty dependency array - only run once
+  }, [getReferralStats]);
 
-  const handleCopyCode = useCallback(() => {
-    if (referralCode) {
-      Clipboard.setString(referralCode);
-      showSuccess(t('profile.referral.copiedToast') || 'Referral code copied!');
+  // ── Load settings on mount ────────────────────────────────────────────────
+  useEffect(() => {
+    const loadSettings = async () => {
+      console.log('⚙️ Loading user settings...');
+      const result = await getSettings();
+      if (result.success) {
+        console.log('✅ Settings loaded:', result.data);
+      } else {
+        console.log('⚠️ No settings found, using defaults');
+      }
+    };
+    loadSettings();
+  }, [getSettings]);
+
+  // ── Sync local state when settings change ────────────────────────────────
+  useEffect(() => {
+    if (settings) {
+      console.log('🔄 Syncing settings state:', settings);
+      setNotifications(settings.notifications ?? true);
+      setEmailAlerts(settings.emailAlerts ?? true);
+      setProfileVisibility(settings.profileVisibility ?? true);
     }
-  }, [referralCode, showSuccess, t]);
+  }, [settings]);
 
-  const handleShareCode = useCallback(async () => {
-    try {
-      const message = `Join QR Parking using my referral code ${referralCode} and get 10 free calls! Download now: https://qrparking.com/refer/${referralCode}`;
-      await Share.share({message, title: t('common.share') || 'Share'});
-    } catch (error) {
-      console.error('Share failed:', error);
-    }
-  }, [referralCode, t]);
+  // ── Handle toggle with optimistic update ─────────────────────────────────
+  const handleToggle = useCallback(
+    async (key, value, setter) => {
+      setter(value);
+      console.log(`⚙️ Updating ${key} to ${value}...`);
+      const result = await updateUserSettings({[key]: value});
+      if (!result.success) {
+        console.error(`❌ Failed to update ${key}`);
+        setter(!value);
+        showError(t('toast.settings.updateFailed'));
+      } else {
+        console.log(`✅ ${key} updated successfully`);
+      }
+    },
+    [updateUserSettings, showError, t],
+  );
 
-  const handleLogout = useCallback(() => {
-    Alert.alert(
-      t('auth.logout.title') || 'Logout',
-      t('auth.logout.message') || 'Are you sure you want to logout?',
-      [
-        {text: t('common.cancel') || 'Cancel', style: 'cancel'},
-        {
-          text: t('auth.logout.button') || 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await logout();
-            if (!result.success) {
-              showError('Logout failed. Please try again.');
-            }
-          },
-        },
-      ],
-    );
-  }, [t, logout, showError]);
+  // const handleCopyCode = useCallback(() => {
+  //   if (referralCode) {
+  //     Clipboard.setString(referralCode);
+  //     showSuccess(t('profile.referral.copiedToast') || 'Referral code copied!');
+  //   }
+  // }, [referralCode, showSuccess, t]);
+
+  // const handleShareCode = useCallback(async () => {
+  //   try {
+  //     const message = `Join QR Parking using my referral code ${referralCode} and get 10 free calls! Download now: https://qrparking.com/refer/${referralCode}`;
+  //     await Share.share({message, title: t('common.share') || 'Share'});
+  //   } catch (error) {
+  //     console.error('Share failed:', error);
+  //   }
+  // }, [referralCode, t]);
 
   const handleDeleteAccount = useCallback(() => {
     navigation.navigate('DeleteAccountStep1');
@@ -127,28 +154,41 @@ const ProfileHomeScreen = ({navigation}) => {
           {paddingHorizontal: layout.screenPadding},
         ]}
         showsVerticalScrollIndicator={false}>
-        {/* User Card */}
+        {/* ── User Card ── */}
         <Card style={styles.userCard}>
+          {/* ✅ Avatar centred via alignItems: 'center' on userCard */}
           <View style={[styles.avatar, {backgroundColor: colors.primary}]}>
             <Text style={[styles.avatarText, {color: colors.white}]}>
               {userName.charAt(0).toUpperCase()}
             </Text>
           </View>
 
-          <Text style={[typography.h2, {marginBottom: spacing.xs}]}>
+          <Text
+            style={[
+              typography.h2,
+              {marginBottom: spacing.xs, textAlign: 'center'},
+            ]}>
             {userName}
           </Text>
-          <Text style={[typography.caption, {marginBottom: spacing.xs}]}>
+          <Text
+            style={[
+              typography.caption,
+              {marginBottom: spacing.xs, textAlign: 'center'},
+            ]}>
             {userEmail}
           </Text>
           {userPhone && (
-            <Text style={[typography.caption, {marginBottom: spacing.sm}]}>
+            <Text
+              style={[
+                typography.caption,
+                {marginBottom: spacing.sm, textAlign: 'center'},
+              ]}>
               {userPhone}
             </Text>
           )}
 
           {/* Verification Badges */}
-          <View
+          {/* <View
             style={[styles.badges, {gap: spacing.sm, marginTop: spacing.sm}]}>
             {user?.verification?.email && (
               <View style={[styles.badge, {backgroundColor: colors.success}]}>
@@ -164,11 +204,11 @@ const ProfileHomeScreen = ({navigation}) => {
                 </Text>
               </View>
             )}
-          </View>
+          </View> */}
         </Card>
 
         {/* Referral Card */}
-        <Card
+        {/* <Card
           style={[
             styles.referralCard,
             {
@@ -235,29 +275,20 @@ const ProfileHomeScreen = ({navigation}) => {
                 referralStats?.totalEarned || 0
               } calls earned`}
           </Text>
-        </Card>
+        </Card> */}
 
-        {/* Settings Menu */}
-        <View style={{marginBottom: spacing.lg}}>
+        {/* ── Settings Menu ── */}
+        <View style={{marginBottom: spacing.md}}>
           <Text style={[typography.h2, {marginBottom: spacing.sm}]}>
             {t('profile.menu.settings')}
           </Text>
-          <Card>
+          <Card style={{padding: 0}}>
             <MenuItem
               icon={
                 <HistoryIcon width={24} height={24} fill={colors.primary} />
               }
               label={t('profile.menu.activity')}
               onPress={() => navigation.navigate('ActivityHistory')}
-              theme={theme}
-            />
-            <Divider color={colors.neutralBorder} />
-            <MenuItem
-              icon={
-                <SettingsIcon width={24} height={24} fill={colors.primary} />
-              }
-              label={t('profile.menu.settingsItem')}
-              onPress={() => navigation.navigate('Settings')}
               theme={theme}
             />
             <Divider color={colors.neutralBorder} />
@@ -279,15 +310,77 @@ const ProfileHomeScreen = ({navigation}) => {
           </Card>
         </View>
 
-        {/* Account Actions */}
-        <View style={{marginTop: spacing.base}}>
-          <SecondaryButton
-            icon={<LogoutIcon width={20} height={20} fill={colors.primary} />}
-            title={`${t('profile.menu.logout')}`}
-            onPress={handleLogout}
-            fullWidth
-          />
+        {/* ── Notifications ── */}
+        <View style={{marginBottom: spacing.md}}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {color: colors.textPrimary, marginBottom: spacing.sm},
+            ]}>
+            {t('profile.settings.notifications.title') || 'Notifications'}
+          </Text>
+          <Card style={{padding: 0}}>
+            <ToggleItem
+              icon={<BellIcon width={22} height={22} fill={colors.warning} />}
+              label={
+                t('profile.settings.notifications.push') || 'Push Notifications'
+              }
+              value={notifications}
+              onValueChange={value =>
+                handleToggle('notifications', value, setNotifications)
+              }
+              theme={theme}
+            />
+            <Divider color={colors.neutralBorder} />
+            <ToggleItem
+              icon={<Text style={styles.emojiIcon}>📧</Text>}
+              label={
+                t('profile.settings.notifications.email') || 'Email Alerts'
+              }
+              value={emailAlerts}
+              onValueChange={value =>
+                handleToggle('emailAlerts', value, setEmailAlerts)
+              }
+              theme={theme}
+            />
+          </Card>
+        </View>
 
+        {/* ── Privacy ── */}
+        <View style={{marginBottom: spacing.md}}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {color: colors.textPrimary, marginBottom: spacing.sm},
+            ]}>
+            {t('profile.settings.privacy.title') || 'Privacy'}
+          </Text>
+          <Card style={{padding: 0}}>
+            <ToggleItem
+              icon={<Text style={styles.emojiIcon}>👁️</Text>}
+              label={
+                t('profile.settings.privacy.visibility') || 'Profile Visibility'
+              }
+              value={profileVisibility}
+              onValueChange={value =>
+                handleToggle('profileVisibility', value, setProfileVisibility)
+              }
+              theme={theme}
+            />
+            <Divider color={colors.neutralBorder} />
+            <MenuItem
+              icon={<Text style={styles.emojiIcon}>📜</Text>}
+              label={t('profile.settings.privacy.dataPolicy') || 'Data Policy'}
+              onPress={() =>
+                showSuccess(t('common.comingSoon') || 'Coming Soon')
+              }
+              theme={theme}
+            />
+          </Card>
+        </View>
+
+        {/* ── Account Actions ── */}
+        <View style={{marginTop: spacing.sm}}>
           <SecondaryButton
             icon={<TrashIcon width={20} height={20} fill={colors.error} />}
             title={t('profile.menu.deleteAccount')}
@@ -297,9 +390,7 @@ const ProfileHomeScreen = ({navigation}) => {
               marginTop: spacing.md,
               borderColor: colors.error,
             }}
-            textStyle={{
-              color: colors.error,
-            }}
+            textStyle={{color: colors.error}}
           />
         </View>
       </ScrollView>
@@ -307,7 +398,31 @@ const ProfileHomeScreen = ({navigation}) => {
   );
 };
 
-// Menu Item Component
+// ── Toggle Item ───────────────────────────────────────────────────────────────
+const ToggleItem = ({icon, label, value, onValueChange, theme}) => {
+  const {colors, spacing} = theme;
+  return (
+    <View style={[styles.toggleItem, {padding: spacing.base}]}>
+      <View style={styles.rowIcon}>{icon}</View>
+      <Text
+        style={[
+          styles.itemLabel,
+          {color: colors.textPrimary, flex: 1, marginLeft: spacing.base},
+        ]}>
+        {label}
+      </Text>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{false: colors.neutralBorder, true: colors.primary}}
+        thumbColor={colors.white}
+        ios_backgroundColor={colors.neutralBorder}
+      />
+    </View>
+  );
+};
+
+// ── Menu Item ─────────────────────────────────────────────────────────────────
 const MenuItem = ({icon, label, onPress, theme}) => {
   const {colors, typography, spacing} = theme;
   return (
@@ -315,7 +430,7 @@ const MenuItem = ({icon, label, onPress, theme}) => {
       style={[styles.menuItem, {padding: spacing.base}]}
       onPress={onPress}
       activeOpacity={0.7}>
-      <Text style={styles.menuIcon}>{icon}</Text>
+      <View style={styles.rowIcon}>{icon}</View>
       <Text style={[typography.body, {flex: 1, marginLeft: spacing.base}]}>
         {label}
       </Text>
@@ -324,83 +439,71 @@ const MenuItem = ({icon, label, onPress, theme}) => {
   );
 };
 
-// Divider Component
+// ── Divider ───────────────────────────────────────────────────────────────────
 const Divider = ({color}) => (
   <View style={[styles.divider, {backgroundColor: color}]} />
 );
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingTop: 24,
-    paddingBottom: 48,
-  },
+  container: {flex: 1},
+  scrollView: {flex: 1},
+  scrollContent: {paddingTop: 24, paddingBottom: 48},
+
+  // ✅ Avatar centred — alignItems: 'center' on userCard + paddingTop/Bottom
   userCard: {
-    alignItems: 'center',
+    alignItems: 'center', // ← centres avatar + text horizontally
     marginBottom: 16,
+    padding: 0
   },
   avatar: {
-    width: 80,
-    height: 80,
+    width: 75,
+    height: 75,
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    alignSelf: 'center', // ← belt-and-braces centre
   },
   avatarText: {
     fontSize: 36,
     fontWeight: '700',
   },
-  badges: {
-    flexDirection: 'row',
-  },
-  badge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  referralCard: {
-    borderWidth: 2,
-  },
-  referralHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+
+  badges: {flexDirection: 'row'},
+  badge: {paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6},
+  badgeText: {fontSize: 12, fontWeight: '500'},
+
+  referralCard: {borderWidth: 2},
+  referralHeader: {flexDirection: 'row', alignItems: 'center'},
   codeBox: {
     borderRadius: 6,
     borderWidth: 2,
     borderStyle: 'dashed',
     alignItems: 'center',
   },
-  codeText: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  referralActions: {
-    flexDirection: 'row',
-  },
-  menuItem: {
-    flexDirection: 'row',
+  codeText: {fontSize: 20, fontWeight: '700'},
+  referralActions: {flexDirection: 'row'},
+
+  // Shared row icon wrapper — ensures SVG and emoji align identically
+  rowIcon: {
+    width: 24,
+    height: 24,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  menuIcon: {
-    fontSize: 24,
-  },
-  menuChevron: {
-    fontSize: 20,
-  },
-  divider: {
-    height: 1,
-  },
+  emojiIcon: {fontSize: 22},
+
+  menuItem: {flexDirection: 'row', alignItems: 'center'},
+  menuChevron: {fontSize: 20},
+
+  // ToggleItem uses same row layout as MenuItem
+  toggleItem: {flexDirection: 'row', alignItems: 'center'},
+
+  itemLabel: {fontSize: 16},
+
+  sectionTitle: {fontSize: 16, fontWeight: '600'},
+
+  divider: {height: 1},
 });
 
 export default ProfileHomeScreen;

@@ -8,7 +8,6 @@ import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import ProfileHomeScreen from '../screens/profile/ProfileHomeScreen';
 import ActivityHistoryScreen from '../screens/profile/ActivityHistoryScreen';
-import SettingsScreen from '../screens/profile/SettingsScreen';
 import HelpSupportScreen from '../screens/profile/HelpSupportScreen';
 import AboutScreen from '../screens/profile/AboutScreen';
 import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
@@ -28,7 +27,6 @@ const ProfileNavigator = () => {
       }}>
       <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} />
       <Stack.Screen name="ActivityHistory" component={ActivityHistoryScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
       <Stack.Screen name="About" component={AboutScreen} />
       <Stack.Screen

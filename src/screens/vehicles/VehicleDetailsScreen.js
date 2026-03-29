@@ -95,13 +95,6 @@ const VehicleDetailsScreen = ({navigation, route}) => {
     return formatDate(dateString);
   };
 
-  const handleShare = () => {
-    Alert.alert(
-      t('common.comingSoon') || 'Coming Soon',
-      t('vehicles.details.shareButton') || 'Share feature coming soon',
-    );
-  };
-
   const handleDelete = () => {
     Alert.alert(
       t('vehicles.details.deleteConfirm.title') || 'Delete Vehicle?',
@@ -246,7 +239,7 @@ const VehicleDetailsScreen = ({navigation, route}) => {
         </View>
 
         {/* Vehicle Information */}
-        <Card style={{marginBottom: spacing.md}}>
+        <Card style={{marginBottom: spacing.md, padding: 0}}>
           <Text
             style={[
               styles.sectionTitle,
@@ -289,7 +282,7 @@ const VehicleDetailsScreen = ({navigation, route}) => {
 
         {/* Contact Information */}
         {vehicle.emergencyContact && (
-          <Card style={{marginBottom: spacing.md}}>
+          <Card style={{marginBottom: spacing.md, padding: 0}}>
             <Text
               style={[
                 styles.sectionTitle,
@@ -313,7 +306,7 @@ const VehicleDetailsScreen = ({navigation, route}) => {
         )}
 
         {/* Activity Statistics */}
-        <Card style={{marginBottom: spacing.md}}>
+        {/* <Card style={{marginBottom: spacing.md}}>
           <Text
             style={[
               styles.sectionTitle,
@@ -353,17 +346,10 @@ const VehicleDetailsScreen = ({navigation, route}) => {
                 : t('common.never') || 'Never'}
             </Text>
           </View>
-        </Card>
+        </Card> */}
 
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
-          <SecondaryButton
-            title={t('vehicles.details.shareButton') || 'Share Vehicle Profile'}
-            onPress={handleShare}
-            fullWidth
-            style={{marginBottom: spacing.md}}
-            icon={<Text style={{fontSize: 18}}>📤</Text>}
-          />
 
           <SecondaryButton
             title={t('vehicles.details.deleteButton') || 'Delete Vehicle'}

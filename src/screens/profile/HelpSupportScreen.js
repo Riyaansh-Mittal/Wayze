@@ -81,11 +81,11 @@ const HelpSupportScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Quick Help Section */}
-        <View style={{ marginBottom: spacing.lg }}>
+        <View style={{ marginBottom: spacing.lg}}>
           <Text style={[typography.h2, { marginBottom: spacing.sm }]}>
             {t('profile.help.quickHelp')}
           </Text>
-          <Card>
+          <Card style={{padding: 0}}>
             <MenuItem
               icon="❓"
               label={t('profile.help.faqs')}
@@ -121,7 +121,7 @@ const HelpSupportScreen = ({ navigation }) => {
           <Text style={[typography.h2, { marginBottom: spacing.sm }]}>
             {t('profile.help.commonIssues')}
           </Text>
-          <Card>
+          <Card style={{padding: 0}}>
             {FAQ_ITEMS.map((item, index) => (
               <React.Fragment key={item.id}>
                 <AccordionItem

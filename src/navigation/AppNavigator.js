@@ -6,6 +6,7 @@ import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import CallConnectingScreen from '../screens/call/CallConnectingScreen';
+import CallRecordsScreen from '../screens/call/CallRecordsScreen'; // ✅ NEW
 import {
   ZegoUIKitPrebuiltCallInCallScreen,
   ZegoUIKitPrebuiltCallWaitingScreen,
@@ -16,8 +17,6 @@ const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
   const {isAuthenticated, isLoading} = useAuth();
-
-  // ✅ Synchronous — no useEffect, no delay, reads before first render
   const [isOfflineCall] = useState(() => getAndClearCallFlag());
 
   if (isLoading) {
@@ -44,6 +43,15 @@ const AppNavigator = () => {
               animation: 'slide_from_right',
             }}
           />
+          {/* ✅ NEW */}
+          <Stack.Screen
+            name="CallRecords"
+            component={CallRecordsScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
         </>
       )}
 
@@ -57,8 +65,6 @@ const AppNavigator = () => {
         component={ZegoUIKitPrebuiltCallWaitingScreen}
         options={{presentation: 'fullScreenModal'}}
       />
-
-      {/* ✅ Always present in stack — navigated to imperatively by ZegoService */}
       <Stack.Screen
         name="CallConnecting"
         component={CallConnectingScreen}

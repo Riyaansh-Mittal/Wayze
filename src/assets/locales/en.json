@@ -31,7 +31,14 @@
     "free": "Free",
     "optional": "Optional",
     "clearAll": "Clear All",
-    "never": "Never"
+    "never": "Never",
+    "verified": "Verified"
+  },
+  "calls": {
+    "status": {
+      "incoming": "Incoming",
+      "outgoing": "Outgoing"
+    }
   },
 
   "toast": {
@@ -212,18 +219,34 @@
       "evening": "Good evening"
     },
     "subtitle": "Here's your parking profile overview",
+    "hero": {
+      "vehiclesActive": "vehicles active",
+      "vehicleActive": "vehicle active"
+    },
     "balance": {
       "title": "Available Balance",
       "calls": "{{count}} calls",
       "helper": "Use for vehicle searches",
-      "lowBalance": "Low balance! Invite friends to earn more calls"
+      "lowBalance": "Low balance! Invite friends to earn more calls",
+      "ready": "Ready to search",
+      "topUp": "Top up"
     },
     "activity": {
       "title": "Your Activity",
-      "vehiclesRegistered": "Vehicles Registered",
-      "vehicleSearches": "Vehicle Searches",
-      "peopleContacted": "People Contacted",
-      "memberSince": "Member Since"
+      "vehiclesRegistered": "Vehicles",
+      "vehicleSearches": "Searches",
+      "peopleContacted": "Contacted",
+      "memberSince": "Member"
+    },
+    "manage": {
+      "title": "Manage",
+      "callRecords": "Call Records",
+      "viewHistory": "View history",
+      "signOut": "Secure exit"
+    },
+    "recentCalls": {
+      "title": "Recent Calls",
+      "seeAll": "See all →"
     }
   },
 
@@ -281,6 +304,52 @@
       "loadFailed": "Failed to load notifications",
       "markReadFailed": "Failed to mark as read",
       "deleteFailed": "Failed to delete notification"
+    }
+  },
+
+  "callRecords": {
+    "title": "Call Records",
+    "filters": {
+      "all": "All",
+      "incoming": "Incoming",
+      "outgoing": "Outgoing"
+    },
+    "empty": {
+      "title": "No Calls Yet",
+      "message": "Your incoming and outgoing call history will appear here"
+    },
+    "loadMore": "Load More",
+    "call": {
+      "incoming": "Incoming",
+      "outgoing": "Outgoing",
+      "duration": "{{duration}}s",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "lastWeek": "Last Week"
+    },
+    "detail": {
+      "title": "Call Details",
+      "plate": "Vehicle",
+      "owner": "Owner",
+      "date": "Date & Time",
+      "duration": "Duration",
+      "status": "Status",
+      "callBack": "Call Back",
+      "close": "Close"
+    },
+    "callLimit": {
+      "title": "Call Limit Reached",
+      "bodyPrefix": "You can only call the same owner",
+      "bodyLimit": "{{limit}} times per day",
+      "bodySuffix": "to prevent spam and ensure safety for all users.",
+      "resetLabel": "Calls reset at",
+      "resetFallback": "1:00 AM",
+      "resetSuffix": "tonight",
+      "tipPrefix": "💡 You can still",
+      "tipAction": "Send a Free Alert",
+      "tipSuffix": "to notify the owner instantly.",
+      "sendAlert": "Send Alert Instead",
+      "dismiss": "Dismiss"
     }
   },
 
@@ -471,22 +540,30 @@
     "results": {
       "title": "Search Result",
       "found": {
-        "vehicleTitle": "Vehicle Found!",
-        "subtitle": "We found the owner of {{plate}}",
+        "vehicleTitle": "Vehicle Found",
+        "registeredOwnerLocated": "Registered owner located",
         "registered": "Registered Vehicle",
-        "ownerTitle": "Owner Information",
-        "contactTitle": "Contact Owner",
-        "alertTitle": "Send Alert",
-        "alertDescription": "Notify owner instantly. They'll see your message.",
-        "alertButton": "Send Alert to Owner",
-        "callTitle": "Call Owner",
-        "callDescription": "Instantly call owner and deduct 1 credit.",
+        "vehicleOwner": "Vehicle Owner",
+        "creditsRemaining": "credits remaining",
         "callButton": "Call Owner",
         "buyCredits": "Buy Credits to Call",
-        "whatsappButton": "WhatsApp Owner",
-        "emailButton": "Email Owner",
-        "respectMessage": "Please be respectful when contacting the owner. This service helps connect people in need.",
-        "reportLink": "Report an issue with this vehicle"
+        "alertButton": "Send Alert • Free",
+        "respectMessage": "Be respectful when contacting the owner",
+        "reportLink": "Report an issue",
+        "callLimit": {
+          "title": "Call Limit Reached",
+          "bodyPrefix": "You can only call the same owner",
+          "bodyLimit": "{{limit}} times per day",
+          "bodySuffix": "to prevent spam and ensure safety for all users.",
+          "resetLabel": "Calls reset at",
+          "resetFallback": "1:00 AM",
+          "resetSuffix": "tonight",
+          "tipPrefix": "💡 You can still",
+          "tipAction": "Send a Free Alert",
+          "tipSuffix": "to notify the owner instantly.",
+          "sendAlert": "Send Alert Instead",
+          "dismiss": "Dismiss"
+        }
       },
       "notFound": {
         "title": "Vehicle Not Found",
@@ -600,7 +677,7 @@
         "all": "All",
         "vehicles": "Vehicles",
         "searches": "Searches",
-        "contacts": "Contacts"
+        "alerts": "Alerts"
       },
       "timeline": {
         "today": "Today",

@@ -124,7 +124,7 @@ const ActivityHistoryScreen = ({navigation}) => {
             theme={theme}
           />
           <FilterChip
-            label={t('profile.activity.filters.contacts') || 'Contacts'}
+            label={t('profile.activity.filters.alerts') || 'Alerts'}
             active={activeFilter === FILTER_TYPES.ALERTS}
             onPress={() => handleFilterChange(FILTER_TYPES.ALERTS)}
             theme={theme}
@@ -521,44 +521,46 @@ const styles = StyleSheet.create({
   timelineItemWrapper: {},
   activityCard: {
     marginHorizontal: 0,
+    padding: 0,
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 10, // was 12 — slightly tighter
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40, // was 44 — harmonises with 30px icon better
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   activityIcon: {
-    fontSize: 22,
+    fontSize: 22, // was 22 — keep, but remove the <Text> wrapper in JSX
+  },
+  activityText: {
+    fontSize: 14, // was 15 — less visual weight in a dense list
+    fontWeight: '400', // was '500' — let content breathe; bold only for alerts
+    marginBottom: 2, // was 4 — tighter
   },
   textContent: {
     flex: 1,
   },
-  activityText: {
-    fontSize: 15,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 2, // ← ADD THIS — prevents time text touching title baseline
   },
   activityTime: {
-    fontSize: 13,
+    fontSize: 12, // was 13
   },
   metaDot: {
-    marginHorizontal: 6,
-    fontSize: 13,
+    marginHorizontal: 4, // was 6 — less gap around bullet
+    fontSize: 12,
   },
   activityDetail: {
-    fontSize: 13,
+    fontSize: 12, // was 13
     flex: 1,
   },
   loadMoreContainer: {

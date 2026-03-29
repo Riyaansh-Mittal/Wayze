@@ -125,7 +125,7 @@ const AboutScreen = ({navigation}) => {
           <Text style={[typography.h2, {marginBottom: spacing.sm}]}>
             {t('profile.about.legal')}
           </Text>
-          <Card>
+          <Card style={{padding: 0}}>
             <MenuItem
               icon="📜"
               label={t('profile.about.terms')}
@@ -154,7 +154,7 @@ const AboutScreen = ({navigation}) => {
           <Text style={[typography.h2, {marginBottom: spacing.sm}]}>
             {t('profile.about.connect')}
           </Text>
-          <Card>
+          <Card style={{padding: 0}}>
             <MenuItem
               icon="🌐"
               label={t('profile.about.website')}
@@ -229,8 +229,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoCircle: {
-    width: 105,
-    height: 105,
+    width: 90,
+    height: 90,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
